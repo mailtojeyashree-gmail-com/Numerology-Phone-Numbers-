@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-const siteUrl = 'https://business.britishnumbers.com/mobile-numbers/'
-const apiUrl = 'https://kmzzrufkoxwcxolbcmek.supabase.co/rest/v1/mobile_numbers'
+const siteUrl = 'https://dummy/mobile-numbers/'
+const apiUrl = 'https:/dummy/rest/v1/mobile_numbers'
 const pageSize = 100
 const concurrency = 12
 
