@@ -1,0 +1,143 @@
+.panja-patchi-page {
+  width: 100%;
+}
+
+.panja-calendar-select {
+  display: grid;
+  width: min(220px, 100%);
+  gap: 8px;
+  margin-bottom: 20px;
+  color: #174a9c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.panja-calendar-select select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 2px solid #3554d1;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #153a8a;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.panja-calendar-scroll {
+  overflow-x: auto;
+  padding: 6px;
+  border: 4px solid #2544d8;
+  border-radius: 4px;
+  background: #e8f5ff;
+}
+
+.panja-calendar {
+  width: 100%;
+  min-width: 1000px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  color: #a51d36;
+  font-family: 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.panja-calendar th,
+.panja-calendar td {
+  border: 1px solid #9eb9e9;
+}
+
+.panja-calendar-weekday-heading {
+  width: 112px;
+  height: 178px;
+  background: #dff1ff;
+  vertical-align: top;
+}
+
+.panja-calendar-weekday-heading span,
+.panja-calendar-period-heading {
+  display: block;
+  padding: 10px 4px;
+  color: #123f98;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.panja-calendar-weekday-heading strong {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  margin: 24px auto 0;
+  border: 5px solid #e32636;
+  border-radius: 50%;
+  background: #fff7cc;
+  color: #d41424;
+  font-size: 46px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.panja-calendar-period-heading {
+  width: 76px;
+  background: #dff1ff;
+  vertical-align: top;
+}
+
+.panja-calendar-time-heading {
+  height: 178px;
+  background: #dff1ff;
+  color: #a51d36;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.panja-calendar-time-heading span {
+  display: inline-block;
+  white-space: nowrap;
+  transform: rotate(-90deg);
+}
+
+.panja-calendar-weekday {
+  width: 112px;
+  background: #fff1c2;
+  color: #174a9c;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.panja-calendar-period {
+  width: 76px;
+  background: #fff8df;
+  color: #174a9c;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.panja-calendar td {
+  height: 30px;
+  padding: 3px 5px;
+  background: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.panja-calendar tbody tr:nth-child(4n + 1) td,
+.panja-calendar tbody tr:nth-child(4n + 2) td {
+  background: #f1f8ff;
+}
+
+.panja-calendar tbody tr:hover td,
+.panja-calendar tbody tr:hover th {
+  background: #d7f5e4;
+}
+
+@media (max-width: 560px) {
+  .panja-calendar {
+    min-width: 1000px;
+  }
+}
