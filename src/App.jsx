@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import './App.css'
 import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOption'
+import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
 import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
 import PanjaPatchiPage from './PanjaPatchiPage'
 import { carRegLetterValues } from './numerologyLetterValues'
@@ -1738,7 +1739,17 @@ function App() {
               <span className="column-selection-label">GENERATE COMBINATIONS (MOBILE STARTS 074; EVERY PAIR AND THE DIGIT TOTAL MUST MATCH LUCKY NUMBERS)</span>
               <div className="combination-generate-buttons">
                 {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
-                  generator === 'GEN-PASSWORD' ? (
+                  generator === 'GEN-DOG-NAMES' ? (
+                    <ManithaNaadiDogNameGenerator
+                      key={generator}
+                      activeGenerator={activeManithaNaadiGenerator}
+                      onGenerate={() => {
+                        setActiveManithaNaadiGenerator('GEN-DOG-NAMES')
+                        setManithaNaadiEmailResults(null)
+                        setManithaNaadiCombinationResults(null)
+                      }}
+                    />
+                  ) : generator === 'GEN-PASSWORD' ? (
                     <ManithaNaadiPasswordGenerator
                       key={`GEN-PASSWORD-${selectedManithaNaadiInitials}`}
                       initials={selectedManithaNaadiInitials}
@@ -1777,24 +1788,17 @@ function App() {
                     <button
                       className={`combination-generate-button${manithaNaadiCombinationResults?.generator === generator ? ' combination-generate-button-active' : ''}`}
                       type="button"
-                      disabled={generator === 'GEN-DOG-NAMES'}
-                      aria-label={generator === 'GEN-DOG-NAMES'
-                        ? `${generator} generation rules not configured`
-                        : generator === 'GEN-MOBILE-NUMBERS'
+                      aria-label={generator === 'GEN-MOBILE-NUMBERS'
                         ? 'Generate UK mobile numbers'
                         : generator === 'GEN-CAR-REG'
                           ? 'Generate car registrations'
                           : generator === 'GEN-5' ? 'Run GEN-5 three-pair checks' : `Run ${generator} with ${generator === 'GEN-6' ? 'three' : 'two'} values`}
-                      title={generator === 'GEN-DOG-NAMES'
-                        ? 'Generation rules not configured yet'
-                        : generator === 'GEN-MOBILE-NUMBERS'
+                      title={generator === 'GEN-MOBILE-NUMBERS'
                         ? 'Generate UK mobile numbers from the selected initials lucky pairs'
                         : generator === 'GEN-CAR-REG'
                           ? 'Generate car registrations from the selected initials lucky numbers'
                           : generator === 'GEN-5' ? 'Generate three-pair checks' : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       onClick={() => {
-                        if (generator === 'GEN-DOG-NAMES') return
-
                         setActiveManithaNaadiGenerator(generator)
                         setManithaNaadiEmailResults(null)
                         const luckyNumbers = manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]
