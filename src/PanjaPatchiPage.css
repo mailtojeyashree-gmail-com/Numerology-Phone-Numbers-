@@ -2,6 +2,13 @@
   width: 100%;
 }
 
+.panja-calendar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
 .panja-calendar-select {
   display: grid;
   width: min(220px, 100%);
@@ -12,7 +19,18 @@
   font-weight: 800;
 }
 
-.panja-calendar-select select {
+.panja-sunrise-select {
+  display: grid;
+  width: min(220px, 100%);
+  gap: 8px;
+  margin-bottom: 20px;
+  color: #174a9c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.panja-calendar-select select,
+.panja-sunrise-select input {
   width: 100%;
   min-height: 48px;
   padding: 0 14px;
@@ -89,17 +107,41 @@
 }
 
 .panja-calendar-time-heading {
+  position: relative;
   height: 178px;
   background: #dff1ff;
-  color: #a51d36;
+  color: #174a9c;
   font-size: 14px;
   font-weight: 800;
 }
 
-.panja-calendar-time-heading span {
-  display: inline-block;
+.panja-calendar-time-labels {
+  position: absolute;
+  inset: 0;
+}
+
+.panja-calendar-time-label,
+.panja-calendar-sunrise-range {
+  position: absolute;
+  top: 50%;
+  width: 150px;
+  text-align: center;
   white-space: nowrap;
-  transform: rotate(-90deg);
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.panja-calendar-time-label {
+  left: 50%;
+}
+
+.panja-calendar-time-labels-with-sunrise .panja-calendar-time-label {
+  left: 34%;
+}
+
+.panja-calendar-sunrise-range {
+  left: 66%;
+  color: #a51d36;
+  font-size: 13px;
 }
 
 .panja-calendar-weekday {
@@ -134,6 +176,16 @@
 .panja-calendar tbody tr:hover td,
 .panja-calendar tbody tr:hover th {
   background: #d7f5e4;
+}
+
+.panja-calendar tbody tr td.panja-calendar-highlighted-growth,
+.panja-calendar tbody tr:hover td.panja-calendar-highlighted-growth {
+  background: #fff000;
+}
+
+.panja-calendar tbody tr td.panja-calendar-highlighted-waning,
+.panja-calendar tbody tr:hover td.panja-calendar-highlighted-waning {
+  background: #ffb6d9;
 }
 
 @media (max-width: 560px) {
