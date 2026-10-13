@@ -26,11 +26,28 @@ const meaningfulWords = [
 ]
 const passwordsPerLuckyNumber = 10
 const maximumPasswordLength = 22
+const emailDomain = 'gmail.com'
 const passwordSuffixes = {
   MA: '42',
   MJ: '54',
   M: '41',
 }
+const emailNameParts = {
+  MJ: ['Jeyashree', 'Murugan'],
+  M: ['Sivganesh', 'Mukundan'],
+  MA: ['Murugan', 'Amir'],
+}
+const emailNameInitials = {
+  MJ: ['C', 'S'],
+  M: ['M', 'J'],
+  MA: ['J', 'A'],
+}
+const emailNameShortForms = {
+  MJ: ['Jey', 'Jeya', 'Jeyash', 'Shree', 'Muru', 'Murug', 'Muruga'],
+  M: ['Siv', 'Siva', 'Ganesh', 'Mukund', 'Kundan'],
+  MA: [],
+}
+const maMuruganPrefixes = ['Sri', 'Shri', 'Shree', 'Sree']
 
 function capitalizeWord(word) {
   return `${word[0].toUpperCase()}${word.slice(1)}`
@@ -46,7 +63,7 @@ function addCandidate(candidates, password, luckyPairs) {
   candidates.add(password)
 }
 
-export function generatePasswords(initials, luckyNumbers) {
+function generateNameMatches(initials, luckyNumbers) {
   const suffix = passwordSuffixes[initials]
   if (!suffix) return { matches: [], unmatchedTargets: [] }
 
@@ -162,11 +179,192 @@ export function generatePasswords(initials, luckyNumbers) {
         value,
       })))
       const initialPair = `${letterValues[0].value}${letterValues[1].value}`
+      const username = `${password}${suffix}`
       matches.push({
-        password: `${password}${suffix}`,
+        password: username,
+        email: `${username}@${emailDomain}`,
         initialPair,
         letterValues,
         total: letterValues.reduce((sum, entry) => sum + entry.value, 0),
+      })
+    }
+  }
+
+  return { matches, unmatchedTargets, shortfallTargets }
+}
+
+export function generatePasswords(initials, luckyNumbers) {
+  return generateNameMatches(initials, luckyNumbers)
+}
+
+export function generateEmails(initials, luckyNumbers, includeGmailInTotal) {
+  const suffix = passwordSuffixes[initials]
+  const parts = emailNameParts[initials]
+  if (!suffix || !parts) return { matches: [], unmatchedTargets: [], shortfallTargets: [] }
+
+  const targets = [...new Set(luckyNumbers.split(/[\s,]+/).filter((value) => /^\d{2}$/.test(value)))]
+  const luckyPairs = new Set(targets)
+  const suffixValues = [...suffix].map(Number)
+  const domainValues = includeGmailInTotal
+    ? [...emailDomain.replace('.', '').toUpperCase()].map((letter) => ({
+      letter,
+      value: carRegLetterValueMap.get(letter),
+    }))
+    : []
+  const sourceLetters = [...new Set(parts.join('').toUpperCase())]
+  const initialPair = initials.length === 2
+    ? `${carRegLetterValueMap.get(initials[0])}${carRegLetterValueMap.get(initials[1])}`
+    : ''
+  const prefixes = [...new Set([
+    ...(luckyPairs.has(initialPair) ? [initials] : []),
+    ...sourceLetters
+      .filter((letter) => luckyPairs.has(`${carRegLetterValueMap.get(initials[0])}${carRegLetterValueMap.get(letter)}`))
+      .map((letter) => `${initials[0]}${letter}`),
+  ])]
+  const nameVariants = new Map()
+
+  function addNameVariant(prefix, orderedParts, fullNameCount) {
+    const names = [orderedParts]
+    if (initials === 'MA') {
+      for (let index = 0; index < orderedParts.length; index += 1) {
+        if (orderedParts[index] !== 'Murugan') continue
+        for (const muruganPrefix of maMuruganPrefixes) {
+          names.push([
+            ...orderedParts.slice(0, index),
+            `${muruganPrefix}Murugan`,
+            ...orderedParts.slice(index + 1),
+          ])
+        }
+      }
+    }
+    for (const nameParts of names) {
+      const name = `${prefix}${nameParts.join('')}`
+      nameVariants.set(name, Math.max(nameVariants.get(name) ?? 0, fullNameCount))
+    }
+  }
+
+  function addPartOrders(remaining, orderedParts) {
+    if (orderedParts.length > 0) {
+      for (const prefix of prefixes) {
+        addNameVariant(prefix, orderedParts, orderedParts.length)
+      }
+    }
+    for (let index = 0; index < remaining.length; index += 1) {
+      addPartOrders(
+        remaining.filter((_, partIndex) => partIndex !== index),
+        [...orderedParts, remaining[index]],
+      )
+    }
+  }
+
+  addPartOrders(parts, [])
+
+  if (emailNameInitials[initials]) {
+    function addOrders(remaining, orderedParts, fullNameCount) {
+      if (orderedParts.length > 0) {
+        for (const prefix of prefixes) {
+          addNameVariant(prefix, orderedParts, fullNameCount)
+        }
+      }
+      for (let index = 0; index < remaining.length; index += 1) {
+        addOrders(
+          remaining.filter((_, partIndex) => partIndex !== index),
+          [...orderedParts, remaining[index]],
+          fullNameCount,
+        )
+      }
+    }
+
+    function addParentInitialOrders(remaining, orderedParts, fullNameCount) {
+      addOrders([...orderedParts, ...remaining], [], fullNameCount)
+      for (let index = 0; index < remaining.length; index += 1) {
+        addParentInitialOrders(
+          remaining.filter((_, partIndex) => partIndex !== index),
+          orderedParts,
+          fullNameCount,
+        )
+      }
+    }
+
+    function addFamilyNameOptions(personIndex, orderedParts, fullNameCount) {
+      if (personIndex === parts.length) {
+        if (orderedParts.length > 0) {
+          addParentInitialOrders(emailNameInitials[initials], orderedParts, fullNameCount)
+        }
+        return
+      }
+
+      const person = parts[personIndex]
+      addFamilyNameOptions(personIndex + 1, orderedParts, fullNameCount)
+      const nameOptions = [
+        person[0],
+        person,
+        ...emailNameShortForms[initials].filter((shortForm) => (
+          person.toLowerCase().includes(shortForm.toLowerCase())
+        )),
+      ]
+      for (const nameOption of nameOptions) {
+        addFamilyNameOptions(
+          personIndex + 1,
+          [...orderedParts, nameOption],
+          fullNameCount + (nameOption === person ? 1 : 0),
+        )
+      }
+    }
+
+    addFamilyNameOptions(0, [], 0)
+  }
+
+  const matches = []
+  const unmatchedTargets = []
+  const shortfallTargets = []
+
+  for (const luckyNumber of targets) {
+    const target = Number(luckyNumber)
+    const candidates = []
+    for (const [name, fullNameCount] of nameVariants) {
+      if (initials === 'MA' && /velayu/i.test(name)) continue
+      if (
+        initials === 'MJ' &&
+        /mur(u|ug)/i.test(name) &&
+        !/Jeyashree/i.test(name)
+      ) continue
+
+      const letterValues = [...name.toUpperCase()].map((letter) => ({
+        letter,
+        value: carRegLetterValueMap.get(letter),
+      })).concat(suffixValues.map((value, index) => ({
+        letter: suffix[index],
+        value,
+      })), domainValues)
+      const initialPair = `${letterValues[0].value}${letterValues[1].value}`
+      const total = letterValues.reduce((sum, entry) => sum + entry.value, 0)
+      if (luckyPairs.has(initialPair) && total === target) {
+        candidates.push({ name, initialPair, letterValues, total, fullNameCount })
+      }
+    }
+
+    const selectedCandidates = candidates
+      .sort((first, second) => (
+        second.fullNameCount - first.fullNameCount ||
+        first.name.length - second.name.length ||
+        first.name.localeCompare(second.name)
+      ))
+      .slice(0, passwordsPerLuckyNumber)
+    if (selectedCandidates.length === 0) {
+      unmatchedTargets.push(luckyNumber)
+      continue
+    }
+    if (selectedCandidates.length < passwordsPerLuckyNumber) {
+      shortfallTargets.push({ luckyNumber, count: selectedCandidates.length })
+    }
+
+    for (const { name, ...match } of selectedCandidates) {
+      const username = `${name}${suffix}`
+      matches.push({
+        ...match,
+        password: username,
+        email: `${username}@${emailDomain}`,
       })
     }
   }

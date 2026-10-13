@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import './App.css'
+import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOption'
 import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
 import PanjaPatchiPage from './PanjaPatchiPage'
 import { carRegLetterValues } from './numerologyLetterValues'
@@ -593,7 +594,7 @@ function calculateCombinationMatches(values, expectedValue, pairCount = 2, allow
   }
 }
 
-function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiChartNumbersByPair) {
+function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiChartNumbersByPair, include85 = true) {
   const luckyPairs = [...new Set(parseEntries(luckyNumbers, true))]
   const allowedValues = new Set(luckyPairs)
   const matches = []
@@ -604,6 +605,7 @@ function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiChartNumb
     if (selectedPairs.length === 4) {
       combinationsChecked += 1
       const number = `074${selectedPairs.join('')}`
+      if (profile === 'MJ' && !include85 && number.includes('85')) return
       const total = sumDigits(number)
       if (!allowedValues.has(String(total).padStart(2, '0'))) return
 
@@ -650,6 +652,9 @@ function App() {
   const [generatedNumbers, setGeneratedNumbers] = useState(null)
   const [additionalGeneratedNumbers, setAdditionalGeneratedNumbers] = useState(null)
   const [manithaNaadiCombinationResults, setManithaNaadiCombinationResults] = useState(null)
+  const [manithaNaadiEmailResults, setManithaNaadiEmailResults] = useState(null)
+  const [activeManithaNaadiGenerator, setActiveManithaNaadiGenerator] = useState(null)
+  const [includeMjMobile85, setIncludeMjMobile85] = useState(true)
   const [combinationExpectedValues, setCombinationExpectedValues] = useState(combinationProfiles)
   const [carRegExpectedValues, setCarRegExpectedValues] = useState(() => ({
     ...combinationProfiles,
@@ -1735,27 +1740,52 @@ function App() {
                 {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
                   generator === 'GEN-PASSWORD' ? (
                     <ManithaNaadiPasswordGenerator
-                      key={selectedManithaNaadiInitials}
+                      key={`GEN-PASSWORD-${selectedManithaNaadiInitials}`}
                       initials={selectedManithaNaadiInitials}
                       luckyNumbers={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
                       rasiChartNumbersByPair={rasiChartNumbersByPair}
-                      activeGenerator={manithaNaadiCombinationResults?.generator}
-                      onGenerate={() => setManithaNaadiCombinationResults(null)}
+                      activeGenerator={activeManithaNaadiGenerator}
+                      onGenerate={() => {
+                        setActiveManithaNaadiGenerator('GEN-PASSWORD')
+                        setManithaNaadiEmailResults(null)
+                        setManithaNaadiCombinationResults(null)
+                      }}
+                    />
+                  ) : generator === 'GEN-EMAIL' ? (
+                    <EmailGeneratorOption
+                      key={`GEN-EMAIL-${selectedManithaNaadiInitials}`}
+                      initials={selectedManithaNaadiInitials}
+                      luckyNumbers={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
+                      onGenerate={(results, includeGmailInTotal) => {
+                        setActiveManithaNaadiGenerator('GEN-EMAIL')
+                        setManithaNaadiCombinationResults(null)
+                        setManithaNaadiEmailResults({
+                          ...results,
+                          initials: selectedManithaNaadiInitials,
+                          includeGmailInTotal,
+                        })
+                      }}
+                      onClear={() => setManithaNaadiEmailResults(null)}
                     />
                   ) : (
+                    <div
+                      key={generator}
+                      className={generator === 'GEN-MOBILE-NUMBERS'
+                        ? 'mobile-number-generator-option'
+                        : 'combination-generator-option'}
+                    >
                     <button
                       className={`combination-generate-button${manithaNaadiCombinationResults?.generator === generator ? ' combination-generate-button-active' : ''}`}
                       type="button"
-                      key={generator}
-                      disabled={['GEN-EMAIL', 'GEN-DOG-NAMES'].includes(generator)}
-                      aria-label={['GEN-EMAIL', 'GEN-DOG-NAMES'].includes(generator)
+                      disabled={generator === 'GEN-DOG-NAMES'}
+                      aria-label={generator === 'GEN-DOG-NAMES'
                         ? `${generator} generation rules not configured`
                         : generator === 'GEN-MOBILE-NUMBERS'
                         ? 'Generate UK mobile numbers'
                         : generator === 'GEN-CAR-REG'
                           ? 'Generate car registrations'
                           : generator === 'GEN-5' ? 'Run GEN-5 three-pair checks' : `Run ${generator} with ${generator === 'GEN-6' ? 'three' : 'two'} values`}
-                      title={['GEN-EMAIL', 'GEN-DOG-NAMES'].includes(generator)
+                      title={generator === 'GEN-DOG-NAMES'
                         ? 'Generation rules not configured yet'
                         : generator === 'GEN-MOBILE-NUMBERS'
                         ? 'Generate UK mobile numbers from the selected initials lucky pairs'
@@ -1763,8 +1793,10 @@ function App() {
                           ? 'Generate car registrations from the selected initials lucky numbers'
                           : generator === 'GEN-5' ? 'Generate three-pair checks' : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       onClick={() => {
-                        if (['GEN-EMAIL', 'GEN-DOG-NAMES'].includes(generator)) return
+                        if (generator === 'GEN-DOG-NAMES') return
 
+                        setActiveManithaNaadiGenerator(generator)
+                        setManithaNaadiEmailResults(null)
                         const luckyNumbers = manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]
                         const generatorResults = generator === 'GEN-5'
                           ? calculateGen5Matches(luckyNumbers, luckyNumbers)
@@ -1773,6 +1805,7 @@ function App() {
                               selectedManithaNaadiInitials,
                               luckyNumbers,
                               rasiChartNumbersByPair,
+                              includeMjMobile85,
                             )
                             : generator === 'GEN-CAR-REG'
                               ? generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPair)
@@ -1830,9 +1863,44 @@ function App() {
                     >
                       {generator}
                     </button>
+                    {generator === 'GEN-MOBILE-NUMBERS' && selectedManithaNaadiInitials === 'MJ' && (
+                      <label className="mobile-number-85-option">
+                        <input
+                          type="checkbox"
+                          checked={includeMjMobile85}
+                          onChange={(event) => {
+                            const include85 = event.target.checked
+                            setIncludeMjMobile85(include85)
+                            if (manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
+                              && manithaNaadiCombinationResults.profile === 'MJ') {
+                              setManithaNaadiCombinationResults({
+                                generator: 'GEN-MOBILE-NUMBERS',
+                                profile: 'MJ',
+                                ...calculateManithaNaadiMobileMatches(
+                                  'MJ',
+                                  manithaNaadiLuckyNumbers.MJ,
+                                  rasiChartNumbersByPair,
+                                  include85,
+                                ),
+                              })
+                            }
+                          }}
+                        />
+                        <span>85</span>
+                      </label>
+                    )}
+                    </div>
                   )
                 ))}
               </div>
+              {activeManithaNaadiGenerator === 'GEN-EMAIL'
+                && manithaNaadiEmailResults?.initials === selectedManithaNaadiInitials && (
+                <EmailGeneratorResults
+                  initials={selectedManithaNaadiInitials}
+                  results={manithaNaadiEmailResults}
+                  rasiChartNumbersByPair={rasiChartNumbersByPair}
+                />
+              )}
             </div>
             {manithaNaadiCombinationResults && (
               <section className="combination-results" aria-live="polite" aria-label={`${manithaNaadiCombinationResults.generator} results`}>

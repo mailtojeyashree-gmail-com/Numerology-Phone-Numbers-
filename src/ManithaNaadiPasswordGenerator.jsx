@@ -11,7 +11,7 @@ export default function ManithaNaadiPasswordGenerator({
   onGenerate,
 }) {
   const [passwords, setPasswords] = useState(null)
-  const visiblePasswords = activeGenerator ? null : passwords
+  const visiblePasswords = activeGenerator === 'GEN-PASSWORD' ? passwords : null
 
   return (
     <>

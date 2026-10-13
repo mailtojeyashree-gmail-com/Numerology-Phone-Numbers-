@@ -1142,6 +1142,58 @@
   margin-top: 10px;
 }
 
+.combination-generator-option {
+  display: contents;
+}
+
+.mobile-number-generator-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.mobile-number-85-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--soft-ink);
+  font-size: 10px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.mobile-number-85-option input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--moss);
+}
+
+.email-generator-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.email-domain-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--soft-ink);
+  font-size: 10px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.email-domain-option input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--moss);
+}
+
 .combination-generate-button {
   min-width: 78px;
   min-height: 40px;
@@ -1206,6 +1258,11 @@
 }
 
 .password-generator-results .manitha-results-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.email-generator-results .manitha-results-table {
   min-width: 0;
   table-layout: fixed;
 }
