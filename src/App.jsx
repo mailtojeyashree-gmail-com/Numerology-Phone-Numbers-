@@ -88,8 +88,8 @@ const matchingPhoneNumbers = [
   '07393797777', '07393977777', '07393999995', '07393999997',
   '07379999992', '07379999993', '07387777774',
 ]
-const manithaNaadiLuckyNumbers = {
-  MJ: '20, 41, 45, 54, 56, 64, 66, 68, 74, 85, 92',
+const manithaNaadiLuckyNumberDefaults = {
+  MJ: '20, 41, 45, 54, 56, 64, 66, 68, 74, 85, 92, 32, 14',
   MA: '06, 16, 33, 42, 51, 52, 73, 79, 84, 85, 87, 88, 93, 97, 99, 92, 54',
   M: '10, 14, 20, 32, 45, 54, 56, 64, 74, 80, 89, 92, 95, 68, 41, 04, 08',
 }
@@ -643,6 +643,9 @@ function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiChartNumb
 function App() {
   const [activePage, setActivePage] = useState('generator')
   const [selectedManithaNaadiInitials, setSelectedManithaNaadiInitials] = useState('MJ')
+  const [manithaNaadiLuckyNumbers, setManithaNaadiLuckyNumbers] = useState(
+    () => ({ ...manithaNaadiLuckyNumberDefaults }),
+  )
   const [selectedCombinationProfile, setSelectedCombinationProfile] = useState('MA')
   const [selectedMatchingProfile, setSelectedMatchingProfile] = useState('MA')
   const [selectedAdditionalMatchingProfile, setSelectedAdditionalMatchingProfile] = useState('AM')
@@ -1690,7 +1693,7 @@ function App() {
                 value={selectedManithaNaadiInitials}
                 onChange={(event) => setSelectedManithaNaadiInitials(event.target.value)}
               >
-                {Object.keys(manithaNaadiLuckyNumbers).map((initials) => (
+                {Object.keys(manithaNaadiLuckyNumberDefaults).map((initials) => (
                   <option value={initials} key={initials}>{initials}</option>
                 ))}
               </select>
@@ -1700,7 +1703,10 @@ function App() {
               <textarea
                 id="manitha-naadi-lucky-numbers"
                 value={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
-                readOnly
+                onChange={(event) => setManithaNaadiLuckyNumbers((currentValues) => ({
+                  ...currentValues,
+                  [selectedManithaNaadiInitials]: event.target.value,
+                }))}
                 rows={4}
                 spellCheck="false"
               />
