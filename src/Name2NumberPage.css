@@ -203,8 +203,7 @@
   font-weight: 800;
 }
 
-.name2number-unique-field textarea,
-.name2number-unique-results textarea {
+.name2number-unique-field textarea {
   width: 100%;
   min-height: 150px;
   padding: 12px 14px;
@@ -245,8 +244,35 @@
   font-weight: 800;
 }
 
-.name2number-unique-results textarea {
-  min-height: 0;
+.name2number-unique-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.name2number-unique-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fffdf8;
+}
+
+.name2number-unique-table th,
+.name2number-unique-table td {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+}
+
+.name2number-unique-table th {
+  background: var(--paper-deep);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.name2number-unique-table td {
+  font: 700 14px/1.5 'SFMono-Regular', Consolas, monospace;
+  white-space: nowrap;
 }
 
 .name2number-unique-number-list {
@@ -262,6 +288,152 @@
   font-weight: 800;
 }
 
+.name2number-including-74-filter {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.name2number-including-74-dropdown {
+  position: relative;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.name2number-including-74-dropdown summary {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+  cursor: pointer;
+}
+
+.name2number-including-74-dropdown summary:focus-visible {
+  border-color: var(--moss);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
+}
+
+.name2number-including-74-options {
+  display: grid;
+  gap: 8px;
+  max-height: 180px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+}
+
+.name2number-including-74-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.name2number-including-74-options input {
+  accent-color: var(--moss);
+}
+
+.name2number-selected-combinations {
+  margin-top: 16px;
+}
+
+.name2number-selected-combinations > p {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.name2number-mobile-combinations {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.name2number-mobile-combinations h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.name2number-mobile-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 900px;
+  margin-top: 18px;
+}
+
+.name2number-mobile-fields .name2number-unique-field textarea {
+  min-height: 130px;
+}
+
+.name2number-mobile-fields .name2number-mobile-field {
+  grid-area: auto;
+  min-width: 0;
+}
+
+.name2number-custom-fields {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.name2number-mobile-field > span {
+  color: var(--forest);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.name2number-mobile-field textarea::placeholder {
+  color: #85877f;
+  font: 500 13px/1.5 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+}
+
+.name2number-unused-button {
+  margin-top: 14px;
+}
+
+.name2number-unused-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.name2number-unused-results section {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+}
+
+.name2number-unused-results h4 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.name2number-unused-results p {
+  margin: 0;
+  color: var(--ink);
+  font: 650 14px/1.6 'SFMono-Regular', Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 760px) {
   .name2number-unique-form {
     grid-template-areas:
@@ -273,6 +445,18 @@
 
   .name2number-find-button {
     justify-self: stretch;
+  }
+
+  .name2number-mobile-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .name2number-unused-button {
+    width: 100%;
+  }
+
+  .name2number-unused-results {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

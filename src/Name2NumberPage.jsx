@@ -11,6 +11,28 @@ const letterRows = Array.from({ length: 8 }, (_, index) => ({
     .map(([letter]) => letter),
 }))
 
+const defaultMobileListA = `04, 39, 68, 88
+06, 41, 72, 89
+08, 42, 73, 92
+10, 45, 74, 93
+12, 51, 77, 95
+14, 52, 79, 97
+16, 54, 80, 99
+20, 56, 84
+29, 64, 85
+32, 66, 87`
+
+const defaultMobileListB = `04, 32, 73, 90
+06, 41, 74, 92
+08, 42, 77, 93
+10, 45, 79, 95
+14, 54, 80, 97
+16, 64, 84, 99
+20, 66, 85
+22, 68, 87
+26, 72, 88
+29, 73, 89`
+
 function xmlEscape(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
     '&': '&amp;',
@@ -44,6 +66,50 @@ function getNameResult(name) {
   }
 }
 
+function parseNumberList(text) {
+  const numbers = []
+  const invalidLines = []
+  const seen = new Set()
+
+  text.split(/\r?\n/).forEach((line, index) => {
+    const trimmedLine = line.trim()
+    if (!trimmedLine) return
+
+    const entries = trimmedLine.split(',').map((entry) => entry.trim())
+    if (entries.some((entry) => !/^\d+$/.test(entry))) {
+      invalidLines.push(index + 1)
+      return
+    }
+
+    entries.forEach((entry) => {
+      const normalized = entry.replace(/^0+(?=\d)/, '')
+      if (seen.has(normalized)) return
+      seen.add(normalized)
+      numbers.push({ key: normalized, value: entry })
+    })
+  })
+
+  return { numbers, invalidLines }
+}
+
+function compareNumberLists(textA, textB) {
+  const parsedA = parseNumberList(textA)
+  const parsedB = parseNumberList(textB)
+  const numbersInA = new Set(parsedA.numbers.map(({ key }) => key))
+  const numbersInB = new Set(parsedB.numbers.map(({ key }) => key))
+
+  return {
+    unusedA: parsedA.numbers
+      .filter(({ key }) => !numbersInB.has(key))
+      .map(({ value }) => value),
+    unusedB: parsedB.numbers
+      .filter(({ key }) => !numbersInA.has(key))
+      .map(({ value }) => value),
+    invalidA: parsedA.invalidLines,
+    invalidB: parsedB.invalidLines,
+  }
+}
+
 export default function Name2NumberPage() {
   const [name, setName] = useState('')
   const [generatedNames, setGeneratedNames] = useState(null)
@@ -51,6 +117,13 @@ export default function Name2NumberPage() {
   const [combinationList, setCombinationList] = useState('')
   const [uniqueCombinations, setUniqueCombinations] = useState(null)
   const [invalidCombinationLines, setInvalidCombinationLines] = useState([])
+  const [selectedIncluding74Totals, setSelectedIncluding74Totals] = useState([])
+  const mobileListA = defaultMobileListA
+  const mobileListB = defaultMobileListB
+  const [unusedMobileNumbers, setUnusedMobileNumbers] = useState(null)
+  const [customListA, setCustomListA] = useState('')
+  const [customListB, setCustomListB] = useState('')
+  const [unusedCustomNumbers, setUnusedCustomNumbers] = useState(null)
   const results = useMemo(
     () => (generatedNames ?? []).map(getNameResult),
     [generatedNames],
@@ -71,11 +144,22 @@ export default function Name2NumberPage() {
   const uniqueCombinationsWithSums = uniqueCombinations?.map((combination) => {
     const digits = combination.match(/\d/g) ?? []
     const digitSum = digits.reduce((sum, digit) => sum + Number(digit), 0)
-    return `${combination} = Total digit sum (${digits.join('+')}) = ${digitSum}`
+    return {
+      combination,
+      digitSum,
+      totalWith74: digitSum + 11,
+    }
   }) ?? []
+  const uniqueIncluding74Totals = [...new Set(
+    uniqueCombinationsWithSums.map(({ totalWith74 }) => totalWith74),
+  )].sort((first, second) => first - second)
+  const selectedCombinations = uniqueCombinationsWithSums.filter(({ totalWith74 }) => (
+    selectedIncluding74Totals.includes(String(totalWith74))
+  ))
 
   function findUniqueCombinations(event) {
     event.preventDefault()
+    setSelectedIncluding74Totals([])
     const seen = new Set()
     const invalidLines = []
     const unique = combinationList
@@ -100,6 +184,14 @@ export default function Name2NumberPage() {
       })
     setUniqueCombinations(unique)
     setInvalidCombinationLines(invalidLines)
+  }
+
+  function findUnusedMobileNumbers() {
+    setUnusedMobileNumbers(compareNumberLists(mobileListA, mobileListB))
+  }
+
+  function findUnusedCustomNumbers() {
+    setUnusedCustomNumbers(compareNumberLists(customListA, customListB))
   }
 
   function downloadExcel() {
@@ -283,6 +375,7 @@ export default function Name2NumberPage() {
                   setCombinationList(event.target.value)
                   setUniqueCombinations(null)
                   setInvalidCombinationLines([])
+                  setSelectedIncluding74Totals([])
                 }}
                 placeholder={'Enter one combination per line, for example:\n15, 11, 35, 25, 5\n15, 11, 35, 25, 5'}
                 rows={7}
@@ -310,15 +403,85 @@ export default function Name2NumberPage() {
                 ) : null}
                 {uniqueCombinations.length > 0 ? (
                   <>
-                    <textarea
-                      aria-label="Unique number combinations"
-                      value={uniqueCombinationsWithSums.join('\n')}
-                      rows={Math.min(uniqueCombinationsWithSums.length, 10)}
-                      readOnly
-                    />
+                    <div className="name2number-unique-table-wrap">
+                      <table className="name2number-unique-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Combination</th>
+                            <th scope="col">Total digit sum</th>
+                            <th scope="col">Including 74</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {uniqueCombinationsWithSums.map(({ combination, digitSum, totalWith74 }) => (
+                            <tr key={combination}>
+                              <td>{combination}</td>
+                              <td>{digitSum}</td>
+                              <td>{totalWith74}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                     <p className="name2number-unique-number-list" aria-label="Unique numbers">
                       <strong>Unique numbers:</strong> {uniqueNumbers.join(', ')}
                     </p>
+                    <div className="name2number-including-74-filter">
+                      <span>Filter by “Including 74” total</span>
+                      <details
+                        className="name2number-including-74-dropdown"
+                        aria-describedby="name2number-including-74-help"
+                      >
+                        <summary>
+                          {selectedIncluding74Totals.length > 0
+                            ? `${selectedIncluding74Totals.length} total${selectedIncluding74Totals.length === 1 ? '' : 's'} selected`
+                            : 'Select totals'}
+                        </summary>
+                        <div className="name2number-including-74-options" role="group" aria-label="Including 74 totals">
+                          {uniqueIncluding74Totals.map((total) => {
+                            const value = String(total)
+                            const inputId = `name2number-including-74-${value}`
+                            return (
+                              <label htmlFor={inputId} key={total}>
+                                <input
+                                  id={inputId}
+                                  type="checkbox"
+                                  checked={selectedIncluding74Totals.includes(value)}
+                                  onChange={(event) => {
+                                    setSelectedIncluding74Totals((selected) => (
+                                      event.target.checked
+                                        ? [...selected, value]
+                                        : selected.filter((selectedTotal) => selectedTotal !== value)
+                                    ))
+                                  }}
+                                />
+                                {total}
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </details>
+                      <span id="name2number-including-74-help" className="name2number-unique-help">
+                        Select one or more totals to show their matching combinations.
+                      </span>
+                    </div>
+                    {selectedIncluding74Totals.length > 0 ? (
+                      <div className="name2number-selected-combinations">
+                        <p>Selected combinations</p>
+                        <div className="name2number-unique-table-wrap">
+                          <table className="name2number-unique-table">
+                            <thead>
+                              <tr><th scope="col">Combination</th></tr>
+                            </thead>
+                            <tbody>
+                              {selectedCombinations.map(({ combination }) => (
+                                <tr key={combination}><td>{combination}</td></tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <p className="name2number-message">Enter at least one number combination.</p>
@@ -326,6 +489,136 @@ export default function Name2NumberPage() {
               </div>
             ) : null}
           </form>
+          <section
+            className="name2number-mobile-combinations"
+            aria-labelledby="name2number-mobile-combinations-title"
+          >
+            <h3 id="name2number-mobile-combinations-title">Mobile number combination</h3>
+            <div className="name2number-mobile-fields">
+              <label className="name2number-unique-field name2number-mobile-field" htmlFor="name2number-mobile-a">
+                <span>Second set</span>
+                <textarea
+                  id="name2number-mobile-a"
+                  aria-label="Second set number list"
+                  value={mobileListA}
+                  readOnly
+                  rows={6}
+                />
+              </label>
+              <label className="name2number-unique-field name2number-mobile-field" htmlFor="name2number-mobile-b">
+                <span>Third set</span>
+                <textarea
+                  id="name2number-mobile-b"
+                  aria-label="Third set number list"
+                  value={mobileListB}
+                  readOnly
+                  rows={6}
+                />
+              </label>
+            </div>
+            <button
+              className="name2number-button name2number-unused-button"
+              type="button"
+              onClick={findUnusedMobileNumbers}
+              disabled={!mobileListA.trim() && !mobileListB.trim()}
+            >
+              Unused numbers
+            </button>
+            {unusedMobileNumbers ? (
+              <>
+                {unusedMobileNumbers.invalidA.length > 0 || unusedMobileNumbers.invalidB.length > 0 ? (
+                  <p className="name2number-message" role="alert">
+                    Invalid entries were skipped
+                    {unusedMobileNumbers.invalidA.length > 0
+                      ? ` in A on lines ${unusedMobileNumbers.invalidA.join(', ')}` : ''}
+                    {unusedMobileNumbers.invalidB.length > 0
+                      ? ` in B on lines ${unusedMobileNumbers.invalidB.join(', ')}` : ''}.
+                    Use comma-separated whole numbers.
+                  </p>
+                ) : null}
+                <div className="name2number-unused-results" aria-live="polite">
+                  <section aria-labelledby="name2number-unused-a-title">
+                    <h4 id="name2number-unused-a-title">Unused A (not in B)</h4>
+                    <p>{unusedMobileNumbers.unusedA.length > 0
+                      ? unusedMobileNumbers.unusedA.join(', ')
+                      : 'None'}</p>
+                  </section>
+                  <section aria-labelledby="name2number-unused-b-title">
+                    <h4 id="name2number-unused-b-title">Unused B (not in A)</h4>
+                    <p>{unusedMobileNumbers.unusedB.length > 0
+                      ? unusedMobileNumbers.unusedB.join(', ')
+                      : 'None'}</p>
+                  </section>
+                </div>
+              </>
+            ) : null}
+            <div className="name2number-mobile-fields name2number-custom-fields">
+              <label className="name2number-unique-field name2number-mobile-field" htmlFor="name2number-custom-a">
+                <span>Input A</span>
+                <textarea
+                  id="name2number-custom-a"
+                  aria-label="Custom input A number list"
+                  value={customListA}
+                  onChange={(event) => {
+                    setCustomListA(event.target.value)
+                    setUnusedCustomNumbers(null)
+                  }}
+                  placeholder="Enter numbers for input A"
+                  rows={6}
+                />
+              </label>
+              <label className="name2number-unique-field name2number-mobile-field" htmlFor="name2number-custom-b">
+                <span>Input B</span>
+                <textarea
+                  id="name2number-custom-b"
+                  aria-label="Custom input B number list"
+                  value={customListB}
+                  onChange={(event) => {
+                    setCustomListB(event.target.value)
+                    setUnusedCustomNumbers(null)
+                  }}
+                  placeholder="Enter numbers for input B"
+                  rows={6}
+                />
+              </label>
+            </div>
+            <button
+              className="name2number-button name2number-unused-button"
+              type="button"
+              onClick={findUnusedCustomNumbers}
+              disabled={!customListA.trim() && !customListB.trim()}
+            >
+              Custom unused numbers
+            </button>
+            {unusedCustomNumbers ? (
+              <>
+                {unusedCustomNumbers.invalidA.length > 0 || unusedCustomNumbers.invalidB.length > 0 ? (
+                  <p className="name2number-message" role="alert">
+                    Invalid entries were skipped
+                    {unusedCustomNumbers.invalidA.length > 0
+                      ? ` in Input A on lines ${unusedCustomNumbers.invalidA.join(', ')}` : ''}
+                    {unusedCustomNumbers.invalidB.length > 0
+                      ? ` in Input B on lines ${unusedCustomNumbers.invalidB.join(', ')}` : ''}.
+                    Use comma-separated whole numbers.
+                  </p>
+                ) : null}
+                <div className="name2number-unused-results" aria-live="polite">
+                  <section aria-labelledby="name2number-custom-unused-a-title">
+                    <h4 id="name2number-custom-unused-a-title">Unused Input A (not in Input B)</h4>
+                    <p>{unusedCustomNumbers.unusedA.length > 0
+                      ? unusedCustomNumbers.unusedA.join(', ')
+                      : 'None'}</p>
+                  </section>
+                  <section aria-labelledby="name2number-custom-unused-b-title">
+                    <h4 id="name2number-custom-unused-b-title">Unused Input B (not in Input A)</h4>
+                    <p>{unusedCustomNumbers.unusedB.length > 0
+                      ? unusedCustomNumbers.unusedB.join(', ')
+                      : 'None'}</p>
+                  </section>
+                </div>
+              </>
+            ) : null}
+          </section>
         </section>
       </div>
     </section>
