@@ -110,11 +110,33 @@ function compareNumberLists(textA, textB) {
   }
 }
 
+function filterCombinationsByExcludedNumbers(combinationText, excludedText) {
+  const excludedNumbers = new Set(
+    excludedText
+      .split(/[,\s]+/)
+      .filter((value) => /^\d+$/.test(value))
+      .map((value) => value.replace(/^0+(?=\d)/, '')),
+  )
+
+  if (excludedNumbers.size === 0) return ''
+
+  return combinationText
+    .split(/\r?\n/)
+    .filter((line) => {
+      const values = line.trim().split(',').map((value) => value.trim())
+      if (!line.trim() || values.some((value) => !/^\d+$/.test(value))) return true
+      return !values.some((value) => excludedNumbers.has(value.replace(/^0+(?=\d)/, '')))
+    })
+    .join('\n')
+}
+
 export default function Name2NumberPage() {
   const [name, setName] = useState('')
   const [generatedNames, setGeneratedNames] = useState(null)
   const [selectedInitials, setSelectedInitials] = useState('MJ')
   const [combinationList, setCombinationList] = useState('')
+  const [excludeFromCombinations, setExcludeFromCombinations] = useState('')
+  const [excludedNumbers, setExcludedNumbers] = useState('')
   const [uniqueCombinations, setUniqueCombinations] = useState(null)
   const [invalidCombinationLines, setInvalidCombinationLines] = useState([])
   const [selectedIncluding74Totals, setSelectedIncluding74Totals] = useState([])
@@ -124,6 +146,8 @@ export default function Name2NumberPage() {
   const [customListA, setCustomListA] = useState('')
   const [customListB, setCustomListB] = useState('')
   const [unusedCustomNumbers, setUnusedCustomNumbers] = useState(null)
+  const combinationRowCount = combinationList.split(/\r?\n/).filter((line) => line.trim()).length
+  const excludedRowCount = excludedNumbers.split(/\r?\n/).filter((line) => line.trim()).length
   const results = useMemo(
     () => (generatedNames ?? []).map(getNameResult),
     [generatedNames],
@@ -162,7 +186,10 @@ export default function Name2NumberPage() {
     setSelectedIncluding74Totals([])
     const seen = new Set()
     const invalidLines = []
-    const unique = combinationList
+    const combinationsToProcess = excludeFromCombinations.trim()
+      ? excludedNumbers
+      : combinationList
+    const unique = combinationsToProcess
       .split(/\r?\n/)
       .map((line, index) => ({ line: line.trim(), lineNumber: index + 1 }))
       .filter(({ line }) => line)
@@ -372,7 +399,13 @@ export default function Name2NumberPage() {
                 id="name2number-combinations"
                 value={combinationList}
                 onChange={(event) => {
-                  setCombinationList(event.target.value)
+                  const nextCombinationList = event.target.value
+                  setCombinationList(nextCombinationList)
+                  if (excludeFromCombinations.trim()) {
+                    setExcludedNumbers(
+                      filterCombinationsByExcludedNumbers(nextCombinationList, excludeFromCombinations),
+                    )
+                  }
                   setUniqueCombinations(null)
                   setInvalidCombinationLines([])
                   setSelectedIncluding74Totals([])
@@ -385,11 +418,58 @@ export default function Name2NumberPage() {
               <span id="name2number-combinations-help" className="name2number-unique-help">
                 Values on each line are sorted ascending; duplicate combinations are removed.
               </span>
+              <span className="name2number-row-count">
+                {combinationRowCount} {combinationRowCount === 1 ? 'row' : 'rows'}
+              </span>
+            </label>
+            <label
+              className="name2number-unique-field name2number-exclude-input-field"
+              htmlFor="name2number-exclude-from-combinations"
+            >
+              <span>Want to exclude from above combinations?</span>
+              <input
+                id="name2number-exclude-from-combinations"
+                type="text"
+                value={excludeFromCombinations}
+                onChange={(event) => {
+                  const nextExcludedValues = event.target.value
+                  setExcludeFromCombinations(nextExcludedValues)
+                  setExcludedNumbers(
+                    filterCombinationsByExcludedNumbers(combinationList, nextExcludedValues),
+                  )
+                  setUniqueCombinations(null)
+                  setInvalidCombinationLines([])
+                  setSelectedIncluding74Totals([])
+                }}
+              />
+            </label>
+            <label className="name2number-unique-field name2number-excluded-field" htmlFor="name2number-excluded-numbers">
+              <span>Excluded numbers</span>
+              <textarea
+                id="name2number-excluded-numbers"
+                value={excludedNumbers}
+                onChange={(event) => {
+                  setExcludedNumbers(event.target.value)
+                  setUniqueCombinations(null)
+                  setInvalidCombinationLines([])
+                  setSelectedIncluding74Totals([])
+                }}
+                rows={4}
+                spellCheck="false"
+              />
+              <span className="name2number-row-count">
+                {excludedRowCount} {excludedRowCount === 1 ? 'row' : 'rows'}
+              </span>
+              {excludeFromCombinations.trim() && excludedRowCount === 0 ? (
+                <span className="name2number-empty-exclusions">
+                  No combinations remain after excluding these numbers.
+                </span>
+              ) : null}
             </label>
             <button
               className="name2number-button name2number-find-button"
               type="submit"
-              disabled={!combinationList.trim()}
+              disabled={!combinationList.trim() && !excludedNumbers.trim() && !excludeFromCombinations.trim()}
             >
               Find unique list
             </button>
@@ -484,7 +564,11 @@ export default function Name2NumberPage() {
                     ) : null}
                   </>
                 ) : (
-                  <p className="name2number-message">Enter at least one number combination.</p>
+                  <p className="name2number-message">
+                    {excludeFromCombinations.trim() && !excludedNumbers.trim()
+                      ? 'No match. Clear or add new data in the “Want to exclude from above combinations?” textbox.'
+                      : 'Enter at least one number combination.'}
+                  </p>
                 )}
               </div>
             ) : null}
