@@ -1,0 +1,225 @@
+.name2number-page {
+  width: 100%;
+}
+
+.name2number-form {
+  display: grid;
+  grid-template-areas:
+    "label label label"
+    "input generate download"
+    "help help help";
+  grid-template-columns: minmax(0, 520px) auto auto;
+  grid-template-rows: auto 48px auto;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 8px;
+  margin-bottom: 24px;
+}
+
+.name2number-field {
+  display: contents;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.name2number-field > span:first-child {
+  grid-area: label;
+}
+
+.name2number-field input {
+  grid-area: input;
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: var(--paper-light, #fffdf6);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: normal;
+}
+
+.name2number-field input:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
+}
+
+.name2number-help {
+  grid-area: help;
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.name2number-button {
+  min-height: 48px;
+  padding: 10px 20px;
+  border: 1px solid var(--forest);
+  border-radius: 6px;
+  background: var(--forest);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.name2number-button:not(.name2number-download-button) {
+  grid-area: generate;
+}
+
+.name2number-download-button {
+  grid-area: download;
+  border-color: var(--line);
+  background: #fffdf8;
+  color: var(--forest);
+  justify-self: start;
+}
+
+.name2number-button:hover:not(:disabled) {
+  background: var(--ink);
+  border-color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.name2number-download-button:hover:not(:disabled) {
+  background: var(--paper-deep);
+  border-color: var(--moss);
+  color: var(--ink);
+}
+
+.name2number-button:focus-visible {
+  outline: 2px solid var(--moss);
+  outline-offset: 2px;
+}
+
+.name2number-button:disabled {
+  border-color: var(--line);
+  background: #e4e1d8;
+  color: #686b62;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.name2number-result {
+  max-width: 100%;
+  margin: 0 0 24px;
+}
+
+.name2number-result-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.name2number-result-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  background: #fffdf8;
+}
+
+.name2number-result-table th,
+.name2number-result-table td {
+  padding: 12px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.name2number-result-table th {
+  background: var(--paper-deep);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.name2number-result-table td {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.name2number-result-table td:nth-child(2),
+.name2number-result-table td:nth-child(3),
+.name2number-result-table td:nth-child(4),
+.name2number-result-table td:nth-child(5) {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.name2number-message {
+  margin-top: 20px;
+  color: var(--soft-ink);
+}
+
+.name2number-initials {
+  max-width: 100%;
+  margin-bottom: 20px;
+}
+
+.name2number-map-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.name2number-map {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.name2number-map th,
+.name2number-map td {
+  height: 52px;
+  padding: 8px 12px;
+  border: 1px solid #858585;
+  color: #111;
+  font-size: 18px;
+  font-weight: 750;
+  text-align: left;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.name2number-map-digit {
+  width: 31%;
+}
+
+.name2number-color-1 { background: #e968c6; }
+.name2number-color-2 { background: #68c2df; }
+.name2number-color-3 { background: #fff000; }
+.name2number-color-4 { background: #ffb000; }
+.name2number-color-5 { background: #8bcb4d; }
+.name2number-color-6 { background: #efa078; }
+.name2number-color-7 { background: #fff2d2; }
+.name2number-color-8 { background: #d7e2f1; }
+
+@media (max-width: 560px) {
+  .name2number-form {
+    grid-template-areas:
+      "label label"
+      "input input"
+      "help help"
+      "generate download";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .name2number-button {
+    width: 100%;
+  }
+
+  .name2number-map th,
+  .name2number-map td {
+    height: 44px;
+    padding: 6px 8px;
+    font-size: 15px;
+  }
+}

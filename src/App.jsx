@@ -4,7 +4,15 @@ import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOpt
 import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
 import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
 import PanjaPatchiPage from './PanjaPatchiPage'
+import Name2NumberPage from './Name2NumberPage'
+import PasswordPage from './PasswordPage'
 import { carRegLetterValues } from './numerologyLetterValues'
+import RasiChart from './RasiChart'
+import {
+  rasiChartClockwiseOrder,
+  rasiChartSigns,
+  rasiChartStartingSigns,
+} from './rasiChartData'
 
 const columns = Array.from({ length: 6 }, (_, index) => index + 1)
 const workspaceColumns = Array.from({ length: 12 }, (_, index) => index + 1)
@@ -485,28 +493,6 @@ function countCombinationsWithRepetition(count, length) {
 }
 
 const manithaNaadiTableHeaders = ['Initials', 'Pair values', 'Number', 'Digit sum', 'Rasi chart', 'Bhavam']
-const rasiChartStartingSigns = {
-  MA: 'மேஷம்',
-  M: 'கன்னி',
-  MJ: 'மகரம்',
-  SM: 'ரிஷபம்',
-}
-const rasiChartClockwiseOrder = ['மீனம்', 'மேஷம்', 'ரிஷபம்', 'மிதுனம்', 'கடகம்', 'சிம்மம்', 'கன்னி', 'துலாம்', 'விருச்சிகம்', 'தனுசு', 'மகரம்', 'கும்பம்']
-const rasiChartSigns = [
-  { name: 'மீனம்', row: 1, column: 1, values: ['80', '89', '77', '95'] },
-  { name: 'மேஷம்', row: 1, column: 2, values: ['16', '06', '33'] },
-  { name: 'ரிஷபம்', row: 1, column: 3, values: ['02', '20', '29', '10'] },
-  { name: 'மிதுனம்', row: 1, column: 4, values: ['22', '04', '12'] },
-  { name: 'கும்பம்', row: 2, column: 1, values: ['99', '85', '93'] },
-  { name: 'கடகம்', row: 2, column: 4, values: ['08', '26', '32', '14'] },
-  { name: 'மகரம்', row: 3, column: 1, values: ['92', '74', '90', '100'] },
-  { name: 'சிம்மம்', row: 3, column: 4, values: ['52', '42', '51', '37'] },
-  { name: 'தனுசு', row: 4, column: 1, values: ['88', '79', '97', '87', '73'] },
-  { name: 'விருச்சிகம்', row: 4, column: 2, values: ['66', '41', '68'] },
-  { name: 'துலாம்', row: 4, column: 3, values: ['72', '84'] },
-  { name: 'கன்னி', row: 4, column: 4, values: ['64', '56', '54', '45'] },
-]
-
 const matchingProfileDefaults = {
   MA: { '1': '', '2': '', '3': '', '4': '', '5': '', Total: '' },
   M: { '1': '', '2': '', '3': '', '4': '', '5': '', Total: '' },
@@ -1047,12 +1033,28 @@ function App() {
             மனித நாடி
           </button>
           <button
+            className={`page-switch${activePage === 'password' ? ' page-switch-active' : ''}`}
+            type="button"
+            aria-pressed={activePage === 'password'}
+            onClick={() => setActivePage('password')}
+          >
+            Password
+          </button>
+          <button
             className={`page-switch${activePage === 'panja-patchi' ? ' page-switch-active' : ''}`}
             type="button"
             aria-pressed={activePage === 'panja-patchi'}
             onClick={() => setActivePage('panja-patchi')}
           >
             பஞ்ச பட்சி
+          </button>
+          <button
+            className={`page-switch${activePage === 'name2number' ? ' page-switch-active' : ''}`}
+            type="button"
+            aria-pressed={activePage === 'name2number'}
+            onClick={() => setActivePage('name2number')}
+          >
+            name2number
           </button>
         </nav>
       </header>
@@ -1712,20 +1714,7 @@ function App() {
               />
             </label>
             <div className="rasi-chart-layout">
-              <div className="rasi-chart" role="img" aria-label="தமிழ் ராசிக் கட்டம்">
-                {rasiChartSigns.map((sign) => (
-                  <div
-                    className="rasi-chart-sign"
-                    key={sign.name}
-                    style={{ gridColumn: sign.column, gridRow: sign.row }}
-                  >
-                    <span className="rasi-chart-sign-name">{sign.name}</span>
-                    <span className="rasi-chart-sign-badge">{rasiChartBadgeNumbers.get(sign.name)}</span>
-                    <span className="rasi-chart-sign-values">{sign.values.join(', ')}</span>
-                  </div>
-                ))}
-                <div className="rasi-chart-center">ராசி</div>
-              </div>
+              <RasiChart initials={selectedManithaNaadiInitials} />
               <div className="car-reg-chart-wrap">
                 <table className="car-reg-chart" aria-label="Number to letter chart">
                   <tbody>
@@ -2053,13 +2042,17 @@ function App() {
               </section>
             )}
           </section>
+        ) : activePage === 'password' ? (
+          <PasswordPage />
+        ) : activePage === 'name2number' ? (
+          <Name2NumberPage />
         ) : (
           <PanjaPatchiPage />
         )}
       </section>
 
       <footer className="page-footer">
-        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'generator' ? 'PHONE NUMBER NOTES' : activePage === 'workspace' ? '12-COLUMN WORKSPACE' : activePage === 'combinations' ? '456 COMBINATION FIRST' : activePage === 'additional-matching-numbers' ? '74 INITIALS' : activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : 'MATCHING PHONE NUMBERS'}</span>
+        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'generator' ? 'PHONE NUMBER NOTES' : activePage === 'workspace' ? '12-COLUMN WORKSPACE' : activePage === 'combinations' ? '456 COMBINATION FIRST' : activePage === 'additional-matching-numbers' ? '74 INITIALS' : activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : 'MATCHING PHONE NUMBERS'}</span>
         <span>EDITABLE IN THIS BROWSER</span>
       </footer>
     </main>
