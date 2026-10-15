@@ -169,6 +169,113 @@
   overflow-x: auto;
 }
 
+.name2number-unique-list {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.name2number-unique-list h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.name2number-unique-form {
+  display: grid;
+  grid-template-areas:
+    "field results"
+    "button results";
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.name2number-unique-field {
+  grid-area: field;
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.name2number-unique-field textarea,
+.name2number-unique-results textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  outline: none;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 600 14px/1.6 'SFMono-Regular', Consolas, monospace;
+  resize: vertical;
+}
+
+.name2number-unique-field textarea:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
+}
+
+.name2number-unique-help {
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.name2number-find-button {
+  grid-area: button;
+  justify-self: start;
+}
+
+.name2number-unique-results {
+  grid-area: results;
+  min-width: 0;
+}
+
+.name2number-unique-results > p:first-child {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.name2number-unique-results textarea {
+  min-height: 0;
+}
+
+.name2number-unique-number-list {
+  margin: 12px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.name2number-unique-number-list strong {
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .name2number-unique-form {
+    grid-template-areas:
+      "field"
+      "button"
+      "results";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .name2number-find-button {
+    justify-self: stretch;
+  }
+}
+
 .name2number-map {
   width: 100%;
   min-width: 480px;
@@ -214,6 +321,10 @@
 
   .name2number-button {
     width: 100%;
+  }
+
+  .name2number-find-button {
+    justify-self: stretch;
   }
 
   .name2number-map th,

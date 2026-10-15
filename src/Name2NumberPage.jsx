@@ -48,6 +48,9 @@ export default function Name2NumberPage() {
   const [name, setName] = useState('')
   const [generatedNames, setGeneratedNames] = useState(null)
   const [selectedInitials, setSelectedInitials] = useState('MJ')
+  const [combinationList, setCombinationList] = useState('')
+  const [uniqueCombinations, setUniqueCombinations] = useState(null)
+  const [invalidCombinationLines, setInvalidCombinationLines] = useState([])
   const results = useMemo(
     () => (generatedNames ?? []).map(getNameResult),
     [generatedNames],
@@ -55,6 +58,49 @@ export default function Name2NumberPage() {
   const validResults = results.filter(({ letterValues }) => letterValues.length > 0)
   const hasInvalidNames = results.some(({ letterValues }) => letterValues.length === 0)
     || (generatedNames !== null && generatedNames.length === 0)
+  const uniqueNumbers = uniqueCombinations === null
+    ? []
+    : [...new Set(uniqueCombinations
+      .flatMap((combination) => combination.split(','))
+      .map((value) => value.trim().replace(/^0+(?=\d)/, '')))]
+      .sort((first, second) => {
+        const firstValue = BigInt(first)
+        const secondValue = BigInt(second)
+        return firstValue < secondValue ? -1 : firstValue > secondValue ? 1 : 0
+      })
+  const uniqueCombinationsWithSums = uniqueCombinations?.map((combination) => {
+    const digits = combination.match(/\d/g) ?? []
+    const digitSum = digits.reduce((sum, digit) => sum + Number(digit), 0)
+    return `${combination} = Total digit sum (${digits.join('+')}) = ${digitSum}`
+  }) ?? []
+
+  function findUniqueCombinations(event) {
+    event.preventDefault()
+    const seen = new Set()
+    const invalidLines = []
+    const unique = combinationList
+      .split(/\r?\n/)
+      .map((line, index) => ({ line: line.trim(), lineNumber: index + 1 }))
+      .filter(({ line }) => line)
+      .flatMap(({ line, lineNumber }) => {
+        const values = line.split(',').map((value) => value.trim())
+        if (values.some((value) => !/^\d+$/.test(value))) {
+          invalidLines.push(lineNumber)
+          return []
+        }
+        const sortedValues = [...values].sort((first, second) => {
+          const firstValue = BigInt(first)
+          const secondValue = BigInt(second)
+          return firstValue < secondValue ? -1 : firstValue > secondValue ? 1 : 0
+        })
+        const key = sortedValues.map((value) => value.replace(/^0+(?=\d)/, '')).join(',')
+        if (seen.has(key)) return []
+        seen.add(key)
+        return [sortedValues.join(', ')]
+      })
+    setUniqueCombinations(unique)
+    setInvalidCombinationLines(invalidLines)
+  }
 
   function downloadExcel() {
     const style = (id, { background, bold = false, size = 11 }) => (
@@ -225,6 +271,62 @@ export default function Name2NumberPage() {
             </table>
           </div>
         </div>
+        <section className="name2number-unique-list" aria-labelledby="name2number-unique-list-title">
+          <h2 id="name2number-unique-list-title">Find unique list</h2>
+          <form className="name2number-unique-form" onSubmit={findUniqueCombinations}>
+            <label className="name2number-unique-field" htmlFor="name2number-combinations">
+              <span>ENTER NUMBER COMBINATIONS</span>
+              <textarea
+                id="name2number-combinations"
+                value={combinationList}
+                onChange={(event) => {
+                  setCombinationList(event.target.value)
+                  setUniqueCombinations(null)
+                  setInvalidCombinationLines([])
+                }}
+                placeholder={'Enter one combination per line, for example:\n15, 11, 35, 25, 5\n15, 11, 35, 25, 5'}
+                rows={7}
+                spellCheck="false"
+                aria-describedby="name2number-combinations-help"
+              />
+              <span id="name2number-combinations-help" className="name2number-unique-help">
+                Values on each line are sorted ascending; duplicate combinations are removed.
+              </span>
+            </label>
+            <button
+              className="name2number-button name2number-find-button"
+              type="submit"
+              disabled={!combinationList.trim()}
+            >
+              Find unique list
+            </button>
+            {uniqueCombinations !== null ? (
+              <div className="name2number-unique-results" aria-live="polite">
+                <p>{uniqueCombinations.length} unique {uniqueCombinations.length === 1 ? 'combination' : 'combinations'}</p>
+                {invalidCombinationLines.length > 0 ? (
+                  <p className="name2number-message" role="alert">
+                    Skipped invalid number combinations on lines {invalidCombinationLines.join(', ')}. Use comma-separated whole numbers.
+                  </p>
+                ) : null}
+                {uniqueCombinations.length > 0 ? (
+                  <>
+                    <textarea
+                      aria-label="Unique number combinations"
+                      value={uniqueCombinationsWithSums.join('\n')}
+                      rows={Math.min(uniqueCombinationsWithSums.length, 10)}
+                      readOnly
+                    />
+                    <p className="name2number-unique-number-list" aria-label="Unique numbers">
+                      <strong>Unique numbers:</strong> {uniqueNumbers.join(', ')}
+                    </p>
+                  </>
+                ) : (
+                  <p className="name2number-message">Enter at least one number combination.</p>
+                )}
+              </div>
+            ) : null}
+          </form>
+        </section>
       </div>
     </section>
   )
