@@ -44,25 +44,31 @@ function xmlEscape(value) {
 }
 
 function getNameResult(name) {
-  const letterValues = [...name.toUpperCase()]
-    .filter((letter) => carRegLetterValueMap.has(letter))
-    .map((letter) => ({ letter, value: carRegLetterValueMap.get(letter) }))
-  const total = letterValues.reduce((sum, entry) => sum + entry.value, 0)
+  const characterValues = [...name.toUpperCase()].flatMap((character) => {
+    if (carRegLetterValueMap.has(character)) {
+      return [{ character, value: carRegLetterValueMap.get(character) }]
+    }
+    if (/^\d$/.test(character)) {
+      return [{ character, value: Number(character) }]
+    }
+    return []
+  })
+  const total = characterValues.reduce((sum, entry) => sum + entry.value, 0)
 
   return {
     name,
-    letterValues,
+    characterValues,
     total,
-    st: letterValues.length > 0
-      ? `${letterValues[0].value}${letterValues[letterValues.length - 1].value}`
+    st: characterValues.length > 0
+      ? `${characterValues[0].value}${characterValues[characterValues.length - 1].value}`
       : '',
     name2number: Array.from(
-      { length: Math.ceil(letterValues.length / 2) },
-      (_, index) => letterValues.slice(index * 2, index * 2 + 2)
+      { length: Math.ceil(characterValues.length / 2) },
+      (_, index) => characterValues.slice(index * 2, index * 2 + 2)
         .map(({ value }) => value)
         .join(''),
     ).join(','),
-    sum: letterValues.map(({ value }) => value).join('+'),
+    sum: characterValues.map(({ value }) => value).join('+'),
   }
 }
 
@@ -152,8 +158,8 @@ export default function Name2NumberPage() {
     () => (generatedNames ?? []).map(getNameResult),
     [generatedNames],
   )
-  const validResults = results.filter(({ letterValues }) => letterValues.length > 0)
-  const hasInvalidNames = results.some(({ letterValues }) => letterValues.length === 0)
+  const validResults = results.filter(({ characterValues }) => characterValues.length > 0)
+  const hasInvalidNames = results.some(({ characterValues }) => characterValues.length === 0)
     || (generatedNames !== null && generatedNames.length === 0)
   const uniqueNumbers = uniqueCombinations === null
     ? []
@@ -347,7 +353,7 @@ export default function Name2NumberPage() {
         ) : null}
         {hasInvalidNames ? (
           <p className="name2number-message" role="alert">
-            Each comma-separated name must contain at least one English letter (A–Z).
+            Each comma-separated name must contain at least one English letter (A–Z) or digit (0–9).
           </p>
         ) : null}
 
@@ -418,7 +424,7 @@ export default function Name2NumberPage() {
               <span id="name2number-combinations-help" className="name2number-unique-help">
                 Values on each line are sorted ascending; duplicate combinations are removed.
               </span>
-              <span className="name2number-row-count">
+              <span className={`name2number-row-count${combinationRowCount === 0 ? ' name2number-row-count-empty' : ''}`}>
                 {combinationRowCount} {combinationRowCount === 1 ? 'row' : 'rows'}
               </span>
             </label>
@@ -457,7 +463,7 @@ export default function Name2NumberPage() {
                 rows={4}
                 spellCheck="false"
               />
-              <span className="name2number-row-count">
+              <span className={`name2number-row-count${excludedRowCount === 0 ? ' name2number-row-count-empty' : ''}`}>
                 {excludedRowCount} {excludedRowCount === 1 ? 'row' : 'rows'}
               </span>
               {excludeFromCombinations.trim() && excludedRowCount === 0 ? (

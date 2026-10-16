@@ -249,6 +249,12 @@
   font-weight: 500;
 }
 
+.name2number-row-count-empty {
+  color: #000;
+  font-size: 20px;
+  font-weight: 800;
+}
+
 .name2number-empty-exclusions {
   color: var(--ink);
   font-weight: 700;

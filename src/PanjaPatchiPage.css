@@ -111,7 +111,7 @@
   height: 178px;
   background: #dff1ff;
   color: #174a9c;
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 800;
 }
 
@@ -141,7 +141,7 @@
 .panja-calendar-sunrise-range {
   left: 66%;
   color: #a51d36;
-  font-size: 13px;
+  font-size: 20px;
 }
 
 .panja-calendar-weekday {
