@@ -2,6 +2,36 @@
   width: 100%;
 }
 
+.name2number-rajanilai-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.name2number-rajanilai-field input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: var(--paper-light, #fffdf6);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: normal;
+}
+
+.name2number-rajanilai-field input:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
+}
+
 .name2number-form {
   display: grid;
   grid-template-areas:
@@ -119,7 +149,7 @@
 
 .name2number-result-table {
   width: 100%;
-  min-width: 780px;
+  min-width: 1040px;
   border-collapse: collapse;
   background: #fffdf8;
 }
@@ -152,6 +182,34 @@
 .name2number-result-table td:nth-child(5) {
   font-size: 17px;
   font-weight: 800;
+}
+
+.name2number-result-table .name2number-rajanilai-calculation {
+  min-width: 170px;
+}
+
+.name2number-rajanilai-calculation span {
+  display: inline-block;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+
+.name2number-rajanilai-pair-match,
+.name2number-rajanilai-match {
+  color: #1d6b43 !important;
+  font-weight: 800 !important;
+}
+
+.name2number-rajanilai-pair-miss,
+.name2number-rajanilai-miss {
+  color: #c62828 !important;
+  font-weight: 800 !important;
+}
+
+.name2number-rajanilai-match,
+.name2number-rajanilai-miss {
+  font-size: 20px !important;
+  white-space: nowrap;
 }
 
 .name2number-message {

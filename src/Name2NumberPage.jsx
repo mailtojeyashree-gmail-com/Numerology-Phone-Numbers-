@@ -33,6 +33,8 @@ const defaultMobileListB = `04, 32, 73, 90
 26, 72, 88
 29, 73, 89`
 
+const defaultRajanilaiNumbers = '2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 26, 32, 33, 39, 41, 42, 45, 51, 52, 54, 56, 64, 66, 68, 72, 73, 74, 77, 79, 80, 84, 85, 87, 88, 89, 92, 93, 95, 97, 99'
+
 function xmlEscape(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
     '&': '&amp;',
@@ -43,7 +45,7 @@ function xmlEscape(value) {
   })[character])
 }
 
-function getNameResult(name) {
+function getNameResult(name, rajanilaiSet) {
   const characterValues = [...name.toUpperCase()].flatMap((character) => {
     if (carRegLetterValueMap.has(character)) {
       return [{ character, value: carRegLetterValueMap.get(character) }]
@@ -54,6 +56,20 @@ function getNameResult(name) {
     return []
   })
   const total = characterValues.reduce((sum, entry) => sum + entry.value, 0)
+  const pairIndexes = characterValues.length === 3
+    ? [[0, 1], [1, 2]]
+    : characterValues.length % 2 === 0
+      ? Array.from({ length: characterValues.length / 2 }, (_, index) => [index * 2, index * 2 + 1])
+      : characterValues.length >= 5
+        ? [
+          ...Array.from({ length: Math.floor(characterValues.length / 2) }, (_, index) => [index * 2, index * 2 + 1]),
+          [characterValues.length - 2, characterValues.length - 1],
+        ]
+        : []
+  const rajanilaiPairs = pairIndexes.map(([firstIndex, secondIndex]) => {
+    const number = characterValues[firstIndex].value * 10 + characterValues[secondIndex].value
+    return { number, matches: rajanilaiSet.has(String(number)) }
+  })
 
   return {
     name,
@@ -69,7 +85,18 @@ function getNameResult(name) {
         .join(''),
     ).join(','),
     sum: characterValues.map(({ value }) => value).join('+'),
+    rajanilaiPairs,
+    rajanilaiMatch: rajanilaiPairs.length > 0 && rajanilaiPairs.every(({ matches }) => matches),
   }
+}
+
+function parseRajanilaiNumbers(value) {
+  return new Set(
+    value
+      .split(/[,\s]+/)
+      .filter((number) => /^\d+$/.test(number))
+      .map((number) => number.replace(/^0+(?=\d)/, '')),
+  )
 }
 
 function parseNumberList(text) {
@@ -138,6 +165,8 @@ function filterCombinationsByExcludedNumbers(combinationText, excludedText) {
 
 export default function Name2NumberPage() {
   const [name, setName] = useState('')
+  const [rajanilaiNumbers, setRajanilaiNumbers] = useState(defaultRajanilaiNumbers)
+  const rajanilaiSet = useMemo(() => parseRajanilaiNumbers(rajanilaiNumbers), [rajanilaiNumbers])
   const [generatedNames, setGeneratedNames] = useState(null)
   const [selectedInitials, setSelectedInitials] = useState('MJ')
   const [combinationList, setCombinationList] = useState('')
@@ -155,8 +184,8 @@ export default function Name2NumberPage() {
   const combinationRowCount = combinationList.split(/\r?\n/).filter((line) => line.trim()).length
   const excludedRowCount = excludedNumbers.split(/\r?\n/).filter((line) => line.trim()).length
   const results = useMemo(
-    () => (generatedNames ?? []).map(getNameResult),
-    [generatedNames],
+    () => (generatedNames ?? []).map((generatedName) => getNameResult(generatedName, rajanilaiSet)),
+    [generatedNames, rajanilaiSet],
   )
   const validResults = results.filter(({ characterValues }) => characterValues.length > 0)
   const hasInvalidNames = results.some(({ characterValues }) => characterValues.length === 0)
@@ -228,9 +257,9 @@ export default function Name2NumberPage() {
   }
 
   function downloadExcel() {
-    const style = (id, { background, bold = false, size = 11 }) => (
+    const style = (id, { background, bold = false, size = 11, color }) => (
       `<Style ss:ID="${id}"><Alignment ss:Vertical="Center" ss:WrapText="1"/>`
-      + `<Font ss:FontName="Calibri" ss:Size="${size}"${bold ? ' ss:Bold="1"' : ''}/>`
+      + `<Font ss:FontName="Calibri" ss:Size="${size}"${bold ? ' ss:Bold="1"' : ''}${color ? ` ss:Color="${color}"` : ''}/>`
       + (background ? `<Interior ss:Color="${background}" ss:Pattern="Solid"/>` : '')
       + '<Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D8D4C8"/>'
       + '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D8D4C8"/>'
@@ -241,15 +270,26 @@ export default function Name2NumberPage() {
       <Style ss:ID="Default"><Alignment ss:Vertical="Center" ss:WrapText="1"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#26332C"/></Style>
       ${style('Header', { background: '#E9E5D9', bold: true })}
       ${style('Body', { bold: true, size: 12 })}
+      ${style('Match', { bold: true, size: 12, color: '#1D6B43' })}
+      ${style('NoMatch', { bold: true, size: 12, color: '#C62828' })}
     </Styles>`
-    const headers = ['Name', 'st', 'total', 'name2numb', 'sum', 'bhavam']
-    const row = (items, styleId, height) => (
-      `<Row ss:AutoFitHeight="0" ss:Height="${height}">${items.map((value) => (
-        `<Cell ss:StyleID="${styleId}"><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`
+    const headers = ['Name', 'st', 'total', 'name2numb', 'sum', 'bhavam', 'Rajanilai calculation', 'Rajanilai match']
+    const row = (items, styleId, height, cellStyles = []) => (
+      `<Row ss:AutoFitHeight="0" ss:Height="${height}">${items.map((value, index) => (
+        `<Cell ss:StyleID="${cellStyles[index] ?? styleId}"><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`
       )).join('')}</Row>`
     )
-    const dataRows = validResults.map(({ name: resultName, st, total, name2number, sum }) => (
-      row([resultName, st, total, name2number, `${sum}=${total}`, getRasiBhavam(name2number, selectedInitials)], 'Body', 32)
+    const dataRows = validResults.map(({ name: resultName, st, total, name2number, sum, rajanilaiPairs, rajanilaiMatch }) => (
+      row([
+        resultName,
+        st,
+        total,
+        name2number,
+        `${sum}=${total}`,
+        getRasiBhavam(name2number, selectedInitials),
+        rajanilaiPairs.map(({ number, matches }) => `${number} ${matches ? '✓' : '✗'}`).join(', ') || '—',
+        rajanilaiMatch ? '✓✓' : '✗✗',
+      ], 'Body', 32, Array(7).fill('Body').concat(rajanilaiMatch ? 'Match' : 'NoMatch'))
     ))
     const workbook = `<?xml version="1.0"?>
       <?mso-application progid="Excel.Sheet"?>
@@ -257,7 +297,7 @@ export default function Name2NumberPage() {
         ${workbookStyles}
         <Worksheet ss:Name="Name2Number">
           <Table>
-            <Column ss:Width="120"/><Column ss:Width="60"/><Column ss:Width="70"/><Column ss:Width="140"/><Column ss:Width="230"/><Column ss:Width="100"/>
+            <Column ss:Width="120"/><Column ss:Width="60"/><Column ss:Width="70"/><Column ss:Width="140"/><Column ss:Width="230"/><Column ss:Width="100"/><Column ss:Width="180"/><Column ss:Width="90"/>
             ${row(headers, 'Header', 24)}
             ${dataRows.join('')}
           </Table>
@@ -281,6 +321,18 @@ export default function Name2NumberPage() {
         <h1 id="name2number-title">name2number</h1>
         <p className="intro-copy">Enter a name to generate its letter values and total.</p>
       </div>
+
+      <label className="name2number-rajanilai-field" htmlFor="name2number-rajanilai-numbers">
+        <span>Rajanilai Numbers</span>
+        <input
+          id="name2number-rajanilai-numbers"
+          type="text"
+          value={rajanilaiNumbers}
+          onChange={(event) => setRajanilaiNumbers(event.target.value)}
+          autoComplete="off"
+          spellCheck="false"
+        />
+      </label>
 
       <form
         className="name2number-form"
@@ -336,7 +388,7 @@ export default function Name2NumberPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {validResults.map(({ name: resultName, st, total, name2number, sum }, index) => (
+                  {validResults.map(({ name: resultName, st, total, name2number, sum, rajanilaiPairs, rajanilaiMatch }, index) => (
                     <tr key={`${resultName}-${index}`}>
                       <td>{resultName}</td>
                       <td>{st}</td>
@@ -344,6 +396,18 @@ export default function Name2NumberPage() {
                       <td>{name2number}</td>
                       <td>{sum}={total}</td>
                       <td>{getRasiBhavam(name2number, selectedInitials)}</td>
+                      <td className="name2number-rajanilai-calculation">
+                        {rajanilaiPairs.length > 0
+                          ? rajanilaiPairs.map(({ number, matches }, pairIndex) => (
+                            <span className={matches ? 'name2number-rajanilai-pair-match' : 'name2number-rajanilai-pair-miss'} key={`${number}-${pairIndex}`}>
+                              {number} {matches ? '✓' : '✗'}
+                            </span>
+                          ))
+                          : '—'}
+                      </td>
+                      <td className={rajanilaiMatch ? 'name2number-rajanilai-match' : 'name2number-rajanilai-miss'}>
+                        {rajanilaiMatch ? '✓✓' : '✗✗'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
