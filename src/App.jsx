@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import './App.css'
 import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOption'
+import Gen8Button from './Gen8Button'
 import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
 import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
 import PanjaPatchiPage from './PanjaPatchiPage'
@@ -1402,12 +1403,27 @@ function App() {
                             combinationExpectedValues[selectedCombinationProfile],
                             generator === 'GEN-6' ? 3 : 2,
                             true,
+                            generator === 'GEN-4' || generator === 'GEN-6',
                           ),
                         })}
                   >
                     {generator}
                   </button>
                 ))}
+                <Gen8Button
+                  active={combinationResults?.generator === 'GEN-8'}
+                  onGenerate={() => setCombinationResults({
+                    generator: 'GEN-8',
+                    profile: selectedCombinationProfile,
+                    ...calculateCombinationMatches(
+                      combinationExpectedValues[selectedCombinationProfile],
+                      combinationExpectedValues[selectedCombinationProfile],
+                      4,
+                      true,
+                      true,
+                    ),
+                  })}
+                />
               </div>
             </div>
 
