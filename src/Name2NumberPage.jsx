@@ -99,6 +99,63 @@ function parseRajanilaiNumbers(value) {
   )
 }
 
+function generateNonRajanilaiNumbers(prefix, rajanilaiSet) {
+  const excludedLowPairs = new Set(['00', '01', '02', '03', '05', '07', '09'])
+  const allowedPairs = Array.from({ length: 100 }, (_, value) => String(value).padStart(2, '0'))
+    .filter((pair) => !excludedLowPairs.has(pair) && !rajanilaiSet.has(String(Number(pair))))
+  const prefixDigitSum = [...prefix].reduce((sum, digit) => sum + Number(digit), 0)
+  let validNumberCount = 0
+
+  function visitValidNumbers(onNumber) {
+    function visitPairs(selectedPairs, digitSum) {
+      if (selectedPairs.length === 4) {
+        if (!rajanilaiSet.has(String(digitSum))) {
+          return onNumber(`${prefix}${selectedPairs.join('')}`, digitSum)
+        }
+        return false
+      }
+
+      for (const pair of allowedPairs) {
+        if (pair === prefix || selectedPairs.includes(pair)) continue
+        const pairDigitSum = Number(pair[0]) + Number(pair[1])
+        if (visitPairs([...selectedPairs, pair], digitSum + pairDigitSum)) return true
+      }
+
+      return false
+    }
+
+    return visitPairs([], prefixDigitSum)
+  }
+
+  visitValidNumbers(() => {
+    validNumberCount += 1
+    return false
+  })
+  const sampleCount = Math.min(10, validNumberCount)
+  const targetIndexes = new Set(Array.from(
+    { length: sampleCount },
+    (_, index) => sampleCount === 1
+      ? 0
+      : Math.floor(index * (validNumberCount - 1) / (sampleCount - 1)),
+  ))
+  const numbers = []
+  let currentIndex = 0
+
+  visitValidNumbers((number, digitSum) => {
+    if (targetIndexes.has(currentIndex)) {
+      numbers.push({
+        number,
+        digitSum,
+        digitSumCalculation: `${[...number].join('+')}=${digitSum}`,
+      })
+    }
+    currentIndex += 1
+    return numbers.length === sampleCount
+  })
+
+  return numbers
+}
+
 function parseNumberList(text) {
   const numbers = []
   const invalidLines = []
@@ -167,14 +224,20 @@ export default function Name2NumberPage() {
   const [name, setName] = useState('')
   const [rajanilaiNumbers, setRajanilaiNumbers] = useState(defaultRajanilaiNumbers)
   const rajanilaiSet = useMemo(() => parseRajanilaiNumbers(rajanilaiNumbers), [rajanilaiNumbers])
+  const [nonRajanilaiPrefix, setNonRajanilaiPrefix] = useState('')
+  const [nonRajanilaiResults, setNonRajanilaiResults] = useState(null)
   const [generatedNames, setGeneratedNames] = useState(null)
   const [selectedInitials, setSelectedInitials] = useState('MJ')
   const [combinationList, setCombinationList] = useState('')
+  const [numberToInclude, setNumberToInclude] = useState('')
   const [excludeFromCombinations, setExcludeFromCombinations] = useState('')
   const [excludedNumbers, setExcludedNumbers] = useState('')
   const [uniqueCombinations, setUniqueCombinations] = useState(null)
   const [invalidCombinationLines, setInvalidCombinationLines] = useState([])
-  const [selectedIncluding74Totals, setSelectedIncluding74Totals] = useState([])
+  const [selectedIncludingNumberTotals, setSelectedIncludingNumberTotals] = useState([])
+  const includedNumberDigitSum = /^\d+$/.test(numberToInclude)
+    ? [...numberToInclude].reduce((sum, digit) => sum + Number(digit), 0)
+    : null
   const mobileListA = defaultMobileListA
   const mobileListB = defaultMobileListB
   const [unusedMobileNumbers, setUnusedMobileNumbers] = useState(null)
@@ -206,19 +269,21 @@ export default function Name2NumberPage() {
     return {
       combination,
       digitSum,
-      totalWith74: digitSum + 11,
+      totalWithIncludedNumber: includedNumberDigitSum === null ? null : digitSum + includedNumberDigitSum,
     }
   }) ?? []
-  const uniqueIncluding74Totals = [...new Set(
-    uniqueCombinationsWithSums.map(({ totalWith74 }) => totalWith74),
+  const uniqueIncludingNumberTotals = [...new Set(
+    uniqueCombinationsWithSums
+      .map(({ totalWithIncludedNumber }) => totalWithIncludedNumber)
+      .filter((total) => total !== null),
   )].sort((first, second) => first - second)
-  const selectedCombinations = uniqueCombinationsWithSums.filter(({ totalWith74 }) => (
-    selectedIncluding74Totals.includes(String(totalWith74))
+  const selectedCombinations = uniqueCombinationsWithSums.filter(({ totalWithIncludedNumber }) => (
+    selectedIncludingNumberTotals.includes(String(totalWithIncludedNumber))
   ))
 
   function findUniqueCombinations(event) {
     event.preventDefault()
-    setSelectedIncluding74Totals([])
+    setSelectedIncludingNumberTotals([])
     const seen = new Set()
     const invalidLines = []
     const combinationsToProcess = excludeFromCombinations.trim()
@@ -328,7 +393,10 @@ export default function Name2NumberPage() {
           id="name2number-rajanilai-numbers"
           type="text"
           value={rajanilaiNumbers}
-          onChange={(event) => setRajanilaiNumbers(event.target.value)}
+          onChange={(event) => {
+            setRajanilaiNumbers(event.target.value)
+            setNonRajanilaiResults(null)
+          }}
           autoComplete="off"
           spellCheck="false"
         />
@@ -478,7 +546,7 @@ export default function Name2NumberPage() {
                   }
                   setUniqueCombinations(null)
                   setInvalidCombinationLines([])
-                  setSelectedIncluding74Totals([])
+                  setSelectedIncludingNumberTotals([])
                 }}
                 placeholder={'Enter one combination per line, for example:\n15, 11, 35, 25, 5\n15, 11, 35, 25, 5'}
                 rows={7}
@@ -509,7 +577,7 @@ export default function Name2NumberPage() {
                   )
                   setUniqueCombinations(null)
                   setInvalidCombinationLines([])
-                  setSelectedIncluding74Totals([])
+                  setSelectedIncludingNumberTotals([])
                 }}
               />
             </label>
@@ -522,7 +590,7 @@ export default function Name2NumberPage() {
                   setExcludedNumbers(event.target.value)
                   setUniqueCombinations(null)
                   setInvalidCombinationLines([])
-                  setSelectedIncluding74Totals([])
+                  setSelectedIncludingNumberTotals([])
                 }}
                 rows={4}
                 spellCheck="false"
@@ -559,15 +627,32 @@ export default function Name2NumberPage() {
                           <tr>
                             <th scope="col">Combination</th>
                             <th scope="col">Total digit sum</th>
-                            <th scope="col">Including 74</th>
+                            <th className="name2number-included-number-heading" scope="col">
+                              <span>Including</span>
+                              <label className="name2number-included-number-label" htmlFor="name2number-include-number">
+                                <span className="visually-hidden">Number to include in total</span>
+                                <input
+                                  id="name2number-include-number"
+                                  type="text"
+                                  inputMode="numeric"
+                                  maxLength={4}
+                                  value={numberToInclude}
+                                  placeholder="Number"
+                                  onChange={(event) => {
+                                    setNumberToInclude(event.target.value.replace(/\D/g, '').slice(0, 4))
+                                    setSelectedIncludingNumberTotals([])
+                                  }}
+                                />
+                              </label>
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
-                          {uniqueCombinationsWithSums.map(({ combination, digitSum, totalWith74 }) => (
+                          {uniqueCombinationsWithSums.map(({ combination, digitSum, totalWithIncludedNumber }) => (
                             <tr key={combination}>
                               <td>{combination}</td>
                               <td>{digitSum}</td>
-                              <td>{totalWith74}</td>
+                              <td>{totalWithIncludedNumber ?? '—'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -576,29 +661,29 @@ export default function Name2NumberPage() {
                     <p className="name2number-unique-number-list" aria-label="Unique numbers">
                       <strong>Unique numbers:</strong> {uniqueNumbers.join(', ')}
                     </p>
-                    <div className="name2number-including-74-filter">
-                      <span>Filter by “Including 74” total</span>
+                    <div className="name2number-including-number-filter">
+                      <span>Filter by “Including {numberToInclude || 'number'}” total</span>
                       <details
-                        className="name2number-including-74-dropdown"
-                        aria-describedby="name2number-including-74-help"
+                        className="name2number-including-number-dropdown"
+                        aria-describedby="name2number-including-number-help"
                       >
                         <summary>
-                          {selectedIncluding74Totals.length > 0
-                            ? `${selectedIncluding74Totals.length} total${selectedIncluding74Totals.length === 1 ? '' : 's'} selected`
+                          {selectedIncludingNumberTotals.length > 0
+                            ? `${selectedIncludingNumberTotals.length} total${selectedIncludingNumberTotals.length === 1 ? '' : 's'} selected`
                             : 'Select totals'}
                         </summary>
-                        <div className="name2number-including-74-options" role="group" aria-label="Including 74 totals">
-                          {uniqueIncluding74Totals.map((total) => {
+                        <div className="name2number-including-number-options" role="group" aria-label={`Including ${numberToInclude || 'number'} totals`}>
+                          {uniqueIncludingNumberTotals.map((total) => {
                             const value = String(total)
-                            const inputId = `name2number-including-74-${value}`
+                            const inputId = `name2number-including-number-${value}`
                             return (
                               <label htmlFor={inputId} key={total}>
                                 <input
                                   id={inputId}
                                   type="checkbox"
-                                  checked={selectedIncluding74Totals.includes(value)}
+                                  checked={selectedIncludingNumberTotals.includes(value)}
                                   onChange={(event) => {
-                                    setSelectedIncluding74Totals((selected) => (
+                                    setSelectedIncludingNumberTotals((selected) => (
                                       event.target.checked
                                         ? [...selected, value]
                                         : selected.filter((selectedTotal) => selectedTotal !== value)
@@ -611,11 +696,11 @@ export default function Name2NumberPage() {
                           })}
                         </div>
                       </details>
-                      <span id="name2number-including-74-help" className="name2number-unique-help">
+                      <span id="name2number-including-number-help" className="name2number-unique-help">
                         Select one or more totals to show their matching combinations.
                       </span>
                     </div>
-                    {selectedIncluding74Totals.length > 0 ? (
+                    {selectedIncludingNumberTotals.length > 0 ? (
                       <div className="name2number-selected-combinations">
                         <p>Selected combinations</p>
                         <div className="name2number-unique-table-wrap">
@@ -775,6 +860,64 @@ export default function Name2NumberPage() {
           </section>
         </section>
       </div>
+      <section className="name2number-non-rajanilai" aria-labelledby="name2number-non-rajanilai-title">
+        <h2 id="name2number-non-rajanilai-title">Generate Non-Rajanilai Numbers</h2>
+        <p className="name2number-non-rajanilai-help">
+          Keep your first pair and generate four more distinct pairs. Every generated pair and the full digit sum must be absent from the Rajanilai list.
+        </p>
+        <form
+          className="name2number-non-rajanilai-form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setNonRajanilaiResults(generateNonRajanilaiNumbers(nonRajanilaiPrefix, rajanilaiSet))
+          }}
+        >
+          <label htmlFor="name2number-non-rajanilai-prefix">First pair (generates 10-digit numbers)</label>
+          <input
+            id="name2number-non-rajanilai-prefix"
+            type="text"
+            inputMode="numeric"
+            maxLength={2}
+            value={nonRajanilaiPrefix}
+            placeholder="e.g. 74"
+            onChange={(event) => {
+              setNonRajanilaiPrefix(event.target.value.replace(/\D/g, '').slice(0, 2))
+              setNonRajanilaiResults(null)
+            }}
+            required
+          />
+          <button className="name2number-button" type="submit" disabled={nonRajanilaiPrefix.length !== 2}>
+            gen-non-rajanilai-numbers
+          </button>
+        </form>
+        {nonRajanilaiResults !== null ? (
+          <div className="name2number-non-rajanilai-results" aria-live="polite">
+            <p>{nonRajanilaiResults.length.toLocaleString()} matching numbers (up to 10)</p>
+            {nonRajanilaiResults.length > 0 ? (
+              <div className="name2number-non-rajanilai-table-wrap">
+                <table className="name2number-non-rajanilai-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Number</th>
+                      <th scope="col">Digit sum calculation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {nonRajanilaiResults.map(({ number, digitSumCalculation }) => (
+                      <tr key={number}>
+                        <td>{number}</td>
+                        <td>{digitSumCalculation}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>No valid numbers were found for this first pair and Rajanilai list.</p>
+            )}
+          </div>
+        ) : null}
+      </section>
     </section>
   )
 }

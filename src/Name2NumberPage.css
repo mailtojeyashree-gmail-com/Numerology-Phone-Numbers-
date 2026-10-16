@@ -32,6 +32,109 @@
   box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
 }
 
+.name2number-non-rajanilai {
+  margin: 0 0 28px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 28%);
+}
+
+.name2number-non-rajanilai h2 {
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.name2number-non-rajanilai-help {
+  margin: -6px 0 14px;
+  color: var(--soft-ink);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.name2number-non-rajanilai-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+
+.name2number-non-rajanilai-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.name2number-non-rajanilai-form input {
+  width: 100px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  outline: none;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 700 16px 'SFMono-Regular', Consolas, monospace;
+}
+
+.name2number-non-rajanilai-form input:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
+}
+
+.name2number-non-rajanilai-form button {
+  min-height: 48px;
+}
+
+.name2number-non-rajanilai-results {
+  margin-top: 16px;
+}
+
+.name2number-non-rajanilai-results p {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.name2number-non-rajanilai-table-wrap {
+  max-width: 100%;
+  max-height: 300px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.name2number-non-rajanilai-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fffdf8;
+}
+
+.name2number-non-rajanilai-table th,
+.name2number-non-rajanilai-table td {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+}
+
+.name2number-non-rajanilai-table th {
+  position: sticky;
+  top: 0;
+  background: var(--paper-deep);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.name2number-non-rajanilai-table td {
+  font: 650 13px/1.5 'SFMono-Regular', Consolas, monospace;
+}
+
 .name2number-form {
   display: grid;
   grid-template-areas:
@@ -361,6 +464,40 @@
   white-space: nowrap;
 }
 
+.name2number-included-number-label {
+  display: inline-flex;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.name2number-included-number-label input {
+  width: 74px;
+  height: 28px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  outline: none;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 700 12px/1.2 'SFMono-Regular', Consolas, monospace;
+}
+
+.name2number-included-number-label input:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 2px rgb(88 108 77 / 14%);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 .name2number-unique-table td {
   font: 700 14px/1.5 'SFMono-Regular', Consolas, monospace;
   white-space: nowrap;
@@ -379,7 +516,7 @@
   font-weight: 800;
 }
 
-.name2number-including-74-filter {
+.name2number-including-number-filter {
   display: grid;
   gap: 8px;
   margin-top: 16px;
@@ -388,14 +525,14 @@
   font-weight: 800;
 }
 
-.name2number-including-74-dropdown {
+.name2number-including-number-dropdown {
   position: relative;
   color: var(--ink);
   font-size: 14px;
   font-weight: 600;
 }
 
-.name2number-including-74-dropdown summary {
+.name2number-including-number-dropdown summary {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line);
@@ -404,13 +541,13 @@
   cursor: pointer;
 }
 
-.name2number-including-74-dropdown summary:focus-visible {
+.name2number-including-number-dropdown summary:focus-visible {
   border-color: var(--moss);
   outline: none;
   box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
 }
 
-.name2number-including-74-options {
+.name2number-including-number-options {
   display: grid;
   gap: 8px;
   max-height: 180px;
@@ -422,14 +559,14 @@
   background: #fffdf8;
 }
 
-.name2number-including-74-options label {
+.name2number-including-number-options label {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
 
-.name2number-including-74-options input {
+.name2number-including-number-options input {
   accent-color: var(--moss);
 }
 
