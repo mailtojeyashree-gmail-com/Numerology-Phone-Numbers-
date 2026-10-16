@@ -87,11 +87,37 @@ function generateNamesForTotal(target) {
   return nameTotals.filter(({ total }) => total === target).slice(0, 10)
 }
 
+function getRajanilaiPairChecks(letterValues, rajanilaiSet) {
+  const pairStarts = []
+  for (let index = 0; index < letterValues.length - 1; index += 2) {
+    pairStarts.push(index)
+  }
+  if (letterValues.length % 2 === 1 && letterValues.length > 1) {
+    pairStarts.push(letterValues.length - 2)
+  }
+
+  return pairStarts.map((start) => {
+    const pair = letterValues.slice(start, start + 2)
+    const number = pair.map(({ value }) => value).join('')
+    return {
+      letters: pair.map(({ letter }) => letter).join(''),
+      number,
+      matches: rajanilaiSet.has(String(Number(number))),
+    }
+  })
+}
+
 export default function ManithaNaadiDogNameGenerator({
   activeGenerator,
   onGenerate,
 }) {
   const [rajanilaiNumbers, setRajanilaiNumbers] = useState(defaultRajanilaiNumbers)
+  const rajanilaiSet = new Set(
+    rajanilaiNumbers
+      .split(/[\s,]+/)
+      .filter((number) => /^\d+$/.test(number))
+      .map((number) => String(Number(number))),
+  )
   const matchesByTotal = useMemo(() => {
     const totals = [...new Set(
       rajanilaiNumbers
@@ -144,23 +170,45 @@ export default function ManithaNaadiDogNameGenerator({
                   <th scope="col">Name</th>
                   <th scope="col">Letter values</th>
                   <th scope="col">Sum</th>
+                  <th scope="col">Rajanilam numbers</th>
                 </tr>
               </thead>
               <tbody>
                 {matchCount > 0
-                  ? matchesByTotal.flatMap(({ total, matches }) => matches.map(({ name, letterValues }, index) => (
-                    <tr key={`${total}-${name}`}>
-                      <td>{total} · {index + 1}</td>
-                      <td><strong>{name}</strong></td>
-                      <td className="dog-name-letter-values">
-                        {letterValues.map(({ letter, value }) => `${letter}=${value}`).join(' + ')}
-                      </td>
-                      <td><strong>{total}</strong></td>
-                    </tr>
-                  )))
+                  ? matchesByTotal.flatMap(({ total, matches }) => matches.map(({ name, letterValues }, index) => {
+                      const pairChecks = getRajanilaiPairChecks(letterValues, rajanilaiSet)
+                      const allPairsMatch = pairChecks.length > 0
+                        && pairChecks.every(({ matches: pairMatches }) => pairMatches)
+                      return (
+                        <tr
+                          className={allPairsMatch ? 'dog-name-rajanilai-match-row' : undefined}
+                          key={`${total}-${name}`}
+                        >
+                          <td>{total} · {index + 1}</td>
+                          <td><strong>{name}</strong></td>
+                          <td className="dog-name-letter-values">
+                            {letterValues.map(({ letter, value }) => `${letter}=${value}`).join(' + ')}
+                          </td>
+                          <td><strong>{total}</strong></td>
+                          <td className="dog-name-rajanilai-checks">
+                            {pairChecks.map(({ letters, number, matches: pairMatches }, pairIndex) => (
+                              <span className={pairMatches ? 'dog-name-rajanilai-pair-match' : 'dog-name-rajanilai-pair-miss'} key={`${letters}-${pairIndex}`}>
+                                {letters} = {number} {pairMatches ? '✓' : '✗'}
+                              </span>
+                            ))}
+                            <strong
+                              className={allPairsMatch ? 'dog-name-rajanilai-pair-match' : 'dog-name-rajanilai-pair-miss'}
+                              aria-label={allPairsMatch ? 'All pairs match Rajanilai numbers' : 'One or more pairs do not match Rajanilai numbers'}
+                            >
+                              {allPairsMatch ? '✓' : '✗'}
+                            </strong>
+                          </td>
+                        </tr>
+                      )
+                    }))
                   : (
                     <tr>
-                      <td colSpan="4">No names match the entered Rajanilai numbers.</td>
+                      <td colSpan="5">No names match the entered Rajanilai numbers.</td>
                     </tr>
                   )}
               </tbody>
