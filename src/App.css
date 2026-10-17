@@ -978,6 +978,28 @@
   display: contents;
 }
 
+.gen8-exclude-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 2px;
+  color: var(--soft-ink);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.gen8-exclude-field input {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #e0dcd1;
+  border-radius: 3px;
+  background: #fffdf8;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px;
+}
+
 .mobile-number-generator-option {
   display: flex;
   flex-direction: column;
@@ -1159,6 +1181,30 @@
   color: var(--soft-ink);
   font-size: 11px;
   font-weight: 700;
+}
+
+.digit-sum-filter-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.digit-sum-filter-input {
+  width: 64px;
+  min-height: 26px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+  font-size: 10px;
+  text-align: left;
+}
+
+.digit-sum-filter-input::placeholder {
+  color: var(--soft-ink);
+  opacity: 0.75;
 }
 
 .manitha-results-table td:nth-child(2),
