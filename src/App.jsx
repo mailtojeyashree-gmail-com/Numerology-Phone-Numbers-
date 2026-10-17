@@ -527,6 +527,16 @@ function App() {
   const visibleManithaNaadiTableRows = manithaNaadiDigitSumFilter.trim()
     ? manithaNaadiTableRows.filter((row) => String(row[3]) === manithaNaadiDigitSumFilter.trim())
     : manithaNaadiTableRows
+  const generatedNumberSet = new Set(manithaNaadiCombinationResults?.generatedNumbers ?? [])
+  const uniqueGeneratedCombinations = [...new Set(
+    visibleManithaNaadiTableRows
+      .filter((row) => generatedNumberSet.has(row[2]))
+      .map((row) => row[1]
+        .split(',')
+        .map((pair) => pair.trim())
+        .sort((first, second) => Number(first) - Number(second))
+        .join(', ')),
+  )]
 
   return (
     <main className="app-shell">
@@ -650,6 +660,10 @@ function App() {
                         setManithaNaadiCombinationResults({
                           generator: 'GEN-8',
                           profile: selectedManithaNaadiInitials,
+                          generatedNumbers: [...new Set(
+                            [...generatorResults.matches, ...generatorResults.repeatedMatches]
+                              .map((result) => result.number ?? result.values.join('')),
+                          )],
                           ...generatorResults,
                         })
                       }}
@@ -747,6 +761,10 @@ function App() {
                                   true,
                                   generator === 'GEN-6',
                                 )
+                        generatorResults.generatedNumbers = [...new Set(
+                          [...generatorResults.matches, ...generatorResults.repeatedMatches]
+                            .map((result) => result.number ?? result.values.join('')),
+                        )]
                         const suppliedNumbers = generator === 'GEN-4'
                           ? manithaNaadiGen4NumerologistNumbers[selectedManithaNaadiInitials]
                           : generator === 'GEN-5'
@@ -912,6 +930,16 @@ function App() {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                    <div className="unique-combination-numbers" aria-live="polite">
+                      <span className="results-kicker">
+                        UNIQUE COMBINATIONS · {uniqueGeneratedCombinations.length}
+                      </span>
+                      <p>
+                        {uniqueGeneratedCombinations.length > 0
+                          ? uniqueGeneratedCombinations.join('\n')
+                          : 'No combinations to display.'}
+                      </p>
                     </div>
                     <button
                       className="combination-generate-button manitha-results-download"

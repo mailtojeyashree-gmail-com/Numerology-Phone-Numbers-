@@ -1260,6 +1260,23 @@
   margin-top: 12px;
 }
 
+.unique-combination-numbers {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.unique-combination-numbers p {
+  margin: 7px 0 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
 .manitha-results-table tbody tr:last-child td {
   border-bottom: 0;
 }
