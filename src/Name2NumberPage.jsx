@@ -75,9 +75,9 @@ function getNameResult(name, rajanilaiSet) {
     name,
     characterValues,
     total,
-    st: characterValues.length > 0
-      ? `${characterValues[0].value}${characterValues[characterValues.length - 1].value}`
-      : '',
+    st: characterValues.length > 1
+      ? `${characterValues[0].value}${characterValues[1].value}`
+      : characterValues[0]?.value ?? '',
     name2number: Array.from(
       { length: Math.ceil(characterValues.length / 2) },
       (_, index) => characterValues.slice(index * 2, index * 2 + 2)
@@ -456,6 +456,8 @@ export default function Name2NumberPage() {
                     <th scope="col">name2numb</th>
                     <th scope="col">sum</th>
                     <th scope="col">bhavam</th>
+                    <th scope="col">Rajanilai calculation</th>
+                    <th scope="col">Rajanilai match</th>
                   </tr>
                 </thead>
                 <tbody>
