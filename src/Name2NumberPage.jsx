@@ -220,6 +220,23 @@ function filterCombinationsByExcludedNumbers(combinationText, excludedText) {
     .join('\n')
 }
 
+function getCombinationPairOrderKey(combination) {
+  const compactCombination = combination.replace(/\s/g, '')
+  if (/^\d+$/.test(compactCombination) && compactCombination.length >= 4 && compactCombination.length % 2 === 0) {
+    return compactCombination.match(/\d{2}/g).sort().join('')
+  }
+
+  return combination
+    .split(',')
+    .map((value) => value.trim().replace(/^0+(?=\d)/, ''))
+    .sort((first, second) => {
+      const firstValue = BigInt(first)
+      const secondValue = BigInt(second)
+      return firstValue < secondValue ? -1 : firstValue > secondValue ? 1 : 0
+    })
+    .join(',')
+}
+
 export default function Name2NumberPage() {
   const [name, setName] = useState('')
   const [rajanilaiNumbers, setRajanilaiNumbers] = useState(defaultRajanilaiNumbers)
@@ -280,9 +297,14 @@ export default function Name2NumberPage() {
       .map(({ totalWithIncludedNumber }) => totalWithIncludedNumber)
       .filter((total) => total !== null),
   )].sort((first, second) => first - second)
-  const selectedCombinations = uniqueCombinationsWithSums.filter(({ totalWithIncludedNumber }) => (
-    selectedIncludingNumberTotals.includes(String(totalWithIncludedNumber))
-  ))
+  const selectedCombinations = uniqueCombinationsWithSums.reduce((selected, entry) => {
+    if (!selectedIncludingNumberTotals.includes(String(entry.totalWithIncludedNumber))) return selected
+
+    const key = getCombinationPairOrderKey(entry.combination)
+    if (selected.some(({ key: selectedKey }) => selectedKey === key)) return selected
+    selected.push({ ...entry, key })
+    return selected
+  }, [])
 
   function findUniqueCombinations(event) {
     event.preventDefault()
