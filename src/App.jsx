@@ -390,6 +390,7 @@ function App() {
   const [manithaNaadiEmailResults, setManithaNaadiEmailResults] = useState(null)
   const [activeManithaNaadiGenerator, setActiveManithaNaadiGenerator] = useState(null)
   const [manithaNaadiDigitSumFilter, setManithaNaadiDigitSumFilter] = useState('')
+  const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
   const [includeMjMobile85, setIncludeMjMobile85] = useState(true)
   function exportManithaNaadiResults() {
     const xmlEscape = (value) => String(value).replace(/[&<>"']/g, (character) => ({
@@ -527,9 +528,14 @@ function App() {
   const visibleManithaNaadiTableRows = manithaNaadiDigitSumFilter.trim()
     ? manithaNaadiTableRows.filter((row) => String(row[3]) === manithaNaadiDigitSumFilter.trim())
     : manithaNaadiTableRows
+  const manithaNaadiUniqueDigitSums = [...new Set(manithaNaadiTableRows.map((row) => row[3]))]
+    .sort((first, second) => first - second)
   const generatedNumberSet = new Set(manithaNaadiCombinationResults?.generatedNumbers ?? [])
   const uniqueGeneratedCombinations = [...new Set(
     visibleManithaNaadiTableRows
+      .filter((row) => !['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8'].includes(manithaNaadiCombinationResults?.generator)
+        || !manithaNaadiUniqueDigitSumSelection
+        || String(row[3]) === manithaNaadiUniqueDigitSumSelection)
       .filter((row) => generatedNumberSet.has(row[2]))
       .map((row) => row[1]
         .split(',')
@@ -656,6 +662,7 @@ function App() {
                       activeGenerator={activeManithaNaadiGenerator}
                       onGenerate={(generatorResults) => {
                         setActiveManithaNaadiGenerator('GEN-8')
+                        setManithaNaadiUniqueDigitSumSelection('')
                         setManithaNaadiEmailResults(null)
                         setManithaNaadiCombinationResults({
                           generator: 'GEN-8',
@@ -729,6 +736,7 @@ function App() {
                           : generator === 'GEN-5' ? 'Generate three-pair checks' : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       onClick={() => {
                         setActiveManithaNaadiGenerator(generator)
+                        setManithaNaadiUniqueDigitSumSelection('')
                         setManithaNaadiEmailResults(null)
                         const luckyNumbers = manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]
                         const excludedNumbers = new Set(parseEntries(
@@ -932,6 +940,21 @@ function App() {
                       </table>
                     </div>
                     <div className="unique-combination-numbers" aria-live="polite">
+                      {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8'].includes(manithaNaadiCombinationResults.generator) && (
+                        <label className="unique-digit-sum-select" htmlFor="unique-digit-sum-select">
+                          <span>DIGIT SUM</span>
+                          <select
+                            id="unique-digit-sum-select"
+                            value={manithaNaadiUniqueDigitSumSelection}
+                            onChange={(event) => setManithaNaadiUniqueDigitSumSelection(event.target.value)}
+                          >
+                            <option value="">All digit sums</option>
+                            {manithaNaadiUniqueDigitSums.map((digitSum) => (
+                              <option value={digitSum} key={digitSum}>{digitSum}</option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
                       <span className="results-kicker">
                         UNIQUE COMBINATIONS · {uniqueGeneratedCombinations.length}
                       </span>

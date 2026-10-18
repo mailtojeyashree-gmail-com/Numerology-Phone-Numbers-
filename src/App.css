@@ -1268,6 +1268,28 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
+.unique-digit-sum-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: var(--soft-ink);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.unique-digit-sum-select select {
+  min-height: 30px;
+  min-width: 130px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
 .unique-combination-numbers p {
   margin: 7px 0 0;
   color: var(--ink);
