@@ -2,6 +2,24 @@ import { useState } from 'react'
 import { generateEmails } from './manithaNaadiPasswords'
 
 const tableHeaders = ['Initials', 'Pair values', 'Email', 'Digit sum', 'Bhavam']
+const rajanilaiNumbers = new Set([
+  2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 26, 32, 33, 39, 41, 42, 45, 51, 52, 54,
+  56, 64, 66, 68, 72, 73, 74, 77, 79, 80, 84, 85, 87, 88, 89, 92, 93, 95, 97, 99,
+])
+
+function getRajanilaiPairChecks(letterValues) {
+  const pairChecks = []
+
+  for (let index = 0; index + 1 < letterValues.length; index += 2) {
+    const pairNumber = `${letterValues[index].value}${letterValues[index + 1].value}`
+    pairChecks.push({
+      number: pairNumber,
+      matches: rajanilaiNumbers.has(Number(pairNumber)),
+    })
+  }
+
+  return pairChecks
+}
 
 export default function EmailGeneratorOption({
   initials,
@@ -74,24 +92,39 @@ export function EmailGeneratorResults({ initials, results, rasiChartNumbersByPai
             </tr>
           </thead>
           <tbody>
-            {results.matches.map(({ email, initialPair, letterValues, total }, index) => (
-              <tr key={`${email}-${index}`}>
-                <td>{initials}</td>
-                <td className="password-letter-breakdown">
-                  <strong className="password-initial-pair">
-                    {letterValues.slice(0, 2).map(({ letter }) => letter).join('')} = {initialPair}
-                  </strong>
-                  <span className="password-letters">{letterValues.map(({ letter }) => letter).join(' ')}</span>
-                  <span className="password-letter-values">
-                    <strong className="password-matched-pair">{initialPair}</strong>
-                    {letterValues.slice(2).map(({ value }) => ` ${value}`).join('')}
-                  </span>
-                </td>
-                <td><strong>{email}</strong></td>
-                <td><strong>{total}</strong></td>
-                <td><strong>{rasiChartNumbersByPair.get(String(total).padStart(2, '0'))?.join('/') ?? '—'}</strong></td>
-              </tr>
-            ))}
+            {results.matches.map(({ email, initialPair, letterValues, total }, index) => {
+              const pairChecks = getRajanilaiPairChecks(letterValues)
+
+              return (
+                <tr key={`${email}-${index}`}>
+                  <td>{initials}</td>
+                  <td className="password-letter-breakdown">
+                    <strong className="password-initial-pair">
+                      {letterValues.slice(0, 2).map(({ letter }) => letter).join('')} = {initialPair}
+                    </strong>
+                    <span className="password-letters">{letterValues.map(({ letter }) => letter).join(' ')}</span>
+                    <span className="password-letter-values">
+                      <strong className="password-matched-pair">{initialPair}</strong>
+                      {letterValues.slice(2).map(({ value }) => ` ${value}`).join('')}
+                    </span>
+                    <span className="email-rajanilai-checks" role="group" aria-label="Rajanilai pair checks">
+                      {pairChecks.map(({ number, matches }, pairIndex) => (
+                        <span
+                          className={matches ? 'email-rajanilai-match' : 'email-rajanilai-miss'}
+                          aria-label={`${number} ${matches ? 'matches' : 'does not match'} Rajanilai numbers`}
+                          key={`${number}-${pairIndex}`}
+                        >
+                          {number} {matches ? '✓' : '✗'}
+                        </span>
+                      ))}
+                    </span>
+                  </td>
+                  <td><strong>{email}</strong></td>
+                  <td><strong>{total}</strong></td>
+                  <td><strong>{rasiChartNumbersByPair.get(String(total).padStart(2, '0'))?.join('/') ?? '—'}</strong></td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
