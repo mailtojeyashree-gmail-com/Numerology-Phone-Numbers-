@@ -226,6 +226,9 @@ export default function Name2NumberPage() {
   const rajanilaiSet = useMemo(() => parseRajanilaiNumbers(rajanilaiNumbers), [rajanilaiNumbers])
   const [nonRajanilaiPrefix, setNonRajanilaiPrefix] = useState('')
   const [nonRajanilaiResults, setNonRajanilaiResults] = useState(null)
+  const [digitSumInput, setDigitSumInput] = useState('')
+  const [digitSumResults, setDigitSumResults] = useState(null)
+  const [invalidDigitSumEntries, setInvalidDigitSumEntries] = useState([])
   const [generatedNames, setGeneratedNames] = useState(null)
   const [selectedInitials, setSelectedInitials] = useState('MJ')
   const [combinationList, setCombinationList] = useState('')
@@ -914,6 +917,91 @@ export default function Name2NumberPage() {
               </div>
             ) : (
               <p>No valid numbers were found for this first pair and Rajanilai list.</p>
+            )}
+          </div>
+        ) : null}
+      </section>
+      <section className="name2number-non-rajanilai" aria-labelledby="name2number-generate-digitsum-title">
+        <h2 id="name2number-generate-digitsum-title">Generate Digitsum</h2>
+        <p className="name2number-non-rajanilai-help">
+          Enter comma-separated number groups, one group per line, to calculate each digit sum.
+        </p>
+        <form
+          className="name2number-non-rajanilai-form name2number-digit-sum-form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            const inputGroups = digitSumInput.split(/\r?\n/).map((group) => group.trim()).filter(Boolean)
+            const validGroups = []
+            const invalidGroups = []
+
+            inputGroups.forEach((group) => {
+              const numberValues = group.split(',').map((number) => number.trim())
+              if (numberValues.some((number) => !/^\d+$/.test(number))) {
+                invalidGroups.push(group)
+                return
+              }
+
+              const digits = numberValues.flatMap((number) => [...number])
+              const digitSum = digits.reduce((total, digit) => total + Number(digit), 0)
+              validGroups.push({
+                number: numberValues.join(', '),
+                digitSumCalculation: `${digits.join(' + ')} = ${digitSum}`,
+                digitSum,
+              })
+            })
+
+            setDigitSumResults(validGroups)
+            setInvalidDigitSumEntries(invalidGroups)
+          }}
+        >
+          <label htmlFor="name2number-digit-sum-input">Numbers</label>
+          <textarea
+            id="name2number-digit-sum-input"
+            className="name2number-digit-sum-input"
+            value={digitSumInput}
+            onChange={(event) => {
+              setDigitSumInput(event.target.value)
+              setDigitSumResults(null)
+              setInvalidDigitSumEntries([])
+            }}
+            placeholder="e.g. 04, 39, 68, 88"
+            rows={3}
+            required
+          />
+          <button className="name2number-button" type="submit" disabled={!digitSumInput.trim()}>
+            Generate Digitsum
+          </button>
+        </form>
+        {digitSumResults !== null ? (
+          <div className="name2number-non-rajanilai-results" aria-live="polite">
+            {invalidDigitSumEntries.length > 0 && (
+              <p className="name2number-message" role="alert">
+                Invalid entries were skipped: {invalidDigitSumEntries.join(', ')}.
+              </p>
+            )}
+            {digitSumResults.length > 0 ? (
+              <div className="name2number-non-rajanilai-table-wrap">
+                <table className="name2number-non-rajanilai-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Number</th>
+                      <th scope="col">Digit sum calculation</th>
+                      <th scope="col">Digit sum</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {digitSumResults.map(({ number, digitSumCalculation, digitSum }, index) => (
+                      <tr key={`${number}-${index}`}>
+                        <td>{number}</td>
+                        <td>{digitSumCalculation}</td>
+                        <td>{digitSum}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>No valid whole numbers were entered.</p>
             )}
           </div>
         ) : null}
