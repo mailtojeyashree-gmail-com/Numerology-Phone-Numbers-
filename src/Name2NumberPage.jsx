@@ -288,7 +288,7 @@ export default function Name2NumberPage() {
     const bhavams = getRasiBhavam(result.name2number, selectedInitials)
       .split(',')
       .map((value) => value.trim())
-    return filters.some((filter) => bhavams.includes(filter))
+    return !filters.some((filter) => bhavams.includes(filter))
   })
   const hasInvalidNames = results.some(({ characterValues }) => characterValues.length === 0)
     || (generatedNames !== null && generatedNames.length === 0)
