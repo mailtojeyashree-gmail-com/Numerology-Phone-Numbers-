@@ -537,7 +537,7 @@ function App() {
     }
   }
   function getManithaNaadiTableRows() {
-    if (!manithaNaadiCombinationResults) return []
+    if (!manithaNaadiCombinationResults || manithaNaadiCombinationResults.generator === 'GEN-CAR-REG') return []
 
     const isGen5 = manithaNaadiCombinationResults.generator === 'GEN-5'
     const isMobile = manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
@@ -799,7 +799,7 @@ function App() {
                               includeMjMobile85,
                             )
                             : generator === 'GEN-CAR-REG'
-                              ? generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPair)
+                              ? generateManithaNaadiCarRegistrations(calculationLuckyNumbers, rasiChartNumbersByPair)
                               : generator === 'GEN-4'
                                 ? calculateGen4Matches(
                                   calculationLuckyNumbers,
@@ -814,7 +814,7 @@ function App() {
                                 )
                         generatorResults.generatedNumbers = [...new Set(
                           [...generatorResults.matches, ...generatorResults.repeatedMatches]
-                            .map((result) => result.number ?? result.values.join('')),
+                            .map((result) => result.number ?? result.registration ?? result.values.join('')),
                         )]
                         const suppliedNumbers = generator === 'GEN-4'
                           ? manithaNaadiGen4NumerologistNumbers[selectedManithaNaadiInitials]
@@ -1042,6 +1042,11 @@ function App() {
                               <td><strong>{rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0'))?.join('/') ?? '—'}</strong></td>
                             </tr>
                           ))}
+                          {manithaNaadiCombinationResults.matches.length === 0 ? (
+                            <tr>
+                              <td colSpan={7}>No registrations were generated.</td>
+                            </tr>
+                          ) : null}
                         </tbody>
                       </table>
                     </div>
