@@ -257,6 +257,7 @@ export default function Name2NumberPage() {
   const [invalidDigitSumEntries, setInvalidDigitSumEntries] = useState([])
   const [generatedNames, setGeneratedNames] = useState(null)
   const [selectedInitials, setSelectedInitials] = useState('MJ')
+  const [bhavamFilter, setBhavamFilter] = useState('')
   const [combinationList, setCombinationList] = useState('')
   const [numberToInclude, setNumberToInclude] = useState('')
   const [excludeFromCombinations, setExcludeFromCombinations] = useState('')
@@ -280,6 +281,15 @@ export default function Name2NumberPage() {
     [generatedNames, rajanilaiSet],
   )
   const validResults = results.filter(({ characterValues }) => characterValues.length > 0)
+  const filteredValidResults = validResults.filter((result) => {
+    const filters = bhavamFilter.split(',').map((value) => value.trim()).filter(Boolean)
+    if (filters.length === 0) return true
+
+    const bhavams = getRasiBhavam(result.name2number, selectedInitials)
+      .split(',')
+      .map((value) => value.trim())
+    return filters.some((filter) => bhavams.includes(filter))
+  })
   const hasInvalidNames = results.some(({ characterValues }) => characterValues.length === 0)
     || (generatedNames !== null && generatedNames.length === 0)
   const uniqueNumbers = uniqueCombinations === null
@@ -387,7 +397,7 @@ export default function Name2NumberPage() {
         `${sum}=${total}`,
         getRasiBhavam(name2number, selectedInitials),
         rajanilaiPairs.map(({ number, matches }) => `${number} ${matches ? '✓' : '✗'}`).join(', ') || '—',
-        rajanilaiMatch ? '✓✓' : '✗✗',
+        `${total} ${rajanilaiMatch ? '✓✓' : '✗✗'}`,
       ], 'Body', 32, Array(7).fill('Body').concat(rajanilaiMatch ? 'Match' : 'NoMatch'))
     ))
     const workbook = `<?xml version="1.0"?>
@@ -440,7 +450,7 @@ export default function Name2NumberPage() {
         className="name2number-form"
         onSubmit={(event) => {
           event.preventDefault()
-          setGeneratedNames(name.split(',').map((part) => part.trim()).filter(Boolean))
+          setGeneratedNames(name.split(/[,\r\n]+/).map((part) => part.trim()).filter(Boolean))
         }}
       >
         <label className="name2number-field" htmlFor="name2number-input">
@@ -459,7 +469,7 @@ export default function Name2NumberPage() {
             spellCheck="false"
           />
           <span id="name2number-help" className="name2number-help">
-            Commas separate names; spaces within a name stay together. Other punctuation is ignored.
+            Commas or new lines separate names; spaces within a name stay together. Other punctuation is ignored.
           </span>
         </label>
         <button className="name2number-button" type="submit" disabled={!name.trim()}>
@@ -487,13 +497,24 @@ export default function Name2NumberPage() {
                     <th scope="col">total</th>
                     <th scope="col">name2numb</th>
                     <th scope="col">sum</th>
-                    <th scope="col">bhavam</th>
+                    <th scope="col">
+                      <label className="name2number-bhavam-filter">
+                        <span>bhavam</span>
+                        <input
+                          type="search"
+                          aria-label="Filter results by Bhavam"
+                          placeholder="e.g. 10, 1"
+                          value={bhavamFilter}
+                          onChange={(event) => setBhavamFilter(event.target.value)}
+                        />
+                      </label>
+                    </th>
                     <th scope="col">Rajanilai calculation</th>
                     <th scope="col">Rajanilai match</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {validResults.map(({ name: resultName, st, total, name2number, sum, rajanilaiPairs, rajanilaiMatch }, index) => (
+                  {filteredValidResults.map(({ name: resultName, st, total, name2number, sum, rajanilaiPairs, rajanilaiMatch }, index) => (
                     <tr key={`${resultName}-${index}`}>
                       <td>{resultName}</td>
                       <td>{st}</td>
@@ -511,10 +532,13 @@ export default function Name2NumberPage() {
                           : '—'}
                       </td>
                       <td className={rajanilaiMatch ? 'name2number-rajanilai-match' : 'name2number-rajanilai-miss'}>
-                        {rajanilaiMatch ? '✓✓' : '✗✗'}
+                        {total} {rajanilaiMatch ? '✓✓' : '✗✗'}
                       </td>
                     </tr>
                   ))}
+                  {filteredValidResults.length === 0 ? (
+                    <tr><td colSpan={8}>No results match this Bhavam filter.</td></tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>

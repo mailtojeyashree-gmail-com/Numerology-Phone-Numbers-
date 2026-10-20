@@ -294,6 +294,30 @@
   white-space: nowrap;
 }
 
+.name2number-bhavam-filter {
+  display: grid;
+  gap: 6px;
+  min-width: 110px;
+}
+
+.name2number-bhavam-filter input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 500 11px 'SFMono-Regular', Consolas, monospace;
+  white-space: normal;
+}
+
+.name2number-bhavam-filter input:focus {
+  border-color: var(--moss);
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(88 108 77 / 14%);
+}
+
 .name2number-result-table td {
   font-size: 14px;
   font-weight: 700;
