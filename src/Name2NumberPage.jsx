@@ -237,6 +237,15 @@ function getCombinationPairOrderKey(combination) {
     .join(',')
 }
 
+function getUniqueCombinationPairs(combinations) {
+  return [...new Set(combinations.flatMap((combination) => {
+    const values = combination.split(',').map((value) => value.trim())
+    return values.every((value) => /^\d{2}$/.test(value))
+      ? values
+      : (combination.replace(/\D/g, '').match(/\d{2}/g) ?? [])
+  }))]
+}
+
 export default function Name2NumberPage() {
   const [name, setName] = useState('')
   const [rajanilaiNumbers, setRajanilaiNumbers] = useState(defaultRajanilaiNumbers)
@@ -436,17 +445,18 @@ export default function Name2NumberPage() {
       >
         <label className="name2number-field" htmlFor="name2number-input">
           <span>ENTER A NAME</span>
-          <input
+          <textarea
             id="name2number-input"
-            type="text"
             autoComplete="off"
             value={name}
+            rows={3}
             onChange={(event) => {
               setName(event.target.value)
               setGeneratedNames(null)
             }}
             placeholder="For example: ANNA or ANNA, MARIA"
             aria-describedby="name2number-help"
+            spellCheck="false"
           />
           <span id="name2number-help" className="name2number-help">
             Commas separate names; spaces within a name stay together. Other punctuation is ignored.
@@ -733,12 +743,24 @@ export default function Name2NumberPage() {
                         <div className="name2number-unique-table-wrap">
                           <table className="name2number-unique-table">
                             <thead>
-                              <tr><th scope="col">Combination</th></tr>
+                              <tr>
+                                <th scope="col">Combination</th>
+                                <th scope="col">Unique pairs</th>
+                              </tr>
                             </thead>
                             <tbody>
-                              {selectedCombinations.map(({ combination }) => (
-                                <tr key={combination}><td>{combination}</td></tr>
-                              ))}
+                              {selectedCombinations.length > 0 ? selectedCombinations.map(({ combination }, index) => (
+                                <tr key={combination}>
+                                  <td>{combination}</td>
+                                  {index === 0 ? (
+                                    <td rowSpan={selectedCombinations.length}>
+                                      {getUniqueCombinationPairs(selectedCombinations.map(({ combination: value }) => value)).join(', ')}
+                                    </td>
+                                  ) : null}
+                                </tr>
+                              )) : (
+                                <tr><td colSpan={2}>No combinations match the selected totals.</td></tr>
+                              )}
                             </tbody>
                           </table>
                         </div>
