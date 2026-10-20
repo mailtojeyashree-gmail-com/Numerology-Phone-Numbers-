@@ -3,6 +3,7 @@ import './App.css'
 import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOption'
 import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
 import ManithaNaadiGen8Generator from './ManithaNaadiGen8Generator'
+import { calculateGen8Matches } from './manithaNaadiGen8Logic'
 import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
 import PanjaPatchiPage from './PanjaPatchiPage'
 import Name2NumberPage from './Name2NumberPage'
@@ -392,6 +393,48 @@ function App() {
   const [manithaNaadiDigitSumFilter, setManithaNaadiDigitSumFilter] = useState('')
   const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
   const [includeMjMobile85, setIncludeMjMobile85] = useState(true)
+  const [manualCombinationTarget, setManualCombinationTarget] = useState('')
+  const [manualCombinationResults, setManualCombinationResults] = useState(null)
+  const [manualCombinationError, setManualCombinationError] = useState('')
+
+  function generateManualCombinations(event) {
+    event.preventDefault()
+    const targets = manualCombinationTarget.trim().split(/[\s,]+/)
+    if (!manualCombinationTarget.trim() || targets.some((target) => !/^\d{2}$/.test(target))) {
+      setManualCombinationError('Enter one or more two-digit values, separated by commas or spaces.')
+      setManualCombinationResults(null)
+      return
+    }
+
+    const luckyNumbers = manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]
+    const excludedNumbers = manithaNaadiGen8ExcludedNumbers[selectedManithaNaadiInitials]
+    const excludedPairs = new Set(parseEntries(excludedNumbers, true))
+    const availableNumbers = parseEntries(luckyNumbers, true)
+      .filter((number) => !excludedPairs.has(number))
+      .join(', ')
+    const gen6Results = calculateCombinationMatches(availableNumbers, targets.join(', '), 3, true, true)
+    const gen8Results = calculateGen8Matches(luckyNumbers, excludedNumbers, targets)
+    const toRows = (results) => [...results.matches, ...results.repeatedMatches].map((combination) => {
+      const number = combination.number ?? combination.values.join('')
+      const digitSum = sumDigits(number)
+      return [
+        combination.values.join(', '),
+        number,
+        digitSum,
+        combination.values.map((value) => rasiChartNumbersByPair.get(value)?.join('/') ?? '—').join('-'),
+        rasiChartNumbersByPair.get(String(digitSum).padStart(2, '0'))?.join('/') ?? '—',
+      ]
+    })
+
+    setManualCombinationResults({
+      profile: selectedManithaNaadiInitials,
+      targets,
+      gen6: toRows(gen6Results),
+      gen8: toRows(gen8Results),
+    })
+    setManualCombinationError('')
+  }
+
   function exportManithaNaadiResults() {
     const xmlEscape = (value) => String(value).replace(/[&<>"']/g, (character) => ({
       '&': '&amp;',
@@ -1042,6 +1085,68 @@ function App() {
                 ))}
               </section>
             )}
+            <section className="manual-combination-generator" aria-labelledby="manual-combination-generator-title">
+              <div className="workspace-results-heading">
+                <div>
+                  <span className="results-kicker">
+                    {(manualCombinationResults?.profile ?? selectedManithaNaadiInitials)} LUCKY NUMBERS
+                  </span>
+                  <h2 id="manual-combination-generator-title">Generate number combinations</h2>
+                </div>
+              </div>
+              <form className="manual-combination-form" onSubmit={generateManualCombinations}>
+                <label htmlFor="manual-combination-target">
+                  <span>Number to match</span>
+                  <input
+                    id="manual-combination-target"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="64"
+                    value={manualCombinationTarget}
+                    onChange={(event) => setManualCombinationTarget(event.target.value)}
+                  />
+                </label>
+                <button className="combination-generate-button" type="submit">Generate</button>
+              </form>
+              {manualCombinationError ? (
+                <p className="manual-combination-error" role="alert">{manualCombinationError}</p>
+              ) : null}
+              {manualCombinationResults ? (
+                <div className="manual-combination-results" aria-live="polite">
+                  {[
+                    { title: '6 combo', rows: manualCombinationResults.gen6 },
+                    { title: '8 combo', rows: manualCombinationResults.gen8 },
+                  ].map(({ title, rows }) => (
+                    <section className="workspace-result-group" key={title}>
+                      <h3>{title}<span>{rows.length} combinations</span></h3>
+                      <div className="manitha-results-table-wrap">
+                        <table className="manitha-results-table" aria-label={`${title} results`}>
+                          <thead>
+                            <tr>
+                              {manithaNaadiTableHeaders.slice(1).map((heading) => (
+                                <th scope="col" key={heading}>{heading}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.length === 0 ? (
+                              <tr><td colSpan={5}>No combinations found for {manualCombinationResults.targets.join(', ')}.</td></tr>
+                            ) : rows.map((row, index) => (
+                              <tr key={`${row[1]}-${index}`}>
+                                {row.map((value, columnIndex) => (
+                                  <td key={`${columnIndex}-${value}`}>{value}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : null}
+            </section>
           </section>
         ) : activePage === 'password' ? (
           <PasswordPage />
