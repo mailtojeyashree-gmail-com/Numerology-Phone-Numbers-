@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOption'
 import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
@@ -8,13 +8,32 @@ import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
 import PanjaPatchiPage from './PanjaPatchiPage'
 import Name2NumberPage from './Name2NumberPage'
 import PasswordPage from './PasswordPage'
-import { carRegLetterValues } from './numerologyLetterValues'
+import { carRegNumberChart } from './carRegistrationGenerator'
 import RasiChart from './RasiChart'
 import {
   rasiChartClockwiseOrder,
   rasiChartSigns,
   rasiChartStartingSigns,
 } from './rasiChartData'
+
+const CAR_REGISTRATION_PAGE_SIZE = 100
+
+function ResultPagination({ page, pageSize, totalItems, onPageChange, label }) {
+  const pageCount = Math.ceil(totalItems / pageSize)
+  if (pageCount < 2) return null
+
+  return (
+    <nav className="car-reg-pagination" aria-label={`${label} pages`}>
+      <button type="button" disabled={page === 0} onClick={() => onPageChange(page - 1)}>
+        Previous
+      </button>
+      <span>Page {page + 1} of {pageCount} · {totalItems.toLocaleString()} rows</span>
+      <button type="button" disabled={page >= pageCount - 1} onClick={() => onPageChange(page + 1)}>
+        Next
+      </button>
+    </nav>
+  )
+}
 
 const manithaNaadiLuckyNumberDefaults = {
   MJ: '20, 41, 45, 54, 56, 64, 66, 68, 74, 85, 92, 32, 14',
@@ -150,108 +169,6 @@ function calculateGen5Matches(values, expectedValue) {
   }
 }
 
-const carRegNumberChart = [
-  { value: 1, letters: ['A', 'I', 'J', 'Y', 'Q'] },
-  { value: 2, letters: ['B', 'K', 'R', '', ''] },
-  { value: 3, letters: ['C', 'G', 'L', 'S', ''] },
-  { value: 4, letters: ['D', 'M', 'T', '', ''] },
-  { value: 5, letters: ['E', 'H', 'N', 'X', ''] },
-  { value: 6, letters: ['U', 'V', 'W', '', ''] },
-  { value: 7, letters: ['Z', 'O', '', '', ''] },
-  { value: 8, letters: ['F', 'P', '', '', ''] },
-]
-
-function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPair) {
-  const luckyPairs = parseEntries(luckyNumbers, true)
-  const allowedValues = new Set(luckyPairs)
-  const allowedDigitSums = new Set(luckyPairs.map(Number))
-  const alphabet = [...new Set(carRegNumberChart.flatMap((row) => row.letters).filter(Boolean))]
-  const letterDigitValues = new Map(carRegLetterValues)
-  const digitValue = (digit) => digit === '0' ? 6 : Number(digit)
-  const possibleCount = luckyPairs.length * alphabet.length ** 4
-  const matchesByBhavam = new Map()
-  let combinationsChecked = 0
-
-  for (const digitSum of allowedDigitSums) {
-    const digitSumKey = String(digitSum).padStart(2, '0')
-    const digitBhavam = rasiChartNumbersByPair.get(digitSumKey)
-    if (!digitBhavam) continue
-
-    const bhavamKey = digitBhavam.join('/')
-    const group = matchesByBhavam.get(bhavamKey) ?? []
-    matchesByBhavam.set(bhavamKey, group)
-
-    for (const pair of luckyPairs) {
-      const firstDigitValue = digitValue(pair[0])
-      const secondDigitValue = digitValue(pair[1])
-      const firstLetters = alphabet.filter((letter) => allowedValues.has(
-        `${letterDigitValues.get(letter)}${firstDigitValue}`,
-      ))
-      const secondLetters = alphabet.filter((letter) => allowedValues.has(
-        `${secondDigitValue}${letterDigitValues.get(letter)}`,
-      ))
-
-      for (const firstLetter of firstLetters) {
-        for (const secondLetter of secondLetters) {
-          for (const thirdLetter of alphabet) {
-            for (const fourthLetter of alphabet) {
-              const thirdCheck = `${letterDigitValues.get(thirdLetter)}${letterDigitValues.get(fourthLetter)}`
-              if (!allowedValues.has(thirdCheck)) continue
-
-              const checks = [
-                `${letterDigitValues.get(firstLetter)}${firstDigitValue}`,
-                `${secondDigitValue}${letterDigitValues.get(secondLetter)}`,
-                thirdCheck,
-              ]
-              if (!checks.every((check) => allowedValues.has(check))) continue
-
-              const digitSumValues = [
-                letterDigitValues.get(firstLetter),
-                firstDigitValue,
-                secondDigitValue,
-                letterDigitValues.get(secondLetter),
-                letterDigitValues.get(thirdLetter),
-                letterDigitValues.get(fourthLetter),
-              ]
-              const candidateDigitSum = digitSumValues.reduce((sum, value) => sum + value, 0)
-              combinationsChecked += 1
-              if (candidateDigitSum !== digitSum || !allowedDigitSums.has(candidateDigitSum)) continue
-
-              const letters = [firstLetter, secondLetter, thirdLetter, fourthLetter]
-              group.push({
-                pair,
-                letters,
-                checks,
-                registration: `${firstLetter}${pair}${letters.slice(1).join('')}`,
-                digitSum: candidateDigitSum,
-                digitSumCalculation: `${digitSumValues.join(' + ')} = ${candidateDigitSum}`,
-              })
-            }
-          }
-        }
-      }
-    }
-
-  }
-
-  const bhavamGroups = [...matchesByBhavam.values()]
-  const matches = []
-  let groupIndex = 0
-  while (bhavamGroups.some((group) => group.length > 0)) {
-    const group = bhavamGroups[groupIndex % bhavamGroups.length]
-    if (group.length > 0) matches.push(group.shift())
-    groupIndex += 1
-  }
-
-  return {
-    matches,
-    repeatedMatches: [],
-    nonMatches: [],
-    combinationsChecked,
-    possibleCombinationsWithRepetition: possibleCount,
-  }
-}
-
 function parseEntries(value, keepPairs = false) {
   if (value === null || value === undefined || value === '') return []
   return String(value)
@@ -382,6 +299,8 @@ function App() {
   const [isButtonActionLoading, setIsButtonActionLoading] = useState(false)
   const isButtonActionLoadingRef = useRef(false)
   const allowButtonActionRef = useRef(false)
+  const keepButtonActionLoadingRef = useRef(false)
+  const carRegistrationWorkerRef = useRef(null)
   const [activePage, setActivePage] = useState('manitha-naadi')
   const [selectedManithaNaadiInitials, setSelectedManithaNaadiInitials] = useState('MJ')
   const [manithaNaadiLuckyNumbers, setManithaNaadiLuckyNumbers] = useState(
@@ -397,6 +316,10 @@ function App() {
   const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
   const [carRegistrationDigitSumFilters, setCarRegistrationDigitSumFilters] = useState([])
   const [carRegistrationLuckyPairFilters, setCarRegistrationLuckyPairFilters] = useState([])
+  const [carRegistrationPage, setCarRegistrationPage] = useState(0)
+  const [carRegistrationCombinationPage, setCarRegistrationCombinationPage] = useState(0)
+  const [filteredCarRegistrationPage, setFilteredCarRegistrationPage] = useState(0)
+  const [carRegistrationGenerationError, setCarRegistrationGenerationError] = useState('')
   const [carRegistrationPairFilterOpen, setCarRegistrationPairFilterOpen] = useState(false)
   const [carRegistrationPairFilterDraft, setCarRegistrationPairFilterDraft] = useState('')
   const [carRegistrationPairFilters, setCarRegistrationPairFilters] = useState([])
@@ -405,6 +328,69 @@ function App() {
   const [manualCombinationTarget, setManualCombinationTarget] = useState('')
   const [manualCombinationResults, setManualCombinationResults] = useState(null)
   const [manualCombinationError, setManualCombinationError] = useState('')
+
+  useEffect(() => () => carRegistrationWorkerRef.current?.terminate(), [])
+
+  function finishCarRegistrationGeneration() {
+    keepButtonActionLoadingRef.current = false
+    carRegistrationWorkerRef.current?.terminate()
+    carRegistrationWorkerRef.current = null
+    isButtonActionLoadingRef.current = false
+    setIsButtonActionLoading(false)
+  }
+
+  function generateCarRegistrationsInWorker(luckyNumbers, profile) {
+    setCarRegistrationGenerationError('')
+    setManithaNaadiCombinationResults(null)
+    keepButtonActionLoadingRef.current = true
+    carRegistrationWorkerRef.current?.terminate()
+
+    try {
+      const worker = new Worker(new URL('./carRegistration.worker.js', import.meta.url), { type: 'module' })
+      carRegistrationWorkerRef.current = worker
+      worker.onmessage = (event) => {
+        if (carRegistrationWorkerRef.current !== worker) return
+        if (event.data.error) {
+          setCarRegistrationGenerationError(event.data.error)
+          finishCarRegistrationGeneration()
+          return
+        }
+        const generatorResults = event.data.results
+        generatorResults.generatedNumbers = [...new Set(
+          [...generatorResults.matches, ...generatorResults.repeatedMatches]
+            .map((result) => result.number ?? result.registration ?? result.values.join('')),
+        )]
+        setManithaNaadiCombinationResults({
+          generator: 'GEN-CAR-REG',
+          profile,
+          ...generatorResults,
+        })
+        finishCarRegistrationGeneration()
+      }
+      worker.onerror = (event) => {
+        event.preventDefault()
+        if (carRegistrationWorkerRef.current !== worker) return
+        setCarRegistrationGenerationError(
+          event.message || 'Car-registration generation failed. Please try again.',
+        )
+        finishCarRegistrationGeneration()
+      }
+      worker.onmessageerror = () => {
+        if (carRegistrationWorkerRef.current !== worker) return
+        setCarRegistrationGenerationError('Could not read the car-registration generation results.')
+        finishCarRegistrationGeneration()
+      }
+      worker.postMessage({
+        luckyNumbers,
+        rasiChartEntries: [...rasiChartNumbersByPair],
+      })
+    } catch (error) {
+      setCarRegistrationGenerationError(
+        error instanceof Error ? error.message : 'Could not start car-registration generation.',
+      )
+      finishCarRegistrationGeneration()
+    }
+  }
 
   function generateManualCombinations(event) {
     event.preventDefault()
@@ -659,6 +645,22 @@ function App() {
       (carRegistrationCombinationCounts.get(combination) ?? 0) + 1,
     )
   })
+  const carRegistrationCombinationEntries = [...carRegistrationCombinationCounts]
+  const filteredCarRegistrations = [...new Set(
+    visibleCarRegistrationMatches.map((match) => match.registration),
+  )]
+  const pagedCarRegistrationMatches = visibleCarRegistrationMatches.slice(
+    carRegistrationPage * CAR_REGISTRATION_PAGE_SIZE,
+    (carRegistrationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
+  )
+  const pagedCarRegistrationCombinationEntries = carRegistrationCombinationEntries.slice(
+    carRegistrationCombinationPage * CAR_REGISTRATION_PAGE_SIZE,
+    (carRegistrationCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
+  )
+  const pagedFilteredCarRegistrations = filteredCarRegistrations.slice(
+    filteredCarRegistrationPage * CAR_REGISTRATION_PAGE_SIZE,
+    (filteredCarRegistrationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
+  )
 
   function deferButtonAction(event) {
     if (allowButtonActionRef.current) return
@@ -678,6 +680,7 @@ function App() {
         button.click()
         allowButtonActionRef.current = false
         window.setTimeout(() => {
+          if (keepButtonActionLoadingRef.current) return
           isButtonActionLoadingRef.current = false
           setIsButtonActionLoading(false)
         }, 300)
@@ -693,6 +696,9 @@ function App() {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         updateFilter()
+        setCarRegistrationPage(0)
+        setCarRegistrationCombinationPage(0)
+        setFilteredCarRegistrationPage(0)
         window.setTimeout(() => {
           isButtonActionLoadingRef.current = false
           setIsButtonActionLoading(false)
@@ -728,6 +734,9 @@ function App() {
     }
 
     setCarRegistrationPairFilters(parsedFilters)
+    setCarRegistrationPage(0)
+    setCarRegistrationCombinationPage(0)
+    setFilteredCarRegistrationPage(0)
     setCarRegistrationPairFilterError('')
     setCarRegistrationPairFilterOpen(false)
   }
@@ -924,12 +933,16 @@ function App() {
                           : generator === 'GEN-5' ? 'Generate three-pair checks' : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       onClick={() => {
                         setActiveManithaNaadiGenerator(generator)
+                        if (generator !== 'GEN-CAR-REG') setCarRegistrationGenerationError('')
                         if (generator === 'GEN-CAR-REG') {
                           setCarRegistrationDigitSumFilters([])
                           setCarRegistrationLuckyPairFilters([])
                           setCarRegistrationPairFilters([])
                           setCarRegistrationPairFilterDraft('')
                           setCarRegistrationPairFilterError('')
+                          setCarRegistrationPage(0)
+                          setCarRegistrationCombinationPage(0)
+                          setFilteredCarRegistrationPage(0)
                         }
                         setManithaNaadiUniqueDigitSumSelection('')
                         setManithaNaadiEmailResults(null)
@@ -941,6 +954,13 @@ function App() {
                         const calculationLuckyNumbers = parseEntries(luckyNumbers, true)
                           .filter((number) => !excludedNumbers.has(number))
                           .join(', ')
+                        if (generator === 'GEN-CAR-REG') {
+                          generateCarRegistrationsInWorker(
+                            calculationLuckyNumbers,
+                            selectedManithaNaadiInitials,
+                          )
+                          return
+                        }
                         const generatorResults = generator === 'GEN-5'
                           ? calculateGen5Matches(calculationLuckyNumbers, calculationLuckyNumbers)
                           : generator === 'GEN-MOBILE-NUMBERS'
@@ -950,9 +970,7 @@ function App() {
                               rasiChartNumbersByPair,
                               includeMjMobile85,
                             )
-                            : generator === 'GEN-CAR-REG'
-                              ? generateManithaNaadiCarRegistrations(calculationLuckyNumbers, rasiChartNumbersByPair)
-                              : generator === 'GEN-4'
+                            : generator === 'GEN-4'
                                 ? calculateGen4Matches(
                                   calculationLuckyNumbers,
                                   calculationLuckyNumbers,
@@ -1062,6 +1080,11 @@ function App() {
                 />
               )}
             </div>
+            {carRegistrationGenerationError && (
+              <p className="car-reg-generation-error" role="alert">
+                {carRegistrationGenerationError}
+              </p>
+            )}
             {manithaNaadiCombinationResults && (
               <section className="combination-results" aria-live="polite" aria-label={`${manithaNaadiCombinationResults.generator} results`}>
                 <div className="workspace-results-heading">
@@ -1270,7 +1293,7 @@ function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {visibleCarRegistrationMatches.map((match, index) => (
+                          {pagedCarRegistrationMatches.map((match, index) => (
                             <tr key={`${match.registration}-${index}`}>
                               <td>{manithaNaadiCombinationResults.profile}</td>
                               <td>{match.pair}</td>
@@ -1338,6 +1361,13 @@ function App() {
                         </tbody>
                       </table>
                     </div>
+                    <ResultPagination
+                      page={carRegistrationPage}
+                      pageSize={CAR_REGISTRATION_PAGE_SIZE}
+                      totalItems={visibleCarRegistrationMatches.length}
+                      onPageChange={setCarRegistrationPage}
+                      label="Car registrations"
+                    />
                     {carRegistrationPairFilterOpen && (
                       <div className="car-reg-pair-filter-backdrop">
                         <section
@@ -1385,6 +1415,9 @@ function App() {
                                 type="button"
                                 onClick={() => {
                                   setCarRegistrationPairFilters([])
+                                  setCarRegistrationPage(0)
+                                  setCarRegistrationCombinationPage(0)
+                                  setFilteredCarRegistrationPage(0)
                                   setCarRegistrationPairFilterDraft('')
                                   setCarRegistrationPairFilterError('')
                                   setCarRegistrationPairFilterOpen(false)
@@ -1409,11 +1442,15 @@ function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              {[...carRegistrationCombinationCounts].map(([combination, count], index) => (
+                              {pagedCarRegistrationCombinationEntries.map(([combination, count], index) => (
                                 <tr key={combination}>
                                   <td>{combination} ({count})</td>
                                   {index === 0 && (
-                                    <td rowSpan={carRegistrationCombinationCounts.size}>
+                                    <td rowSpan={Math.min(
+                                      CAR_REGISTRATION_PAGE_SIZE,
+                                      carRegistrationCombinationEntries.length
+                                        - carRegistrationCombinationPage * CAR_REGISTRATION_PAGE_SIZE,
+                                    )}>
                                       {carRegistrationUniquePairs.join(', ')}
                                     </td>
                                   )}
@@ -1422,6 +1459,13 @@ function App() {
                             </tbody>
                           </table>
                         </div>
+                        <ResultPagination
+                          page={carRegistrationCombinationPage}
+                          pageSize={CAR_REGISTRATION_PAGE_SIZE}
+                          totalItems={carRegistrationCombinationEntries.length}
+                          onPageChange={setCarRegistrationCombinationPage}
+                          label="Registration combinations"
+                        />
                       </section>
                     )}
                     {(carRegistrationPairFilters.length > 0 || carRegistrationLuckyPairFilters.length > 0) && (
@@ -1443,16 +1487,22 @@ function App() {
                               <tr><th scope="col">Registration</th></tr>
                             </thead>
                             <tbody>
-                              {[...new Set(visibleCarRegistrationMatches.map((match) => match.registration))]
-                                .map((registration) => (
-                                  <tr key={registration}><td>{registration}</td></tr>
-                                ))}
+                              {pagedFilteredCarRegistrations.map((registration) => (
+                                <tr key={registration}><td>{registration}</td></tr>
+                              ))}
                               {visibleCarRegistrationMatches.length === 0 && (
                                 <tr><td>No registrations match the selected filters.</td></tr>
                               )}
                             </tbody>
                           </table>
                         </div>
+                        <ResultPagination
+                          page={filteredCarRegistrationPage}
+                          pageSize={CAR_REGISTRATION_PAGE_SIZE}
+                          totalItems={filteredCarRegistrations.length}
+                          onPageChange={setFilteredCarRegistrationPage}
+                          label="Filtered registrations"
+                        />
                       </section>
                     )}
                   </>

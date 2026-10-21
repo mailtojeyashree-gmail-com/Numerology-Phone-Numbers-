@@ -1519,6 +1519,38 @@
   overflow-x: auto;
 }
 
+.car-reg-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+  color: #74776c;
+  font-size: 12px;
+}
+
+.car-reg-pagination button {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fffdf8;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.car-reg-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.car-reg-generation-error {
+  margin: 12px 0;
+  color: #b42318;
+  font-weight: 700;
+}
+
 .car-reg-selected-table {
   width: 100%;
   border-collapse: collapse;
