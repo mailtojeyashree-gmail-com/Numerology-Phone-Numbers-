@@ -157,7 +157,7 @@ const carRegNumberChart = [
   { value: 8, letters: ['F', 'P', '', '', ''] },
 ]
 
-function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPair, perBhavamLimit = 10) {
+function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPair) {
   const luckyPairs = parseEntries(luckyNumbers, true)
   const allowedValues = new Set(luckyPairs)
   const allowedDigitSums = new Set(luckyPairs.map(Number))
@@ -175,10 +175,9 @@ function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPa
 
     const bhavamKey = digitBhavam.join('/')
     const group = matchesByBhavam.get(bhavamKey) ?? []
+    matchesByBhavam.set(bhavamKey, group)
 
     for (const pair of luckyPairs) {
-      if (group.length >= perBhavamLimit) break
-
       const firstDigitValue = digitValue(pair[0])
       const secondDigitValue = digitValue(pair[1])
       const firstLetters = alphabet.filter((letter) => allowedValues.has(
@@ -192,7 +191,6 @@ function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPa
         for (const secondLetter of secondLetters) {
           for (const thirdLetter of alphabet) {
             for (const fourthLetter of alphabet) {
-              if (group.length >= perBhavamLimit) break
               const thirdCheck = `${letterDigitValues.get(thirdLetter)}${letterDigitValues.get(fourthLetter)}`
               if (!allowedValues.has(thirdCheck)) continue
 
@@ -230,14 +228,12 @@ function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPa
       }
     }
 
-    if (group.length > 0) matchesByBhavam.set(bhavamKey, group)
   }
 
   const bhavamGroups = [...matchesByBhavam.values()]
   const matches = []
   let groupIndex = 0
-  const totalLimit = perBhavamLimit * 12
-  while (matches.length < totalLimit && bhavamGroups.some((group) => group.length > 0)) {
+  while (bhavamGroups.some((group) => group.length > 0)) {
     const group = bhavamGroups[groupIndex % bhavamGroups.length]
     if (group.length > 0) matches.push(group.shift())
     groupIndex += 1
@@ -915,14 +911,14 @@ function App() {
                     : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
                       ? 'Every number starts with 074; all four following pairs and the digit total must be in the selected initials lucky numbers'
                       : manithaNaadiCombinationResults.generator === 'GEN-CAR-REG'
-                        ? 'All three pair checks and the digit sum must match the selected initials lucky numbers; up to 10 registrations per reachable Bhavam'
+                        ? 'All matching registrations with three valid pair checks and a valid digit sum'
                       : 'Total includes combinations with repeated values; distinct count excludes repeats'}>
                     {manithaNaadiCombinationResults.generator === 'GEN-5'
                       ? `${manithaNaadiCombinationResults.matches.length} NUMBERS`
                       : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
                         ? `${manithaNaadiCombinationResults.matches.length} MATCHES`
                         : manithaNaadiCombinationResults.generator === 'GEN-CAR-REG'
-                          ? `${manithaNaadiCombinationResults.matches.length.toLocaleString()} SHOWN · UP TO 120`
+                          ? `${manithaNaadiCombinationResults.matches.length.toLocaleString()} REGISTRATIONS`
                           : `${manithaNaadiCombinationResults.possibleCombinationsWithRepetition.toLocaleString()} POSSIBLE WITH REPEATS · ${manithaNaadiCombinationResults.combinationsChecked.toLocaleString()} DISTINCT${manithaNaadiCombinationResults.generator === 'GEN-4' && manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : manithaNaadiCombinationResults.generator === 'GEN-6' && manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : ''}`}
                   </span>
                 </div>
