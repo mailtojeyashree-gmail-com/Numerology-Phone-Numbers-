@@ -396,6 +396,7 @@ function App() {
   const [manithaNaadiDigitSumFilter, setManithaNaadiDigitSumFilter] = useState('')
   const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
   const [carRegistrationDigitSumFilters, setCarRegistrationDigitSumFilters] = useState([])
+  const [carRegistrationLuckyPairFilters, setCarRegistrationLuckyPairFilters] = useState([])
   const [carRegistrationPairFilterOpen, setCarRegistrationPairFilterOpen] = useState(false)
   const [carRegistrationPairFilterDraft, setCarRegistrationPairFilterDraft] = useState('')
   const [carRegistrationPairFilters, setCarRegistrationPairFilters] = useState([])
@@ -637,9 +638,13 @@ function App() {
     : []
   const carRegistrationDigitSums = [...new Set(carRegistrationMatches.map((match) => match.digitSum))]
     .sort((first, second) => first - second)
+  const carRegistrationLuckyPairs = [...new Set(carRegistrationMatches.map((match) => match.pair))]
+    .sort((first, second) => Number(first) - Number(second))
   const visibleCarRegistrationMatches = carRegistrationMatches.filter((match) => (
     (carRegistrationDigitSumFilters.length === 0
       || carRegistrationDigitSumFilters.includes(String(match.digitSum)))
+    && (carRegistrationLuckyPairFilters.length === 0
+      || carRegistrationLuckyPairFilters.includes(match.pair))
     && (carRegistrationPairFilters.length === 0
       || carRegistrationPairFilters.includes(match.checks.join(',')))
   ))
@@ -672,6 +677,22 @@ function App() {
         allowButtonActionRef.current = true
         button.click()
         allowButtonActionRef.current = false
+        window.setTimeout(() => {
+          isButtonActionLoadingRef.current = false
+          setIsButtonActionLoading(false)
+        }, 300)
+      })
+    })
+  }
+
+  function deferCarRegistrationFilterUpdate(updateFilter) {
+    if (isButtonActionLoadingRef.current) return
+
+    isButtonActionLoadingRef.current = true
+    setIsButtonActionLoading(true)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        updateFilter()
         window.setTimeout(() => {
           isButtonActionLoadingRef.current = false
           setIsButtonActionLoading(false)
@@ -905,6 +926,7 @@ function App() {
                         setActiveManithaNaadiGenerator(generator)
                         if (generator === 'GEN-CAR-REG') {
                           setCarRegistrationDigitSumFilters([])
+                          setCarRegistrationLuckyPairFilters([])
                           setCarRegistrationPairFilters([])
                           setCarRegistrationPairFilterDraft('')
                           setCarRegistrationPairFilterError('')
@@ -1161,7 +1183,35 @@ function App() {
                         <thead>
                           <tr>
                             <th scope="col">Initials</th>
-                            <th scope="col">Lucky pair</th>
+                            <th scope="col">
+                              <div className="car-reg-digit-sum-filter" role="group" aria-label="Filter car registrations by lucky pair">
+                                <span>Lucky pair</span>
+                                <div className="car-reg-digit-sum-options">
+                                  {carRegistrationLuckyPairs.map((pair) => {
+                                    const value = String(pair)
+                                    return (
+                                      <label key={pair}>
+                                        <input
+                                          type="checkbox"
+                                          checked={carRegistrationLuckyPairFilters.includes(value)}
+                                          onChange={(event) => {
+                                            const { checked } = event.target
+                                            deferCarRegistrationFilterUpdate(() => {
+                                              setCarRegistrationLuckyPairFilters((selected) => (
+                                                checked
+                                                  ? [...selected, value]
+                                                  : selected.filter((selectedValue) => selectedValue !== value)
+                                              ))
+                                            })
+                                          }}
+                                        />
+                                        {pair}
+                                      </label>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            </th>
                             <th scope="col">Registration</th>
                             <th scope="col">
                               <div className="car-reg-pair-checks-heading">
@@ -1198,11 +1248,16 @@ function App() {
                                         <input
                                           type="checkbox"
                                           checked={carRegistrationDigitSumFilters.includes(value)}
-                                          onChange={(event) => setCarRegistrationDigitSumFilters((selected) => (
-                                            event.target.checked
-                                              ? [...selected, value]
-                                              : selected.filter((selectedValue) => selectedValue !== value)
-                                          ))}
+                                          onChange={(event) => {
+                                            const { checked } = event.target
+                                            deferCarRegistrationFilterUpdate(() => {
+                                              setCarRegistrationDigitSumFilters((selected) => (
+                                                checked
+                                                  ? [...selected, value]
+                                                  : selected.filter((selectedValue) => selectedValue !== value)
+                                              ))
+                                            })
+                                          }}
                                         />
                                         {digitSum}
                                       </label>
@@ -1369,7 +1424,7 @@ function App() {
                         </div>
                       </section>
                     )}
-                    {carRegistrationPairFilters.length > 0 && (
+                    {(carRegistrationPairFilters.length > 0 || carRegistrationLuckyPairFilters.length > 0) && (
                       <section className="car-reg-filtered-registrations" aria-label="Filtered registrations">
                         <div className="workspace-results-heading">
                           <h2>Filtered registrations</h2>
