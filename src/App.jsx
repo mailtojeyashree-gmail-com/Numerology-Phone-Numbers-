@@ -272,6 +272,7 @@ function App() {
   const [carRegistrationDigitSumFilters, setCarRegistrationDigitSumFilters] = useState([])
   const [carRegistrationLuckyPairFilters, setCarRegistrationLuckyPairFilters] = useState([])
   const [carRegistrationPage, setCarRegistrationPage] = useState(0)
+  const [carRegistrationSortDirection, setCarRegistrationSortDirection] = useState(null)
   const [carRegistrationCombinationPage, setCarRegistrationCombinationPage] = useState(0)
   const [filteredCarRegistrationPage, setFilteredCarRegistrationPage] = useState(0)
   const [mobileNumberPage, setMobileNumberPage] = useState(0)
@@ -612,6 +613,12 @@ function App() {
     && (carRegistrationPairFilters.length === 0
       || carRegistrationPairFilters.includes(match.checks.join(',')))
   ))
+  const sortedCarRegistrationMatches = carRegistrationSortDirection
+    ? [...visibleCarRegistrationMatches].sort((first, second) => (
+      first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
+      * (carRegistrationSortDirection === 'asc' ? 1 : -1)
+    ))
+    : visibleCarRegistrationMatches
   const carRegistrationUniquePairs = [...new Set(
     visibleCarRegistrationMatches.flatMap((match) => match.checks),
   )]
@@ -627,7 +634,7 @@ function App() {
   const filteredCarRegistrations = [...new Set(
     visibleCarRegistrationMatches.map((match) => match.registration),
   )]
-  const pagedCarRegistrationMatches = visibleCarRegistrationMatches.slice(
+  const pagedCarRegistrationMatches = sortedCarRegistrationMatches.slice(
     carRegistrationPage * CAR_REGISTRATION_PAGE_SIZE,
     (carRegistrationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
   )
@@ -1238,7 +1245,30 @@ function App() {
                                 </div>
                               </div>
                             </th>
-                            <th scope="col">Registration</th>
+                            <th
+                              scope="col"
+                              aria-sort={carRegistrationSortDirection === 'asc'
+                                ? 'ascending'
+                                : carRegistrationSortDirection === 'desc' ? 'descending' : 'none'}
+                            >
+                              <button
+                                className="car-reg-sort-button"
+                                type="button"
+                                onClick={() => {
+                                  setCarRegistrationSortDirection((direction) => (
+                                    direction === 'asc' ? 'desc' : 'asc'
+                                  ))
+                                  setCarRegistrationPage(0)
+                                }}
+                              >
+                                Registration
+                                <span aria-hidden="true">
+                                  {carRegistrationSortDirection === 'asc'
+                                    ? ' ↑'
+                                    : carRegistrationSortDirection === 'desc' ? ' ↓' : ' ↕'}
+                                </span>
+                              </button>
+                            </th>
                             <th scope="col">
                               <div className="car-reg-pair-checks-heading">
                                 <span>Pair checks</span>

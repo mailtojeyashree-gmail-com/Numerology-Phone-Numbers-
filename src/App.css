@@ -1545,6 +1545,22 @@
   opacity: 0.45;
 }
 
+.car-reg-sort-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: inherit;
+  white-space: nowrap;
+}
+
+.car-reg-sort-button:focus-visible {
+  outline: 2px solid var(--moss);
+  outline-offset: 3px;
+}
+
 .car-reg-generation-error {
   margin: 12px 0;
   color: #b42318;
