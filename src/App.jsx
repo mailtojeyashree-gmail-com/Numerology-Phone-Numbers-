@@ -250,51 +250,6 @@ function calculateCombinationMatches(values, expectedValue, pairCount = 2, allow
   }
 }
 
-function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiChartNumbersByPair, include85 = true) {
-  const luckyPairs = [...new Set(parseEntries(luckyNumbers, true))]
-  const allowedValues = new Set(luckyPairs)
-  const matches = []
-  let combinationsChecked = 0
-  const selectedPairs = []
-
-  function generatePairCombinations() {
-    if (selectedPairs.length === 4) {
-      combinationsChecked += 1
-      const number = `074${selectedPairs.join('')}`
-      if (profile === 'MJ' && !include85 && number.includes('85')) return
-      const total = sumDigits(number)
-      if (!allowedValues.has(String(total).padStart(2, '0'))) return
-
-      matches.push({
-        number,
-        values: [...selectedPairs],
-        total,
-        reducedTotal: total,
-        rasi: rasiChartNumbersByPair.get(String(total).padStart(2, '0'))?.join('/') ?? '—',
-        profile,
-      })
-      return
-    }
-
-    for (const pair of luckyPairs) {
-      if (selectedPairs.includes(pair)) continue
-      selectedPairs.push(pair)
-      generatePairCombinations()
-      selectedPairs.pop()
-    }
-  }
-
-  generatePairCombinations()
-
-  return {
-    matches,
-    repeatedMatches: [],
-    nonMatches: [],
-    combinationsChecked,
-    possibleCombinationsWithRepetition: luckyPairs.length ** 4,
-  }
-}
-
 function App() {
   const [isButtonActionLoading, setIsButtonActionLoading] = useState(false)
   const isButtonActionLoadingRef = useRef(false)
@@ -319,6 +274,8 @@ function App() {
   const [carRegistrationPage, setCarRegistrationPage] = useState(0)
   const [carRegistrationCombinationPage, setCarRegistrationCombinationPage] = useState(0)
   const [filteredCarRegistrationPage, setFilteredCarRegistrationPage] = useState(0)
+  const [mobileNumberPage, setMobileNumberPage] = useState(0)
+  const [mobileUniqueCombinationPage, setMobileUniqueCombinationPage] = useState(0)
   const [carRegistrationGenerationError, setCarRegistrationGenerationError] = useState('')
   const [carRegistrationPairFilterOpen, setCarRegistrationPairFilterOpen] = useState(false)
   const [carRegistrationPairFilterDraft, setCarRegistrationPairFilterDraft] = useState('')
@@ -331,7 +288,7 @@ function App() {
 
   useEffect(() => () => carRegistrationWorkerRef.current?.terminate(), [])
 
-  function finishCarRegistrationGeneration() {
+  function finishGeneratorWorker() {
     keepButtonActionLoadingRef.current = false
     carRegistrationWorkerRef.current?.terminate()
     carRegistrationWorkerRef.current = null
@@ -339,56 +296,64 @@ function App() {
     setIsButtonActionLoading(false)
   }
 
-  function generateCarRegistrationsInWorker(luckyNumbers, profile) {
+  function generateInWorker(generator, luckyNumbers, profile, include85 = true) {
     setCarRegistrationGenerationError('')
     setManithaNaadiCombinationResults(null)
     keepButtonActionLoadingRef.current = true
+    isButtonActionLoadingRef.current = true
+    setIsButtonActionLoading(true)
     carRegistrationWorkerRef.current?.terminate()
 
     try {
-      const worker = new Worker(new URL('./carRegistration.worker.js', import.meta.url), { type: 'module' })
+      const worker = generator === 'GEN-MOBILE-NUMBERS'
+        ? new Worker(new URL('./mobileNumber.worker.js', import.meta.url), { type: 'module' })
+        : new Worker(new URL('./carRegistration.worker.js', import.meta.url), { type: 'module' })
       carRegistrationWorkerRef.current = worker
       worker.onmessage = (event) => {
         if (carRegistrationWorkerRef.current !== worker) return
         if (event.data.error) {
           setCarRegistrationGenerationError(event.data.error)
-          finishCarRegistrationGeneration()
+          finishGeneratorWorker()
           return
         }
         const generatorResults = event.data.results
-        generatorResults.generatedNumbers = [...new Set(
-          [...generatorResults.matches, ...generatorResults.repeatedMatches]
-            .map((result) => result.number ?? result.registration ?? result.values.join('')),
-        )]
+        if (generator !== 'GEN-MOBILE-NUMBERS') {
+          generatorResults.generatedNumbers = [...new Set(
+            [...generatorResults.matches, ...generatorResults.repeatedMatches]
+              .map((result) => result.number ?? result.registration ?? result.values.join('')),
+          )]
+        }
         setManithaNaadiCombinationResults({
-          generator: 'GEN-CAR-REG',
+          generator,
           profile,
           ...generatorResults,
         })
-        finishCarRegistrationGeneration()
+        finishGeneratorWorker()
       }
       worker.onerror = (event) => {
         event.preventDefault()
         if (carRegistrationWorkerRef.current !== worker) return
         setCarRegistrationGenerationError(
-          event.message || 'Car-registration generation failed. Please try again.',
+          event.message || `${generator} generation failed. Please try again.`,
         )
-        finishCarRegistrationGeneration()
+        finishGeneratorWorker()
       }
       worker.onmessageerror = () => {
         if (carRegistrationWorkerRef.current !== worker) return
-        setCarRegistrationGenerationError('Could not read the car-registration generation results.')
-        finishCarRegistrationGeneration()
+        setCarRegistrationGenerationError(`Could not read the ${generator} generation results.`)
+        finishGeneratorWorker()
       }
       worker.postMessage({
+        profile,
         luckyNumbers,
         rasiChartEntries: [...rasiChartNumbersByPair],
+        include85,
       })
     } catch (error) {
       setCarRegistrationGenerationError(
-        error instanceof Error ? error.message : 'Could not start car-registration generation.',
+        error instanceof Error ? error.message : `Could not start ${generator} generation.`,
       )
-      finishCarRegistrationGeneration()
+      finishGeneratorWorker()
     }
   }
 
@@ -604,6 +569,12 @@ function App() {
   const visibleManithaNaadiTableRows = manithaNaadiDigitSumFilter.trim()
     ? manithaNaadiTableRows.filter((row) => String(row[3]) === manithaNaadiDigitSumFilter.trim())
     : manithaNaadiTableRows
+  const pagedManithaNaadiTableRows = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
+    ? visibleManithaNaadiTableRows.slice(
+      mobileNumberPage * CAR_REGISTRATION_PAGE_SIZE,
+      (mobileNumberPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
+    )
+    : visibleManithaNaadiTableRows
   const manithaNaadiUniqueDigitSums = [...new Set(manithaNaadiTableRows.map((row) => row[3]))]
     .sort((first, second) => first - second)
   const generatedNumberSet = new Set(manithaNaadiCombinationResults?.generatedNumbers ?? [])
@@ -612,13 +583,20 @@ function App() {
       .filter((row) => !['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8'].includes(manithaNaadiCombinationResults?.generator)
         || !manithaNaadiUniqueDigitSumSelection
         || String(row[3]) === manithaNaadiUniqueDigitSumSelection)
-      .filter((row) => generatedNumberSet.has(row[2]))
+      .filter((row) => manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
+        || generatedNumberSet.has(row[2]))
       .map((row) => row[1]
         .split(',')
         .map((pair) => pair.trim())
         .sort((first, second) => Number(first) - Number(second))
         .join(', ')),
   )]
+  const pagedUniqueGeneratedCombinations = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
+    ? uniqueGeneratedCombinations.slice(
+      mobileUniqueCombinationPage * CAR_REGISTRATION_PAGE_SIZE,
+      (mobileUniqueCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
+    )
+    : uniqueGeneratedCombinations
   const carRegistrationMatches = manithaNaadiCombinationResults?.generator === 'GEN-CAR-REG'
     ? manithaNaadiCombinationResults.matches
     : []
@@ -955,22 +933,26 @@ function App() {
                           .filter((number) => !excludedNumbers.has(number))
                           .join(', ')
                         if (generator === 'GEN-CAR-REG') {
-                          generateCarRegistrationsInWorker(
+                          generateInWorker(
+                            generator,
                             calculationLuckyNumbers,
                             selectedManithaNaadiInitials,
                           )
                           return
                         }
+                        if (generator === 'GEN-MOBILE-NUMBERS') {
+                          setMobileNumberPage(0)
+                          generateInWorker(
+                            generator,
+                            luckyNumbers,
+                            selectedManithaNaadiInitials,
+                            includeMjMobile85,
+                          )
+                          return
+                        }
                         const generatorResults = generator === 'GEN-5'
                           ? calculateGen5Matches(calculationLuckyNumbers, calculationLuckyNumbers)
-                          : generator === 'GEN-MOBILE-NUMBERS'
-                            ? calculateManithaNaadiMobileMatches(
-                              selectedManithaNaadiInitials,
-                              luckyNumbers,
-                              rasiChartNumbersByPair,
-                              includeMjMobile85,
-                            )
-                            : generator === 'GEN-4'
+                          : generator === 'GEN-4'
                                 ? calculateGen4Matches(
                                   calculationLuckyNumbers,
                                   calculationLuckyNumbers,
@@ -1042,16 +1024,13 @@ function App() {
                             setIncludeMjMobile85(include85)
                             if (manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
                               && manithaNaadiCombinationResults.profile === 'MJ') {
-                              setManithaNaadiCombinationResults({
-                                generator: 'GEN-MOBILE-NUMBERS',
-                                profile: 'MJ',
-                                ...calculateManithaNaadiMobileMatches(
-                                  'MJ',
-                                  manithaNaadiLuckyNumbers.MJ,
-                                  rasiChartNumbersByPair,
-                                  include85,
-                                ),
-                              })
+                              setMobileNumberPage(0)
+                              generateInWorker(
+                                'GEN-MOBILE-NUMBERS',
+                                manithaNaadiLuckyNumbers.MJ,
+                                'MJ',
+                                include85,
+                              )
                             }
                           }}
                         />
@@ -1128,7 +1107,13 @@ function App() {
                                       aria-label="Filter results by digit sum"
                                       placeholder="Filter"
                                       value={manithaNaadiDigitSumFilter}
-                                      onChange={(event) => setManithaNaadiDigitSumFilter(event.target.value)}
+                                      onChange={(event) => {
+                                        setManithaNaadiDigitSumFilter(event.target.value)
+                                        if (manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS') {
+                                          setMobileNumberPage(0)
+                                          setMobileUniqueCombinationPage(0)
+                                        }
+                                      }}
                                     />
                                   </span>
                                 ) : heading}
@@ -1141,7 +1126,7 @@ function App() {
                             <tr>
                               <td colSpan={manithaNaadiTableHeaders.length}>No results match this digit sum.</td>
                             </tr>
-                          ) : visibleManithaNaadiTableRows.map((row, index) => (
+                          ) : pagedManithaNaadiTableRows.map((row, index) => (
                             <tr
                               className={(
                                 manithaNaadiCombinationResults.generator === 'GEN-5'
@@ -1166,6 +1151,15 @@ function App() {
                         </tbody>
                       </table>
                     </div>
+                    {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
+                      <ResultPagination
+                        page={mobileNumberPage}
+                        pageSize={CAR_REGISTRATION_PAGE_SIZE}
+                        totalItems={visibleManithaNaadiTableRows.length}
+                        onPageChange={setMobileNumberPage}
+                        label="Mobile numbers"
+                      />
+                    )}
                     <div className="unique-combination-numbers" aria-live="polite">
                       {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8'].includes(manithaNaadiCombinationResults.generator) && (
                         <label className="unique-digit-sum-select" htmlFor="unique-digit-sum-select">
@@ -1186,11 +1180,20 @@ function App() {
                         UNIQUE COMBINATIONS · {uniqueGeneratedCombinations.length}
                       </span>
                       <p>
-                        {uniqueGeneratedCombinations.length > 0
-                          ? uniqueGeneratedCombinations.join('\n')
+                        {pagedUniqueGeneratedCombinations.length > 0
+                          ? pagedUniqueGeneratedCombinations.join('\n')
                           : 'No combinations to display.'}
                       </p>
                     </div>
+                    {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
+                      <ResultPagination
+                        page={mobileUniqueCombinationPage}
+                        pageSize={CAR_REGISTRATION_PAGE_SIZE}
+                        totalItems={uniqueGeneratedCombinations.length}
+                        onPageChange={setMobileUniqueCombinationPage}
+                        label="Unique mobile-number combinations"
+                      />
+                    )}
                     <button
                       className="combination-generate-button manitha-results-download"
                       type="button"
