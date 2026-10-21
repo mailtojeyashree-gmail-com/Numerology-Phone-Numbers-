@@ -6,6 +6,46 @@
   flex-direction: column;
 }
 
+.button-action-loading-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(244, 241, 232, 0.78);
+  color: var(--ink);
+  cursor: wait;
+}
+
+.button-action-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.button-action-loading-logo {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border: 3px solid var(--line);
+  border-top-color: var(--moss);
+  border-right-color: var(--moss);
+  border-radius: 50%;
+  color: var(--coral);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 29px;
+  font-style: italic;
+  animation: button-action-spin 850ms linear infinite;
+}
+
+@keyframes button-action-spin {
+  to { transform: rotate(360deg); }
+}
+
 .topbar,
 .page-footer {
   display: flex;

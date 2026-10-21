@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import './App.css'
 import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOption'
 import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
@@ -379,6 +379,9 @@ function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiChartNumb
 }
 
 function App() {
+  const [isButtonActionLoading, setIsButtonActionLoading] = useState(false)
+  const isButtonActionLoadingRef = useRef(false)
+  const allowButtonActionRef = useRef(false)
   const [activePage, setActivePage] = useState('manitha-naadi')
   const [selectedManithaNaadiInitials, setSelectedManithaNaadiInitials] = useState('MJ')
   const [manithaNaadiLuckyNumbers, setManithaNaadiLuckyNumbers] = useState(
@@ -617,8 +620,33 @@ function App() {
     )
   })
 
+  function deferButtonAction(event) {
+    if (allowButtonActionRef.current) return
+
+    const button = event.target instanceof Element ? event.target.closest('button') : null
+    if (!button) return
+
+    event.preventDefault()
+    event.stopPropagation()
+    if (isButtonActionLoadingRef.current) return
+
+    isButtonActionLoadingRef.current = true
+    setIsButtonActionLoading(true)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        allowButtonActionRef.current = true
+        button.click()
+        allowButtonActionRef.current = false
+        window.setTimeout(() => {
+          isButtonActionLoadingRef.current = false
+          setIsButtonActionLoading(false)
+        }, 300)
+      })
+    })
+  }
+
   return (
-    <main className="app-shell">
+    <main className="app-shell" onClickCapture={deferButtonAction}>
       <header className="topbar">
         <a className="wordmark" href="#top" aria-label="Number Signal home" onClick={() => setActivePage('manitha-naadi')}>
           <span className="wordmark-mark" aria-hidden="true">n.</span>
@@ -1144,7 +1172,7 @@ function App() {
                           <table className="car-reg-selected-table">
                             <thead>
                               <tr>
-                                <th scope="col">Combination</th>
+                                <th scope="col">Combination ({carRegistrationCombinationCounts.size})</th>
                                 <th scope="col">Unique pairs</th>
                               </tr>
                             </thead>
@@ -1273,6 +1301,14 @@ function App() {
         <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : 'மனித நாடி LUCKY NUMBERS'}</span>
         <span>EDITABLE IN THIS BROWSER</span>
       </footer>
+      {isButtonActionLoading && (
+        <div className="button-action-loading-overlay" role="status" aria-live="polite" aria-label="Loading">
+          <div className="button-action-loading-content">
+            <span className="button-action-loading-logo" aria-hidden="true">n.</span>
+            <span>Loading, please wait...</span>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
