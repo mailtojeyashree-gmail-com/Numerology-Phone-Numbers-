@@ -974,6 +974,10 @@
   margin-top: 10px;
 }
 
+.car-reg-toolbar-download {
+  white-space: nowrap;
+}
+
 .combination-generator-option {
   display: contents;
 }
@@ -1183,6 +1187,59 @@
   font-weight: 700;
 }
 
+.car-reg-digit-sum-filter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.car-reg-digit-sum-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  max-width: 220px;
+}
+
+.car-reg-digit-sum-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.car-reg-digit-sum-options input {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: var(--moss);
+}
+
+.car-reg-rajanilai-calculation {
+  display: flex;
+  gap: 10px;
+}
+
+.car-reg-rajanilai-pair-match,
+.car-reg-rajanilai-match {
+  color: #1d6b43;
+  font-weight: 800;
+}
+
+.car-reg-rajanilai-pair-miss,
+.car-reg-rajanilai-miss {
+  color: #c62828;
+  font-weight: 800;
+}
+
+.car-reg-rajanilai-match,
+.car-reg-rajanilai-miss {
+  font-size: 18px;
+}
+
 .digit-sum-filter-heading {
   display: inline-flex;
   align-items: center;
@@ -1277,6 +1334,53 @@
 
 .manitha-results-download {
   margin-top: 12px;
+}
+
+.car-reg-selected-combinations {
+  margin-top: 20px;
+}
+
+.car-reg-selected-combinations h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.car-reg-selected-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.car-reg-selected-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fffdf8;
+}
+
+.car-reg-selected-table th,
+.car-reg-selected-table td {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+}
+
+.car-reg-selected-table th {
+  background: var(--paper-deep);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.car-reg-selected-table td {
+  font: 700 14px/1.5 'SFMono-Regular', Consolas, monospace;
+  white-space: nowrap;
+}
+
+.car-reg-selected-table td[rowspan] {
+  vertical-align: middle;
+  white-space: normal;
 }
 
 .unique-combination-numbers {

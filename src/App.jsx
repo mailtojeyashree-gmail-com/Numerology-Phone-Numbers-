@@ -21,6 +21,10 @@ const manithaNaadiLuckyNumberDefaults = {
   MA: '06, 16, 33, 42, 51, 52, 73, 79, 84, 85, 87, 88, 93, 97, 99, 92, 54',
   M: '10, 14, 20, 32, 45, 54, 56, 64, 74, 80, 89, 92, 95, 68, 41, 04, 08',
 }
+const manithaNaadiRajanilaiNumbers = new Set([
+  2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 26, 32, 33, 39, 41, 42, 45, 51, 52, 54,
+  56, 64, 66, 68, 72, 73, 74, 77, 79, 80, 84, 85, 87, 88, 89, 92, 93, 95, 97, 99,
+])
 const manithaNaadiGen5NumerologistNumbers = {
   MA: new Set(['73887', '99887', '42887', '51887', '73797', '99797']),
   M: new Set(['68685', '95685', '89664', '32414', '29414', '89414']),
@@ -388,6 +392,7 @@ function App() {
   const [activeManithaNaadiGenerator, setActiveManithaNaadiGenerator] = useState(null)
   const [manithaNaadiDigitSumFilter, setManithaNaadiDigitSumFilter] = useState('')
   const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
+  const [carRegistrationDigitSumFilters, setCarRegistrationDigitSumFilters] = useState([])
   const [includeMjMobile85, setIncludeMjMobile85] = useState(true)
   const [manualCombinationTarget, setManualCombinationTarget] = useState('')
   const [manualCombinationResults, setManualCombinationResults] = useState(null)
@@ -461,16 +466,20 @@ function App() {
       ${style('HighlightPairRight', { background: '#DDEFE3', color: '#1D6B43', bold: true, alignment: 'Right' })}
       ${style('CarBoldLeft', { color: '#26332C', bold: true })}
       ${style('CarBoldRight', { color: '#26332C', bold: true, alignment: 'Right' })}
+      ${style('RajanilaiMatchLeft', { color: '#1D6B43', bold: true })}
+      ${style('RajanilaiMissLeft', { color: '#C62828', bold: true })}
     </Styles>`
     const isCarRegistration = manithaNaadiCombinationResults.generator === 'GEN-CAR-REG'
     const exportRows = isCarRegistration
       ? [
-        ['Initials', 'Lucky pair', 'Registration', 'Pair checks', 'Digit sum calculation', 'Digit sum', 'Digit Bhavam'],
+        ['Initials', 'Lucky pair', 'Registration', 'Pair checks', 'Rajanilai calculation', 'Rajanilai match', 'Digit sum calculation', 'Digit sum', 'Digit Bhavam'],
         ...manithaNaadiCombinationResults.matches.map((match) => [
           manithaNaadiCombinationResults.profile,
           match.pair,
           match.registration,
           match.checks.join(', '),
+          match.checks.map((check) => `${check} ${manithaNaadiRajanilaiNumbers.has(Number(check)) ? '✓' : '✗'}`).join(' '),
+          `${match.digitSum} ${manithaNaadiRajanilaiNumbers.has(match.digitSum) ? '✓✓' : '✗✗'}`,
           match.digitSumCalculation,
           match.digitSum,
           rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0'))?.join('/') ?? '—',
@@ -485,17 +494,21 @@ function App() {
           ? manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile]
           : null
     const headerRow = exportRows[0].map((value, index) => {
-      const isRightAligned = (isCarRegistration ? [1, 5] : [1, 2, 3, 5]).includes(index)
+      const isRightAligned = (isCarRegistration ? [1, 7] : [1, 2, 3, 5]).includes(index)
       return `<Cell ss:StyleID="${isRightAligned ? 'HeaderRight' : 'HeaderLeft'}"><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`
     }).join('')
     const dataRows = exportRows.slice(1).map((row) => {
       const isHighlighted = !isCarRegistration && highlightedNumbers?.has(row[2])
       const cells = row.map((value, index) => {
-        const isRightAligned = (isCarRegistration ? [1, 5] : [1, 2, 3, 5]).includes(index)
+        const isRightAligned = (isCarRegistration ? [1, 7] : [1, 2, 3, 5]).includes(index)
         const isBold = isCarRegistration
-          ? index === 2 || index === 6
+          ? index === 2 || index === 8
           : index === 4 || index === 5 || (isHighlighted && [1, 2].includes(index))
-        const styleId = isHighlighted
+        const styleId = isCarRegistration && index === 5
+          ? manithaNaadiRajanilaiNumbers.has(Number(row[7]))
+            ? 'RajanilaiMatchLeft'
+            : 'RajanilaiMissLeft'
+          : isHighlighted
           ? [1, 2].includes(index)
             ? 'HighlightPair'
             : isBold ? 'HighlightBold' : 'Highlight'
@@ -503,7 +516,8 @@ function App() {
             ? isBold ? 'CarBold' : 'Body'
             : isBold ? 'BodyBold' : 'Body'
         const alignment = isRightAligned ? 'Right' : 'Left'
-        return `<Cell ss:StyleID="${styleId}${alignment}"><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`
+        const cellStyleId = isCarRegistration && index === 5 ? styleId : `${styleId}${alignment}`
+        return `<Cell ss:StyleID="${cellStyleId}"><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`
       }).join('')
       return `<Row>${cells}</Row>`
     })
@@ -582,6 +596,26 @@ function App() {
         .sort((first, second) => Number(first) - Number(second))
         .join(', ')),
   )]
+  const carRegistrationMatches = manithaNaadiCombinationResults?.generator === 'GEN-CAR-REG'
+    ? manithaNaadiCombinationResults.matches
+    : []
+  const carRegistrationDigitSums = [...new Set(carRegistrationMatches.map((match) => match.digitSum))]
+    .sort((first, second) => first - second)
+  const visibleCarRegistrationMatches = carRegistrationMatches.filter((match) => (
+    carRegistrationDigitSumFilters.length === 0
+      || carRegistrationDigitSumFilters.includes(String(match.digitSum))
+  ))
+  const carRegistrationUniquePairs = [...new Set(
+    visibleCarRegistrationMatches.flatMap((match) => match.checks),
+  )]
+  const carRegistrationCombinationCounts = new Map()
+  visibleCarRegistrationMatches.forEach((match) => {
+    const combination = match.checks.join('')
+    carRegistrationCombinationCounts.set(
+      combination,
+      (carRegistrationCombinationCounts.get(combination) ?? 0) + 1,
+    )
+  })
 
   return (
     <main className="app-shell">
@@ -775,6 +809,7 @@ function App() {
                           : generator === 'GEN-5' ? 'Generate three-pair checks' : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       onClick={() => {
                         setActiveManithaNaadiGenerator(generator)
+                        if (generator === 'GEN-CAR-REG') setCarRegistrationDigitSumFilters([])
                         setManithaNaadiUniqueDigitSumSelection('')
                         setManithaNaadiEmailResults(null)
                         const luckyNumbers = manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]
@@ -887,6 +922,15 @@ function App() {
                     </div>
                   )
                 ))}
+                {manithaNaadiCombinationResults?.generator === 'GEN-CAR-REG' && (
+                  <button
+                    className="combination-generate-button car-reg-toolbar-download"
+                    type="button"
+                    onClick={exportManithaNaadiResults}
+                  >
+                    Download as Excel
+                  </button>
+                )}
               </div>
               {activeManithaNaadiGenerator === 'GEN-EMAIL'
                 && manithaNaadiEmailResults?.initials === selectedManithaNaadiInitials && (
@@ -1021,38 +1065,105 @@ function App() {
                             <th scope="col">Lucky pair</th>
                             <th scope="col">Registration</th>
                             <th scope="col">Pair checks</th>
+                            <th scope="col">Rajanilai calculation</th>
+                            <th scope="col">Rajanilai match</th>
                             <th scope="col">Digit sum calculation</th>
-                            <th scope="col">Digit sum</th>
+                            <th scope="col">
+                              <div className="car-reg-digit-sum-filter" role="group" aria-label="Filter car registrations by digit sum">
+                                <span>Digit sum</span>
+                                <div className="car-reg-digit-sum-options">
+                                  {carRegistrationDigitSums.map((digitSum) => {
+                                    const value = String(digitSum)
+                                    return (
+                                      <label key={digitSum}>
+                                        <input
+                                          type="checkbox"
+                                          checked={carRegistrationDigitSumFilters.includes(value)}
+                                          onChange={(event) => setCarRegistrationDigitSumFilters((selected) => (
+                                            event.target.checked
+                                              ? [...selected, value]
+                                              : selected.filter((selectedValue) => selectedValue !== value)
+                                          ))}
+                                        />
+                                        {digitSum}
+                                      </label>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            </th>
                             <th scope="col">Digit Bhavam</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {manithaNaadiCombinationResults.matches.map((match, index) => (
+                          {visibleCarRegistrationMatches.map((match, index) => (
                             <tr key={`${match.registration}-${index}`}>
                               <td>{manithaNaadiCombinationResults.profile}</td>
                               <td>{match.pair}</td>
                               <td><strong>{match.registration}</strong></td>
                               <td>{match.checks.join(', ')}</td>
+                              <td>
+                                <div className="car-reg-rajanilai-calculation">
+                                  {match.checks.map((check, checkIndex) => {
+                                    const isMatch = manithaNaadiRajanilaiNumbers.has(Number(check))
+                                    return (
+                                      <span
+                                        className={isMatch ? 'car-reg-rajanilai-pair-match' : 'car-reg-rajanilai-pair-miss'}
+                                        key={`${check}-${checkIndex}`}
+                                      >
+                                        {check} {isMatch ? '✓' : '✗'}
+                                      </span>
+                                    )
+                                  })}
+                                </div>
+                              </td>
+                              <td className={manithaNaadiRajanilaiNumbers.has(match.digitSum) ? 'car-reg-rajanilai-match' : 'car-reg-rajanilai-miss'}>
+                                {match.digitSum} {manithaNaadiRajanilaiNumbers.has(match.digitSum) ? '✓✓' : '✗✗'}
+                              </td>
                               <td>{match.digitSumCalculation}</td>
                               <td>{match.digitSum}</td>
                               <td><strong>{rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0'))?.join('/') ?? '—'}</strong></td>
                             </tr>
                           ))}
-                          {manithaNaadiCombinationResults.matches.length === 0 ? (
+                          {visibleCarRegistrationMatches.length === 0 ? (
                             <tr>
-                              <td colSpan={7}>No registrations were generated.</td>
+                              <td colSpan={9}>
+                                {carRegistrationMatches.length === 0
+                                  ? 'No registrations were generated.'
+                                  : 'No registrations match the selected digit sums.'}
+                              </td>
                             </tr>
                           ) : null}
                         </tbody>
                       </table>
                     </div>
-                    <button
-                      className="combination-generate-button manitha-results-download"
-                      type="button"
-                      onClick={exportManithaNaadiResults}
-                    >
-                      Download as Excel
-                    </button>
+                    {visibleCarRegistrationMatches.length > 0 && (
+                      <section className="car-reg-selected-combinations" aria-label="Selected registration combinations">
+                        <h3>Selected combinations</h3>
+                        <div className="car-reg-selected-table-wrap">
+                          <table className="car-reg-selected-table">
+                            <thead>
+                              <tr>
+                                <th scope="col">Combination</th>
+                                <th scope="col">Unique pairs</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[...carRegistrationCombinationCounts].map(([combination, count], index) => (
+                                <tr key={combination}>
+                                  <td>{combination} ({count})</td>
+                                  {index === 0 && (
+                                    <td rowSpan={carRegistrationCombinationCounts.size}>
+                                      {carRegistrationUniquePairs.join(', ')}
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+                    )}
                   </>
                 ) : [
                   { title: 'Matching', combinations: manithaNaadiCombinationResults.matches },
