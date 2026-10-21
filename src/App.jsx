@@ -396,6 +396,10 @@ function App() {
   const [manithaNaadiDigitSumFilter, setManithaNaadiDigitSumFilter] = useState('')
   const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
   const [carRegistrationDigitSumFilters, setCarRegistrationDigitSumFilters] = useState([])
+  const [carRegistrationPairFilterOpen, setCarRegistrationPairFilterOpen] = useState(false)
+  const [carRegistrationPairFilterDraft, setCarRegistrationPairFilterDraft] = useState('')
+  const [carRegistrationPairFilters, setCarRegistrationPairFilters] = useState([])
+  const [carRegistrationPairFilterError, setCarRegistrationPairFilterError] = useState('')
   const [includeMjMobile85, setIncludeMjMobile85] = useState(true)
   const [manualCombinationTarget, setManualCombinationTarget] = useState('')
   const [manualCombinationResults, setManualCombinationResults] = useState(null)
@@ -475,7 +479,7 @@ function App() {
     const isCarRegistration = manithaNaadiCombinationResults.generator === 'GEN-CAR-REG'
     const exportRows = isCarRegistration
       ? [
-        ['Initials', 'Lucky pair', 'Registration', 'Pair checks', 'Rajanilai calculation', 'Rajanilai match', 'Digit sum calculation', 'Digit sum', 'Digit Bhavam'],
+        ['Initials', 'Lucky pair', 'Registration', 'Pair checks', 'Rajanilai calculation', 'Rajanilai match', 'Pair bhavam', 'Digit sum', 'Sum bhavam'],
         ...manithaNaadiCombinationResults.matches.map((match) => [
           manithaNaadiCombinationResults.profile,
           match.pair,
@@ -483,7 +487,7 @@ function App() {
           match.checks.join(', '),
           match.checks.map((check) => `${check} ${manithaNaadiRajanilaiNumbers.has(Number(check)) ? '✓' : '✗'}`).join(' '),
           `${match.digitSum} ${manithaNaadiRajanilaiNumbers.has(match.digitSum) ? '✓✓' : '✗✗'}`,
-          match.digitSumCalculation,
+          match.checks.map((check) => rasiChartNumbersByPair.get(check)?.join('/') ?? '—').join(', '),
           match.digitSum,
           rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0'))?.join('/') ?? '—',
         ]),
@@ -530,6 +534,35 @@ function App() {
     const link = document.createElement('a')
     link.href = downloadUrl
     link.download = `manitha-naadi-${manithaNaadiCombinationResults.generator.toLowerCase()}-${manithaNaadiCombinationResults.profile}-${new Date().toISOString().slice(0, 10)}.xls`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+  }
+
+  function exportFilteredCarRegistrations() {
+    const registrations = [...new Set(
+      visibleCarRegistrationMatches.map((match) => match.registration),
+    )]
+    const xmlEscape = (value) => String(value).replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&apos;',
+    })[character])
+    const rows = [
+      '<Row><Cell><Data ss:Type="String">Registration</Data></Cell></Row>',
+      ...registrations.map((registration) => (
+        `<Row><Cell><Data ss:Type="String">${xmlEscape(registration)}</Data></Cell></Row>`
+      )),
+    ].join('')
+    const workbook = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Registrations"><Table>${rows}</Table></Worksheet></Workbook>`
+    const blob = new Blob([workbook], { type: 'application/vnd.ms-excel;charset=utf-8' })
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `filtered-registrations-${selectedManithaNaadiInitials}-${new Date().toISOString().slice(0, 10)}.xls`
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -605,8 +638,10 @@ function App() {
   const carRegistrationDigitSums = [...new Set(carRegistrationMatches.map((match) => match.digitSum))]
     .sort((first, second) => first - second)
   const visibleCarRegistrationMatches = carRegistrationMatches.filter((match) => (
-    carRegistrationDigitSumFilters.length === 0
-      || carRegistrationDigitSumFilters.includes(String(match.digitSum))
+    (carRegistrationDigitSumFilters.length === 0
+      || carRegistrationDigitSumFilters.includes(String(match.digitSum)))
+    && (carRegistrationPairFilters.length === 0
+      || carRegistrationPairFilters.includes(match.checks.join(',')))
   ))
   const carRegistrationUniquePairs = [...new Set(
     visibleCarRegistrationMatches.flatMap((match) => match.checks),
@@ -643,6 +678,37 @@ function App() {
         }, 300)
       })
     })
+  }
+
+  function applyCarRegistrationPairFilter(event) {
+    event.preventDefault()
+    const lines = carRegistrationPairFilterDraft
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+    const parsedFilters = []
+    const invalidLines = []
+
+    lines.forEach((line, index) => {
+      const pairs = line.split(',').map((pair) => pair.trim())
+      if (pairs.length !== 3 || pairs.some((pair) => !/^\d{2}$/.test(pair))) {
+        invalidLines.push(index + 1)
+        return
+      }
+      const filter = pairs.join(',')
+      if (!parsedFilters.includes(filter)) parsedFilters.push(filter)
+    })
+
+    if (invalidLines.length > 0) {
+      setCarRegistrationPairFilterError(
+        `Enter exactly three two-digit pairs separated by commas on each line. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
+      )
+      return
+    }
+
+    setCarRegistrationPairFilters(parsedFilters)
+    setCarRegistrationPairFilterError('')
+    setCarRegistrationPairFilterOpen(false)
   }
 
   return (
@@ -837,7 +903,12 @@ function App() {
                           : generator === 'GEN-5' ? 'Generate three-pair checks' : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       onClick={() => {
                         setActiveManithaNaadiGenerator(generator)
-                        if (generator === 'GEN-CAR-REG') setCarRegistrationDigitSumFilters([])
+                        if (generator === 'GEN-CAR-REG') {
+                          setCarRegistrationDigitSumFilters([])
+                          setCarRegistrationPairFilters([])
+                          setCarRegistrationPairFilterDraft('')
+                          setCarRegistrationPairFilterError('')
+                        }
                         setManithaNaadiUniqueDigitSumSelection('')
                         setManithaNaadiEmailResults(null)
                         const luckyNumbers = manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]
@@ -1092,10 +1163,30 @@ function App() {
                             <th scope="col">Initials</th>
                             <th scope="col">Lucky pair</th>
                             <th scope="col">Registration</th>
-                            <th scope="col">Pair checks</th>
+                            <th scope="col">
+                              <div className="car-reg-pair-checks-heading">
+                                <span>Pair checks</span>
+                                <button
+                                  className="car-reg-pair-filter-button"
+                                  type="button"
+                                  aria-label="Filter car registrations by pair checks"
+                                  onClick={() => {
+                                    setCarRegistrationPairFilterDraft(
+                                      carRegistrationPairFilters.map((filter) => filter.replaceAll(',', ', ')).join('\n'),
+                                    )
+                                    setCarRegistrationPairFilterError('')
+                                    setCarRegistrationPairFilterOpen(true)
+                                  }}
+                                >
+                                  {carRegistrationPairFilters.length > 0
+                                    ? `Filter (${carRegistrationPairFilters.length})`
+                                    : 'Filter'}
+                                </button>
+                              </div>
+                            </th>
                             <th scope="col">Rajanilai calculation</th>
                             <th scope="col">Rajanilai match</th>
-                            <th scope="col">Digit sum calculation</th>
+                            <th scope="col">Pair bhavam</th>
                             <th scope="col">
                               <div className="car-reg-digit-sum-filter" role="group" aria-label="Filter car registrations by digit sum">
                                 <span>Digit sum</span>
@@ -1120,7 +1211,7 @@ function App() {
                                 </div>
                               </div>
                             </th>
-                            <th scope="col">Digit Bhavam</th>
+                            <th scope="col">Sum bhavam</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1148,9 +1239,36 @@ function App() {
                               <td className={manithaNaadiRajanilaiNumbers.has(match.digitSum) ? 'car-reg-rajanilai-match' : 'car-reg-rajanilai-miss'}>
                                 {match.digitSum} {manithaNaadiRajanilaiNumbers.has(match.digitSum) ? '✓✓' : '✗✗'}
                               </td>
-                              <td>{match.digitSumCalculation}</td>
+                              <td>
+                                <div className="car-reg-pair-bhavams" aria-label={`Pair bhavam: ${match.checks.map((check) => rasiChartNumbersByPair.get(check)?.join('/') ?? '—').join(', ')}`}>
+                                  {match.checks.map((check, checkIndex) => (
+                                    <span className="car-reg-pair-bhavam" key={`${check}-${checkIndex}`}>
+                                      {rasiChartNumbersByPair.get(check)?.length
+                                        ? rasiChartNumbersByPair.get(check).map((bhavam, bhavamIndex) => (
+                                          <span className="rasi-chart-sign-badge" key={`${bhavam}-${bhavamIndex}`}>
+                                            {bhavam}
+                                          </span>
+                                        ))
+                                        : '—'}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
                               <td>{match.digitSum}</td>
-                              <td><strong>{rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0'))?.join('/') ?? '—'}</strong></td>
+                              <td>
+                                <div
+                                  className="car-reg-pair-bhavams"
+                                  aria-label={`Sum bhavam: ${rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0'))?.join('/') ?? '—'}`}
+                                >
+                                  {rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0'))?.length
+                                    ? rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0')).map((bhavam, bhavamIndex) => (
+                                      <span className="rasi-chart-sign-badge" key={`${bhavam}-${bhavamIndex}`}>
+                                        {bhavam}
+                                      </span>
+                                    ))
+                                    : '—'}
+                                </div>
+                              </td>
                             </tr>
                           ))}
                           {visibleCarRegistrationMatches.length === 0 ? (
@@ -1165,6 +1283,65 @@ function App() {
                         </tbody>
                       </table>
                     </div>
+                    {carRegistrationPairFilterOpen && (
+                      <div className="car-reg-pair-filter-backdrop">
+                        <section
+                          className="car-reg-pair-filter-dialog"
+                          role="dialog"
+                          aria-modal="true"
+                          aria-labelledby="car-reg-pair-filter-title"
+                        >
+                          <div className="car-reg-pair-filter-dialog-heading">
+                            <h3 id="car-reg-pair-filter-title">Filter by pair checks</h3>
+                            <button
+                              className="car-reg-pair-filter-close"
+                              type="button"
+                              aria-label="Close pair checks filter"
+                              onClick={() => setCarRegistrationPairFilterOpen(false)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <form onSubmit={applyCarRegistrationPairFilter}>
+                            <label htmlFor="car-reg-pair-filter-input">
+                              Enter three pairs per line, separated by commas.
+                            </label>
+                            <textarea
+                              id="car-reg-pair-filter-input"
+                              rows={5}
+                              placeholder={'32, 64, 14\n85, 68, 68'}
+                              value={carRegistrationPairFilterDraft}
+                              onChange={(event) => {
+                                setCarRegistrationPairFilterDraft(event.target.value)
+                                setCarRegistrationPairFilterError('')
+                              }}
+                            />
+                            {carRegistrationPairFilterError && (
+                              <p className="car-reg-pair-filter-error" role="alert">
+                                {carRegistrationPairFilterError}
+                              </p>
+                            )}
+                            <div className="car-reg-pair-filter-actions">
+                              <button className="combination-generate-button" type="submit">
+                                Apply filter
+                              </button>
+                              <button
+                                className="car-reg-pair-filter-clear"
+                                type="button"
+                                onClick={() => {
+                                  setCarRegistrationPairFilters([])
+                                  setCarRegistrationPairFilterDraft('')
+                                  setCarRegistrationPairFilterError('')
+                                  setCarRegistrationPairFilterOpen(false)
+                                }}
+                              >
+                                Clear filter
+                              </button>
+                            </div>
+                          </form>
+                        </section>
+                      </div>
+                    )}
                     {visibleCarRegistrationMatches.length > 0 && (
                       <section className="car-reg-selected-combinations" aria-label="Selected registration combinations">
                         <h3>Selected combinations</h3>
@@ -1187,6 +1364,37 @@ function App() {
                                   )}
                                 </tr>
                               ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+                    )}
+                    {carRegistrationPairFilters.length > 0 && (
+                      <section className="car-reg-filtered-registrations" aria-label="Filtered registrations">
+                        <div className="workspace-results-heading">
+                          <h2>Filtered registrations</h2>
+                          <button
+                            className="combination-generate-button"
+                            type="button"
+                            onClick={exportFilteredCarRegistrations}
+                            disabled={visibleCarRegistrationMatches.length === 0}
+                          >
+                            Download as Excel
+                          </button>
+                        </div>
+                        <div className="car-reg-selected-table-wrap">
+                          <table className="car-reg-selected-table">
+                            <thead>
+                              <tr><th scope="col">Registration</th></tr>
+                            </thead>
+                            <tbody>
+                              {[...new Set(visibleCarRegistrationMatches.map((match) => match.registration))]
+                                .map((registration) => (
+                                  <tr key={registration}><td>{registration}</td></tr>
+                                ))}
+                              {visibleCarRegistrationMatches.length === 0 && (
+                                <tr><td>No registrations match the selected filters.</td></tr>
+                              )}
                             </tbody>
                           </table>
                         </div>
