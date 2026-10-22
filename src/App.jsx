@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOption'
 import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
@@ -601,52 +601,74 @@ function App() {
       (mobileUniqueCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
     )
     : uniqueGeneratedCombinations
-  const carRegistrationMatches = isCarRegistrationGenerator(manithaNaadiCombinationResults?.generator)
-    ? manithaNaadiCombinationResults.matches
-    : []
-  const carRegistrationDigitSums = [...new Set(carRegistrationMatches.map((match) => match.digitSum))]
-    .sort((first, second) => first - second)
-  const carRegistrationLuckyPairs = [...new Set(carRegistrationMatches.map((match) => match.pair))]
-    .sort((first, second) => Number(first) - Number(second))
-  const visibleCarRegistrationMatches = carRegistrationMatches.filter((match) => (
-    (carRegistrationDigitSumFilters.length === 0
-      || carRegistrationDigitSumFilters.includes(String(match.digitSum)))
-    && (carRegistrationLuckyPairFilters.length === 0
-      || carRegistrationLuckyPairFilters.includes(match.pair))
-    && (carRegistrationPairFilters.length === 0
-      || carRegistrationPairFilters.includes(match.checks.join(',')))
-  ))
-  const sortedCarRegistrationMatches = carRegistrationSortDirection
-    ? [...visibleCarRegistrationMatches].sort((first, second) => (
-      first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
-      * (carRegistrationSortDirection === 'asc' ? 1 : -1)
+  const carRegistrationData = useMemo(() => {
+    const matches = isCarRegistrationGenerator(manithaNaadiCombinationResults?.generator)
+      ? manithaNaadiCombinationResults.matches
+      : []
+    const digitSums = [...new Set(matches.map((match) => match.digitSum))]
+      .sort((first, second) => first - second)
+    const luckyPairs = [...new Set(matches.map((match) => match.pair))]
+      .sort((first, second) => Number(first) - Number(second))
+    const visibleMatches = matches.filter((match) => (
+      (carRegistrationDigitSumFilters.length === 0
+        || carRegistrationDigitSumFilters.includes(String(match.digitSum)))
+      && (carRegistrationLuckyPairFilters.length === 0
+        || carRegistrationLuckyPairFilters.includes(match.pair))
+      && (carRegistrationPairFilters.length === 0
+        || carRegistrationPairFilters.includes(match.checks.join(',')))
     ))
-    : visibleCarRegistrationMatches
-  const alphabeticalCarRegistrationMatches = [...visibleCarRegistrationMatches].sort((first, second) => (
-    first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
-  ))
-  const carRegistrationAlphabetStarts = new Map()
-  alphabeticalCarRegistrationMatches.forEach((match, index) => {
-    const letter = match.registration[0]?.toUpperCase()
-    if (letter && !carRegistrationAlphabetStarts.has(letter)) {
-      carRegistrationAlphabetStarts.set(letter, index)
+    const alphabeticalMatches = [...visibleMatches].sort((first, second) => (
+      first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
+    ))
+    const sortedMatches = carRegistrationSortDirection
+      ? [...visibleMatches].sort((first, second) => (
+        first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
+        * (carRegistrationSortDirection === 'asc' ? 1 : -1)
+      ))
+      : visibleMatches
+    const alphabetStarts = new Map()
+    alphabeticalMatches.forEach((match, index) => {
+      const letter = match.registration[0]?.toUpperCase()
+      if (letter && !alphabetStarts.has(letter)) alphabetStarts.set(letter, index)
+    })
+    const uniquePairs = [...new Set(visibleMatches.flatMap((match) => match.checks))]
+    const combinationCounts = new Map()
+    visibleMatches.forEach((match) => {
+      const combination = match.checks.join('')
+      combinationCounts.set(combination, (combinationCounts.get(combination) ?? 0) + 1)
+    })
+
+    return {
+      matches,
+      digitSums,
+      luckyPairs,
+      visibleMatches,
+      sortedMatches,
+      alphabetStarts,
+      uniquePairs,
+      combinationCounts,
+      combinationEntries: [...combinationCounts],
+      filteredRegistrations: [...new Set(visibleMatches.map((match) => match.registration))],
     }
-  })
-  const carRegistrationUniquePairs = [...new Set(
-    visibleCarRegistrationMatches.flatMap((match) => match.checks),
-  )]
-  const carRegistrationCombinationCounts = new Map()
-  visibleCarRegistrationMatches.forEach((match) => {
-    const combination = match.checks.join('')
-    carRegistrationCombinationCounts.set(
-      combination,
-      (carRegistrationCombinationCounts.get(combination) ?? 0) + 1,
-    )
-  })
-  const carRegistrationCombinationEntries = [...carRegistrationCombinationCounts]
-  const filteredCarRegistrations = [...new Set(
-    visibleCarRegistrationMatches.map((match) => match.registration),
-  )]
+  }, [
+    manithaNaadiCombinationResults,
+    carRegistrationDigitSumFilters,
+    carRegistrationLuckyPairFilters,
+    carRegistrationPairFilters,
+    carRegistrationSortDirection,
+  ])
+  const {
+    matches: carRegistrationMatches,
+    digitSums: carRegistrationDigitSums,
+    luckyPairs: carRegistrationLuckyPairs,
+    visibleMatches: visibleCarRegistrationMatches,
+    sortedMatches: sortedCarRegistrationMatches,
+    alphabetStarts: carRegistrationAlphabetStarts,
+    uniquePairs: carRegistrationUniquePairs,
+    combinationCounts: carRegistrationCombinationCounts,
+    combinationEntries: carRegistrationCombinationEntries,
+    filteredRegistrations: filteredCarRegistrations,
+  } = carRegistrationData
   const pagedCarRegistrationMatches = sortedCarRegistrationMatches.slice(
     carRegistrationPage * CAR_REGISTRATION_PAGE_SIZE,
     (carRegistrationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
