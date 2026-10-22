@@ -17,6 +17,8 @@ import {
 } from './rasiChartData'
 
 const CAR_REGISTRATION_PAGE_SIZE = 100
+const CAR_REGISTRATION_GENERATORS = new Set(['GEN-CAR-REG', 'GEN-AB12CD-REG-FORMAT'])
+const isCarRegistrationGenerator = (generator) => CAR_REGISTRATION_GENERATORS.has(generator)
 
 function ResultPagination({ page, pageSize, totalItems, onPageChange, label }) {
   const pageCount = Math.ceil(totalItems / pageSize)
@@ -349,6 +351,7 @@ function App() {
         luckyNumbers,
         rasiChartEntries: [...rasiChartNumbersByPair],
         include85,
+        registrationFormat: generator === 'GEN-AB12CD-REG-FORMAT' ? 'AB12CD' : 'A12BCD',
       })
     } catch (error) {
       setCarRegistrationGenerationError(
@@ -429,7 +432,7 @@ function App() {
       ${style('RajanilaiMatchLeft', { color: '#1D6B43', bold: true })}
       ${style('RajanilaiMissLeft', { color: '#C62828', bold: true })}
     </Styles>`
-    const isCarRegistration = manithaNaadiCombinationResults.generator === 'GEN-CAR-REG'
+    const isCarRegistration = isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
     const exportRows = isCarRegistration
       ? [
         ['Initials', 'Lucky pair', 'Registration', 'Pair checks', 'Rajanilai calculation', 'Rajanilai match', 'Pair bhavam', 'Digit sum', 'Sum bhavam'],
@@ -536,7 +539,7 @@ function App() {
     }
   }
   function getManithaNaadiTableRows() {
-    if (!manithaNaadiCombinationResults || manithaNaadiCombinationResults.generator === 'GEN-CAR-REG') return []
+    if (!manithaNaadiCombinationResults || isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)) return []
 
     const isGen5 = manithaNaadiCombinationResults.generator === 'GEN-5'
     const isMobile = manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
@@ -598,7 +601,7 @@ function App() {
       (mobileUniqueCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
     )
     : uniqueGeneratedCombinations
-  const carRegistrationMatches = manithaNaadiCombinationResults?.generator === 'GEN-CAR-REG'
+  const carRegistrationMatches = isCarRegistrationGenerator(manithaNaadiCombinationResults?.generator)
     ? manithaNaadiCombinationResults.matches
     : []
   const carRegistrationDigitSums = [...new Set(carRegistrationMatches.map((match) => match.digitSum))]
@@ -619,6 +622,16 @@ function App() {
       * (carRegistrationSortDirection === 'asc' ? 1 : -1)
     ))
     : visibleCarRegistrationMatches
+  const alphabeticalCarRegistrationMatches = [...visibleCarRegistrationMatches].sort((first, second) => (
+    first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
+  ))
+  const carRegistrationAlphabetStarts = new Map()
+  alphabeticalCarRegistrationMatches.forEach((match, index) => {
+    const letter = match.registration[0]?.toUpperCase()
+    if (letter && !carRegistrationAlphabetStarts.has(letter)) {
+      carRegistrationAlphabetStarts.set(letter, index)
+    }
+  })
   const carRegistrationUniquePairs = [...new Set(
     visibleCarRegistrationMatches.flatMap((match) => match.checks),
   )]
@@ -835,7 +848,7 @@ function App() {
             <div className="combination-generate">
               <span className="column-selection-label">GENERATE COMBINATIONS (MOBILE STARTS 074; EVERY PAIR AND THE DIGIT TOTAL MUST MATCH LUCKY NUMBERS)</span>
               <div className="combination-generate-buttons">
-                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
+                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-AB12CD-REG-FORMAT', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
                   generator === 'GEN-8' ? (
                     <ManithaNaadiGen8Generator
                       key={generator}
@@ -908,18 +921,22 @@ function App() {
                       type="button"
                       aria-label={generator === 'GEN-MOBILE-NUMBERS'
                         ? 'Generate UK mobile numbers'
-                        : generator === 'GEN-CAR-REG'
+                        : isCarRegistrationGenerator(generator)
                           ? 'Generate car registrations'
                           : generator === 'GEN-5' ? 'Run GEN-5 three-pair checks' : `Run ${generator} with ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       title={generator === 'GEN-MOBILE-NUMBERS'
                         ? 'Generate UK mobile numbers from the selected initials lucky pairs'
                         : generator === 'GEN-CAR-REG'
-                          ? 'Generate car registrations from the selected initials lucky numbers'
-                          : generator === 'GEN-5' ? 'Generate three-pair checks' : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
+                          ? 'Generate A12BCD car registrations from the selected initials lucky numbers'
+                          : generator === 'GEN-AB12CD-REG-FORMAT'
+                            ? 'Generate AB12CD car registrations from the selected initials lucky numbers'
+                            : generator === 'GEN-5'
+                              ? 'Generate three-pair checks'
+                              : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       onClick={() => {
                         setActiveManithaNaadiGenerator(generator)
-                        if (generator !== 'GEN-CAR-REG') setCarRegistrationGenerationError('')
-                        if (generator === 'GEN-CAR-REG') {
+                        if (!isCarRegistrationGenerator(generator)) setCarRegistrationGenerationError('')
+                        if (isCarRegistrationGenerator(generator)) {
                           setCarRegistrationDigitSumFilters([])
                           setCarRegistrationLuckyPairFilters([])
                           setCarRegistrationPairFilters([])
@@ -939,7 +956,7 @@ function App() {
                         const calculationLuckyNumbers = parseEntries(luckyNumbers, true)
                           .filter((number) => !excludedNumbers.has(number))
                           .join(', ')
-                        if (generator === 'GEN-CAR-REG') {
+                        if (isCarRegistrationGenerator(generator)) {
                           generateInWorker(
                             generator,
                             calculationLuckyNumbers,
@@ -1047,7 +1064,7 @@ function App() {
                     </div>
                   )
                 ))}
-                {manithaNaadiCombinationResults?.generator === 'GEN-CAR-REG' && (
+                {isCarRegistrationGenerator(manithaNaadiCombinationResults?.generator) && (
                   <button
                     className="combination-generate-button car-reg-toolbar-download"
                     type="button"
@@ -1076,22 +1093,23 @@ function App() {
                 <div className="workspace-results-heading">
                   <div>
                     <span className="results-kicker">{manithaNaadiCombinationResults.generator} · {manithaNaadiCombinationResults.profile} VALUES</span>
-                    <h2>{['GEN-5', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG'].includes(manithaNaadiCombinationResults.generator)
-                      ? manithaNaadiCombinationResults.generator === 'GEN-CAR-REG' ? 'Generated registrations' : 'Generated numbers'
+                    <h2>{['GEN-5', 'GEN-MOBILE-NUMBERS'].includes(manithaNaadiCombinationResults.generator)
+                      || isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
+                      ? isCarRegistrationGenerator(manithaNaadiCombinationResults.generator) ? 'Generated registrations' : 'Generated numbers'
                       : 'Combination sum results'}</h2>
                   </div>
                   <span className="results-count" title={manithaNaadiCombinationResults.generator === 'GEN-5'
                     ? 'Numbers matching the selected-initial pair and shared-pool checks'
                     : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
                       ? 'Every number starts with 074; all four following pairs and the digit total must be in the selected initials lucky numbers'
-                      : manithaNaadiCombinationResults.generator === 'GEN-CAR-REG'
+                      : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
                         ? 'All matching registrations with three valid pair checks and a valid digit sum'
                       : 'Total includes combinations with repeated values; distinct count excludes repeats'}>
                     {manithaNaadiCombinationResults.generator === 'GEN-5'
                       ? `${manithaNaadiCombinationResults.matches.length} NUMBERS`
                       : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
                         ? `${manithaNaadiCombinationResults.matches.length} MATCHES`
-                        : manithaNaadiCombinationResults.generator === 'GEN-CAR-REG'
+                        : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
                           ? `${manithaNaadiCombinationResults.matches.length.toLocaleString()} REGISTRATIONS`
                           : `${manithaNaadiCombinationResults.possibleCombinationsWithRepetition.toLocaleString()} POSSIBLE WITH REPEATS · ${manithaNaadiCombinationResults.combinationsChecked.toLocaleString()} DISTINCT${manithaNaadiCombinationResults.generator === 'GEN-4' && manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : manithaNaadiCombinationResults.generator === 'GEN-6' && manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : ''}`}
                   </span>
@@ -1209,7 +1227,7 @@ function App() {
                       Download as Excel
                     </button>
                   </>
-                ) : manithaNaadiCombinationResults.generator === 'GEN-CAR-REG' ? (
+                ) : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator) ? (
                   <>
                     <div className="manitha-results-table-wrap">
                       <table className="manitha-results-table manitha-car-reg-results-table">
@@ -1401,6 +1419,34 @@ function App() {
                       onPageChange={setCarRegistrationPage}
                       label="Car registrations"
                     />
+                    {visibleCarRegistrationMatches.length > 0 && (
+                      <nav className="car-reg-alphabet-pagination" aria-label="Jump to registrations by starting letter">
+                        <span>Start at letter</span>
+                        <div>
+                          {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((letter) => {
+                            const firstMatchIndex = carRegistrationAlphabetStarts.get(letter)
+                            return (
+                              <button
+                                type="button"
+                                key={letter}
+                                disabled={firstMatchIndex === undefined}
+                                title={firstMatchIndex === undefined
+                                  ? `No registrations starting with ${letter}`
+                                  : `Go to page ${Math.floor(firstMatchIndex / CAR_REGISTRATION_PAGE_SIZE) + 1}, starting with ${letter}`}
+                                aria-label={`Go to registrations starting with ${letter}`}
+                                onClick={() => {
+                                  if (firstMatchIndex === undefined) return
+                                  setCarRegistrationSortDirection('asc')
+                                  setCarRegistrationPage(Math.floor(firstMatchIndex / CAR_REGISTRATION_PAGE_SIZE))
+                                }}
+                              >
+                                {letter}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </nav>
+                    )}
                     {carRegistrationPairFilterOpen && (
                       <div className="car-reg-pair-filter-backdrop">
                         <section

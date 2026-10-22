@@ -113,3 +113,90 @@ export function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumb
     possibleCombinationsWithRepetition: possibleCount,
   }
 }
+
+export function generateManithaNaadiFormattedCarRegistrations(luckyNumbers, rasiChartNumbersByPair) {
+  const luckyPairs = parseLuckyPairs(luckyNumbers)
+  const allowedValues = new Set(luckyPairs)
+  const allowedDigitSums = new Set(luckyPairs.map(Number))
+  const alphabet = [...new Set(carRegNumberChart.flatMap((row) => row.letters).filter(Boolean))]
+  const letterDigitValues = new Map(carRegLetterValues)
+  const digitValue = (digit) => digit === '0' ? 6 : Number(digit)
+  const possibleCount = luckyPairs.length * alphabet.length ** 4
+  const letterPairs = []
+
+  for (const firstLetter of alphabet) {
+    for (const secondLetter of alphabet) {
+      const pair = `${letterDigitValues.get(firstLetter)}${letterDigitValues.get(secondLetter)}`
+      if (!allowedValues.has(pair)) continue
+      letterPairs.push({ letters: [firstLetter, secondLetter], pair })
+    }
+  }
+
+  const matchesByBhavam = new Map()
+  let combinationsChecked = 0
+
+  for (const digitSum of allowedDigitSums) {
+    const digitBhavam = rasiChartNumbersByPair.get(String(digitSum).padStart(2, '0'))
+    if (!digitBhavam) continue
+
+    const bhavamKey = digitBhavam.join('/')
+    const group = matchesByBhavam.get(bhavamKey) ?? []
+    matchesByBhavam.set(bhavamKey, group)
+
+    for (const firstLetterPair of letterPairs) {
+      for (const pair of luckyPairs) {
+        const firstDigitValue = digitValue(pair[0])
+        const secondDigitValue = digitValue(pair[1])
+
+        for (const lastLetterPair of letterPairs) {
+          const checks = [firstLetterPair.pair, pair, lastLetterPair.pair]
+          if (!checks.every((check) => allowedValues.has(check))) continue
+
+          const letters = [...firstLetterPair.letters, ...lastLetterPair.letters]
+          const digitSumValues = [
+            ...letters.slice(0, 2).map((letter) => letterDigitValues.get(letter)),
+            firstDigitValue,
+            secondDigitValue,
+            ...letters.slice(2).map((letter) => letterDigitValues.get(letter)),
+          ]
+          const candidateDigitSum = digitSumValues.reduce((sum, value) => sum + value, 0)
+          combinationsChecked += 1
+          if (candidateDigitSum !== digitSum || !allowedDigitSums.has(candidateDigitSum)) continue
+
+          group.push({
+            pair,
+            letters,
+            checks,
+            registration: `${letters[0]}${letters[1]}${pair}${letters[2]}${letters[3]}`,
+            digitSum: candidateDigitSum,
+            digitSumCalculation: `${digitSumValues.join(' + ')} = ${candidateDigitSum}`,
+          })
+        }
+      }
+    }
+  }
+
+  const bhavamGroups = [...matchesByBhavam.values()]
+  const groupOffsets = bhavamGroups.map(() => 0)
+  const matches = []
+  let remainingMatches = bhavamGroups.reduce((total, group) => total + group.length, 0)
+  let groupIndex = 0
+  while (remainingMatches > 0) {
+    const group = bhavamGroups[groupIndex]
+    const offset = groupOffsets[groupIndex]
+    if (offset < group.length) {
+      matches.push(group[offset])
+      groupOffsets[groupIndex] += 1
+      remainingMatches -= 1
+    }
+    groupIndex = (groupIndex + 1) % bhavamGroups.length
+  }
+
+  return {
+    matches,
+    repeatedMatches: [],
+    nonMatches: [],
+    combinationsChecked,
+    possibleCombinationsWithRepetition: possibleCount,
+  }
+}
