@@ -1,6 +1,7 @@
 import {
   generateManithaNaadiCarRegistrations,
   generateManithaNaadiFormattedCarRegistrations,
+  generateManithaNaadiNumericFirstCarRegistrations,
 } from './carRegistrationGenerator'
 
 self.onmessage = (event) => {
@@ -8,7 +9,9 @@ self.onmessage = (event) => {
     const { luckyNumbers, rasiChartEntries, registrationFormat } = event.data
     const generateRegistrations = registrationFormat === 'AB12CD'
       ? generateManithaNaadiFormattedCarRegistrations
-      : generateManithaNaadiCarRegistrations
+      : registrationFormat === '1234AB'
+        ? generateManithaNaadiNumericFirstCarRegistrations
+        : generateManithaNaadiCarRegistrations
     const results = generateRegistrations(
       luckyNumbers,
       new Map(rasiChartEntries),

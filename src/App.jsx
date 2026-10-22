@@ -17,7 +17,11 @@ import {
 } from './rasiChartData'
 
 const CAR_REGISTRATION_PAGE_SIZE = 100
-const CAR_REGISTRATION_GENERATORS = new Set(['GEN-CAR-REG', 'GEN-AB12CD-REG-FORMAT'])
+const CAR_REGISTRATION_GENERATORS = new Set([
+  'GEN-CAR-REG',
+  'GEN-AB12CD-REG-FORMAT',
+  'GEN-1234AB-REG-FORMAT',
+])
 const isCarRegistrationGenerator = (generator) => CAR_REGISTRATION_GENERATORS.has(generator)
 
 function ResultPagination({ page, pageSize, totalItems, onPageChange, label }) {
@@ -351,7 +355,9 @@ function App() {
         luckyNumbers,
         rasiChartEntries: [...rasiChartNumbersByPair],
         include85,
-        registrationFormat: generator === 'GEN-AB12CD-REG-FORMAT' ? 'AB12CD' : 'A12BCD',
+        registrationFormat: generator === 'GEN-AB12CD-REG-FORMAT'
+          ? 'AB12CD'
+          : generator === 'GEN-1234AB-REG-FORMAT' ? '1234AB' : 'A12BCD',
       })
     } catch (error) {
       setCarRegistrationGenerationError(
@@ -870,7 +876,7 @@ function App() {
             <div className="combination-generate">
               <span className="column-selection-label">GENERATE COMBINATIONS (MOBILE STARTS 074; EVERY PAIR AND THE DIGIT TOTAL MUST MATCH LUCKY NUMBERS)</span>
               <div className="combination-generate-buttons">
-                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-AB12CD-REG-FORMAT', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
+                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-AB12CD-REG-FORMAT', 'GEN-1234AB-REG-FORMAT', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
                   generator === 'GEN-8' ? (
                     <ManithaNaadiGen8Generator
                       key={generator}
@@ -952,6 +958,8 @@ function App() {
                           ? 'Generate A12BCD car registrations from the selected initials lucky numbers'
                           : generator === 'GEN-AB12CD-REG-FORMAT'
                             ? 'Generate AB12CD car registrations from the selected initials lucky numbers'
+                            : generator === 'GEN-1234AB-REG-FORMAT'
+                              ? 'Generate 1234AB car registrations from the selected initials lucky numbers'
                             : generator === 'GEN-5'
                               ? 'Generate three-pair checks'
                               : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
