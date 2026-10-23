@@ -44,6 +44,27 @@ function ResultPagination({ page, pageSize, totalItems, onPageChange, label }) {
   )
 }
 
+function CopyListButton({ copyKey, label, status, text, onCopy }) {
+  return (
+    <div className="car-reg-copy-action">
+      <button
+        className="combination-generate-button car-reg-copy-button"
+        type="button"
+        aria-label={`Copy ${label.toLowerCase()}`}
+        disabled={!text}
+        onClick={() => onCopy(copyKey, text)}
+      >
+        {status?.success ? 'Copied' : status ? 'Copy failed' : 'Copy list'}
+      </button>
+      {status && (
+        <span className={status.success ? 'car-reg-copy-success' : 'car-reg-copy-error'} role="status">
+          {status.message}
+        </span>
+      )}
+    </div>
+  )
+}
+
 const manithaNaadiLuckyNumberDefaults = {
   MJ: '20, 41, 45, 54, 56, 64, 66, 68, 74, 85, 92, 32, 14',
   MA: '06, 16, 33, 42, 51, 52, 73, 79, 84, 85, 87, 88, 93, 97, 99, 92, 54',
@@ -286,6 +307,10 @@ function App() {
   const [filteredCarRegistrationPage, setFilteredCarRegistrationPage] = useState(0)
   const [mobileNumberPage, setMobileNumberPage] = useState(0)
   const [mobileUniqueCombinationPage, setMobileUniqueCombinationPage] = useState(0)
+  const [mobileUniquePairFilterOpen, setMobileUniquePairFilterOpen] = useState(false)
+  const [mobileUniquePairFilterDraft, setMobileUniquePairFilterDraft] = useState('')
+  const [mobileUniquePairFilters, setMobileUniquePairFilters] = useState([])
+  const [mobileUniquePairFilterError, setMobileUniquePairFilterError] = useState('')
   const [carRegistrationGenerationError, setCarRegistrationGenerationError] = useState('')
   const [carRegistrationPairFilterOpen, setCarRegistrationPairFilterOpen] = useState(false)
   const [carRegistrationPairFilterDraft, setCarRegistrationPairFilterDraft] = useState('')
@@ -295,6 +320,7 @@ function App() {
   const [carRegistrationUniquePairFilterDraft, setCarRegistrationUniquePairFilterDraft] = useState('')
   const [carRegistrationUniquePairFilters, setCarRegistrationUniquePairFilters] = useState([])
   const [carRegistrationUniquePairFilterError, setCarRegistrationUniquePairFilterError] = useState('')
+  const [carRegistrationCopyFeedback, setCarRegistrationCopyFeedback] = useState({})
   const [includeMjMobile85, setIncludeMjMobile85] = useState(true)
   const [manualCombinationTarget, setManualCombinationTarget] = useState('')
   const [manualCombinationResults, setManualCombinationResults] = useState(null)
@@ -461,7 +487,12 @@ function App() {
           rasiChartNumbersByPair.get(String(match.digitSum).padStart(2, '0'))?.join('/') ?? '—',
         ]),
       ]
-      : [manithaNaadiTableHeaders, ...getManithaNaadiTableRows()]
+      : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
+        ? [
+          [...manithaNaadiTableHeaders, 'Unique pairs'],
+          ...getManithaNaadiTableRows(),
+        ]
+        : [manithaNaadiTableHeaders, ...getManithaNaadiTableRows()]
     const highlightedNumbers = manithaNaadiCombinationResults.generator === 'GEN-4'
       ? manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile]
       : manithaNaadiCombinationResults.generator === 'GEN-5'
@@ -538,6 +569,27 @@ function App() {
     setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
   }
 
+  async function copyCarRegistrationList(copyKey, text) {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard access is unavailable in this browser.')
+      }
+      await navigator.clipboard.writeText(text)
+      setCarRegistrationCopyFeedback((feedback) => ({
+        ...feedback,
+        [copyKey]: { success: true, message: 'Copied to clipboard.' },
+      }))
+    } catch (error) {
+      setCarRegistrationCopyFeedback((feedback) => ({
+        ...feedback,
+        [copyKey]: {
+          success: false,
+          message: `Copy failed: ${error instanceof Error ? error.message : 'Clipboard access was denied.'}`,
+        },
+      }))
+    }
+  }
+
   const chartStartIndex = rasiChartClockwiseOrder.indexOf(rasiChartStartingSigns[selectedManithaNaadiInitials])
   const rasiChartBadgeNumbers = new Map(rasiChartClockwiseOrder.map((sign, index) => [
     sign,
@@ -572,7 +624,7 @@ function App() {
         : isDigitSumGenerator ? sumDigits(number) : combination.total
       const sumLookup = isGen5 ? combination.digitSum : isMobile ? combination.total : combination.reducedTotal
 
-      return [
+      const row = [
         manithaNaadiCombinationResults.profile,
         values.join(', '),
         number,
@@ -580,12 +632,21 @@ function App() {
         values.map((value) => rasiChartNumbersByPair.get(value)?.join('/') ?? '—').join('-'),
         rasiChartNumbersByPair.get(String(sumLookup).padStart(2, '0'))?.join('/') ?? '—',
       ]
+      return isMobile
+        ? [...row, getCanonicalPairChecks(values).replaceAll(',', ', ')]
+        : row
     })
   }
   const manithaNaadiTableRows = getManithaNaadiTableRows()
-  const visibleManithaNaadiTableRows = manithaNaadiDigitSumFilter.trim()
-    ? manithaNaadiTableRows.filter((row) => String(row[3]) === manithaNaadiDigitSumFilter.trim())
-    : manithaNaadiTableRows
+  const visibleManithaNaadiTableRows = manithaNaadiTableRows.filter((row) => (
+    (!manithaNaadiDigitSumFilter.trim()
+      || String(row[3]) === manithaNaadiDigitSumFilter.trim())
+    && (manithaNaadiCombinationResults?.generator !== 'GEN-MOBILE-NUMBERS'
+      || mobileUniquePairFilters.length === 0
+      || mobileUniquePairFilters.includes(getCanonicalPairChecks(
+        row[6].split(',').map((pair) => pair.trim()),
+      )))
+  ))
   const pagedManithaNaadiTableRows = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
     ? visibleManithaNaadiTableRows.slice(
       mobileNumberPage * CAR_REGISTRATION_PAGE_SIZE,
@@ -603,13 +664,14 @@ function App() {
       .filter((row) => manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
         || generatedNumberSet.has(row[2]))
       .map((row) => {
+        if (manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS') {
+          return row[6].split(',').map((pair) => pair.trim()).join('')
+        }
         const pairs = row[1]
           .split(',')
           .map((pair) => pair.trim())
           .sort((first, second) => Number(first) - Number(second))
-        return manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
-          ? pairs.join('')
-          : pairs.join(', ')
+        return pairs.join(', ')
       }),
   )]
   
@@ -819,6 +881,40 @@ function App() {
     setFilterDraft(parsedFilters.map((filter) => filter.replaceAll(',', ', ')).join('\n'))
     setFilterError('')
     setFilterOpen(false)
+  }
+
+  function applyMobileUniquePairFilter(event) {
+    event.preventDefault()
+    const lines = mobileUniquePairFilterDraft
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+    const parsedFilters = []
+    const invalidLines = []
+
+    lines.forEach((line, index) => {
+      const pairs = line.split(',').map((pair) => pair.trim())
+      if (pairs.length !== 4 || pairs.some((pair) => !/^\d{2}$/.test(pair))) {
+        invalidLines.push(index + 1)
+        return
+      }
+      const filter = getCanonicalPairChecks(pairs)
+      if (!parsedFilters.includes(filter)) parsedFilters.push(filter)
+    })
+
+    if (invalidLines.length > 0) {
+      setMobileUniquePairFilterError(
+        `Enter exactly four two-digit pairs separated by commas on each line. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
+      )
+      return
+    }
+
+    setMobileUniquePairFilters(parsedFilters)
+    setMobileUniquePairFilterDraft(parsedFilters.map((filter) => filter.replaceAll(',', ', ')).join('\n'))
+    setMobileNumberPage(0)
+    setMobileUniqueCombinationPage(0)
+    setMobileUniquePairFilterError('')
+    setMobileUniquePairFilterOpen(false)
   }
 
   return (
@@ -1207,9 +1303,37 @@ function App() {
                       <table className="manitha-results-table">
                         <thead>
                           <tr>
-                            {manithaNaadiTableHeaders.map((heading) => (
+                            {(manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
+                              ? [
+                                ...manithaNaadiTableHeaders.slice(0, 2),
+                                'Unique pairs',
+                                ...manithaNaadiTableHeaders.slice(2),
+                              ]
+                              : manithaNaadiTableHeaders).map((heading) => (
                               <th scope="col" key={heading}>
-                                {heading === 'Digit sum' ? (
+                                {heading === 'Unique pairs' ? (
+                                  <div className="car-reg-pair-checks-heading">
+                                    <span>{heading}</span>
+                                    <button
+                                      className="car-reg-pair-filter-button"
+                                      type="button"
+                                      aria-label="Filter mobile numbers by unique pairs"
+                                      onClick={() => {
+                                        setMobileUniquePairFilterDraft(
+                                          mobileUniquePairFilters
+                                            .map((filter) => filter.replaceAll(',', ', '))
+                                            .join('\n'),
+                                        )
+                                        setMobileUniquePairFilterError('')
+                                        setMobileUniquePairFilterOpen(true)
+                                      }}
+                                    >
+                                      {mobileUniquePairFilters.length > 0
+                                        ? `Filter (${mobileUniquePairFilters.length})`
+                                        : 'Filter'}
+                                    </button>
+                                  </div>
+                                ) : heading === 'Digit sum' ? (
                                   <span className="digit-sum-filter-heading">
                                     <span>{heading}</span>
                                     <input
@@ -1234,9 +1358,14 @@ function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {visibleManithaNaadiTableRows.length === 0 && manithaNaadiDigitSumFilter.trim() ? (
+                          {visibleManithaNaadiTableRows.length === 0 ? (
                             <tr>
-                              <td colSpan={manithaNaadiTableHeaders.length}>No results match this digit sum.</td>
+                              <td colSpan={manithaNaadiTableHeaders.length
+                                + (manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' ? 1 : 0)}>
+                                {manithaNaadiDigitSumFilter.trim() || mobileUniquePairFilters.length > 0
+                                  ? 'No results match the selected filters.'
+                                  : 'No results to display.'}
+                              </td>
                             </tr>
                           ) : pagedManithaNaadiTableRows.map((row, index) => (
                             <tr
@@ -1254,15 +1383,79 @@ function App() {
                             >
                               <td>{row[0]}</td>
                               <td>{row[1]}</td>
-                              <td>{row[2]}</td>
-                              <td>{row[3]}</td>
-                              <td><strong>{row[4]}</strong></td>
-                              <td><strong>{row[5]}</strong></td>
+                                {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
+                                  <td>{row[6]}</td>
+                                )}
+                                <td>{row[2]}</td>
+                                <td>{row[3]}</td>
+                                <td><strong>{row[4]}</strong></td>
+                                <td><strong>{row[5]}</strong></td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
+                    {mobileUniquePairFilterOpen && (
+                      <div className="car-reg-pair-filter-backdrop">
+                        <section
+                          className="car-reg-pair-filter-dialog"
+                          role="dialog"
+                          aria-modal="true"
+                          aria-labelledby="mobile-unique-pair-filter-title"
+                        >
+                          <div className="car-reg-pair-filter-dialog-heading">
+                            <h3 id="mobile-unique-pair-filter-title">Filter by unique pairs</h3>
+                            <button
+                              className="car-reg-pair-filter-close"
+                              type="button"
+                              aria-label="Close unique pairs filter"
+                              onClick={() => setMobileUniquePairFilterOpen(false)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <form onSubmit={applyMobileUniquePairFilter}>
+                            <label htmlFor="mobile-unique-pair-filter-input">
+                              Enter four pairs per line, separated by commas.
+                            </label>
+                            <textarea
+                              id="mobile-unique-pair-filter-input"
+                              rows={5}
+                              placeholder={'14, 41, 64, 85'}
+                              value={mobileUniquePairFilterDraft}
+                              onChange={(event) => {
+                                setMobileUniquePairFilterDraft(event.target.value)
+                                setMobileUniquePairFilterError('')
+                              }}
+                            />
+                            {mobileUniquePairFilterError && (
+                              <p className="car-reg-pair-filter-error" role="alert">
+                                {mobileUniquePairFilterError}
+                              </p>
+                            )}
+                            <div className="car-reg-pair-filter-actions">
+                              <button className="combination-generate-button" type="submit">
+                                Apply filter
+                              </button>
+                              <button
+                                className="car-reg-pair-filter-clear"
+                                type="button"
+                                onClick={() => {
+                                  setMobileUniquePairFilters([])
+                                  setMobileNumberPage(0)
+                                  setMobileUniqueCombinationPage(0)
+                                  setMobileUniquePairFilterDraft('')
+                                  setMobileUniquePairFilterError('')
+                                  setMobileUniquePairFilterOpen(false)
+                                }}
+                              >
+                                Clear filter
+                              </button>
+                            </div>
+                          </form>
+                        </section>
+                      </div>
+                    )}
                     {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
                       <ResultPagination
                         page={mobileNumberPage}
@@ -1685,26 +1878,48 @@ function App() {
                     {visibleCarRegistrationMatches.length > 0 && (
                       <section className="car-reg-selected-combinations" aria-label="Selected registration combinations">
                         <h3>Selected combinations</h3>
-                        <label className="car-reg-combinations-copy-field" htmlFor="car-reg-unique-pairs-copy">
-                          <span>Unique pairs</span>
+                        <div className="car-reg-combinations-copy-field">
+                          <div className="car-reg-copy-field-heading">
+                            <span>Unique pairs</span>
+                            <CopyListButton
+                              copyKey="uniquePairs"
+                              label="unique pairs"
+                              status={carRegistrationCopyFeedback.uniquePairs}
+                              text={carRegistrationUniquePairs.join(', ')}
+                              onCopy={copyCarRegistrationList}
+                            />
+                          </div>
                           <textarea
                             id="car-reg-unique-pairs-copy"
+                            aria-label="Unique pairs"
                             rows={4}
                             readOnly
                             value={carRegistrationUniquePairs.join(', ')}
                           />
-                        </label>
-                        <label className="car-reg-combinations-copy-field" htmlFor="car-reg-combinations-list">
-                          <span>Combination ({carRegistrationCombinationCounts.size})</span>
+                        </div>
+                        <div className="car-reg-combinations-copy-field">
+                          <div className="car-reg-copy-field-heading">
+                            <span>Combination ({carRegistrationCombinationCounts.size})</span>
+                            <CopyListButton
+                              copyKey="combinations"
+                              label="all combinations"
+                              status={carRegistrationCopyFeedback.combinations}
+                              text={carRegistrationCombinationEntries
+                                .map(([combination]) => combination)
+                                .join('\n')}
+                              onCopy={copyCarRegistrationList}
+                            />
+                          </div>
                           <textarea
                             id="car-reg-combinations-list"
+                            aria-label="Combination list"
                             rows={Math.min(12, Math.max(4, pagedCarRegistrationCombinationEntries.length))}
                             readOnly
                             value={pagedCarRegistrationCombinationEntries
                               .map(([combination]) => combination)
                               .join('\n')}
                           />
-                        </label>
+                        </div>
                         <ResultPagination
                           page={carRegistrationCombinationPage}
                           pageSize={CAR_REGISTRATION_PAGE_SIZE}
@@ -1720,14 +1935,23 @@ function App() {
                       <section className="car-reg-filtered-registrations" aria-label="Filtered registrations">
                         <div className="workspace-results-heading">
                           <h2>Filtered registrations</h2>
-                          <button
-                            className="combination-generate-button"
-                            type="button"
-                            onClick={exportFilteredCarRegistrations}
-                            disabled={visibleCarRegistrationMatches.length === 0}
-                          >
-                            Download as Excel
-                          </button>
+                          <div className="car-reg-filtered-actions">
+                            <CopyListButton
+                              copyKey="filteredRegistrations"
+                              label="filtered registrations"
+                              status={carRegistrationCopyFeedback.filteredRegistrations}
+                              text={filteredCarRegistrations.join('\n')}
+                              onCopy={copyCarRegistrationList}
+                            />
+                            <button
+                              className="combination-generate-button"
+                              type="button"
+                              onClick={exportFilteredCarRegistrations}
+                              disabled={visibleCarRegistrationMatches.length === 0}
+                            >
+                              Download as Excel
+                            </button>
+                          </div>
                         </div>
                         <div className="car-reg-selected-table-wrap">
                           <table className="car-reg-selected-table">
