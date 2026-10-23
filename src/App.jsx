@@ -598,11 +598,15 @@ function App() {
         || String(row[3]) === manithaNaadiUniqueDigitSumSelection)
       .filter((row) => manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
         || generatedNumberSet.has(row[2]))
-      .map((row) => row[1]
-        .split(',')
-        .map((pair) => pair.trim())
-        .sort((first, second) => Number(first) - Number(second))
-        .join(', ')),
+      .map((row) => {
+        const pairs = row[1]
+          .split(',')
+          .map((pair) => pair.trim())
+          .sort((first, second) => Number(first) - Number(second))
+        return manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
+          ? pairs.join('')
+          : pairs.join(', ')
+      }),
   )]
   const pagedUniqueGeneratedCombinations = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
     ? uniqueGeneratedCombinations.slice(
@@ -662,7 +666,7 @@ function App() {
     const uniquePairs = [...new Set(visibleMatches.flatMap((match) => match.checks))]
     const combinationCounts = new Map()
     visibleMatches.forEach((match) => {
-      const combination = match.checks.join('')
+      const combination = getCanonicalPairChecks(match.checks).replaceAll(',', '')
       combinationCounts.set(combination, (combinationCounts.get(combination) ?? 0) + 1)
     })
 
