@@ -608,6 +608,7 @@ function App() {
           : pairs.join(', ')
       }),
   )]
+  
   const pagedUniqueGeneratedCombinations = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
     ? uniqueGeneratedCombinations.slice(
       mobileUniqueCombinationPage * CAR_REGISTRATION_PAGE_SIZE,
