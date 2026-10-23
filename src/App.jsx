@@ -1020,7 +1020,7 @@ function App() {
                           setMobileNumberPage(0)
                           generateInWorker(
                             generator,
-                            luckyNumbers,
+                            calculationLuckyNumbers,
                             selectedManithaNaadiInitials,
                             includeMjMobile85,
                           )
