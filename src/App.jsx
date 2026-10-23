@@ -1559,22 +1559,17 @@ function App() {
                             value={carRegistrationUniquePairs.join(', ')}
                           />
                         </label>
-                        <div className="car-reg-selected-table-wrap">
-                          <table className="car-reg-selected-table">
-                            <thead>
-                              <tr>
-                                <th scope="col">Combination ({carRegistrationCombinationCounts.size})</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {pagedCarRegistrationCombinationEntries.map(([combination]) => (
-                                <tr key={combination}>
-                                  <td>{combination}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                        <label className="car-reg-combinations-copy-field" htmlFor="car-reg-combinations-list">
+                          <span>Combination ({carRegistrationCombinationCounts.size})</span>
+                          <textarea
+                            id="car-reg-combinations-list"
+                            rows={Math.min(12, Math.max(4, pagedCarRegistrationCombinationEntries.length))}
+                            readOnly
+                            value={pagedCarRegistrationCombinationEntries
+                              .map(([combination]) => combination)
+                              .join('\n')}
+                          />
+                        </label>
                         <ResultPagination
                           page={carRegistrationCombinationPage}
                           pageSize={CAR_REGISTRATION_PAGE_SIZE}
