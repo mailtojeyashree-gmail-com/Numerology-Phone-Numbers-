@@ -20,6 +20,18 @@ const CAR_REGISTRATION_PAGE_SIZE = 100
 const getCanonicalPairChecks = (checks) => [...checks]
   .sort((first, second) => Number(first) - Number(second))
   .join(',')
+const parsePairFilterLine = (line, pairCount) => {
+  if (line.includes(',')) {
+    const pairs = line.split(',').map((pair) => pair.trim())
+    return pairs.length === pairCount && pairs.every((pair) => /^\d{2}$/.test(pair))
+      ? pairs
+      : null
+  }
+
+  const digits = line.replace(/\s/g, '')
+  if (!new RegExp(`^\\d{${pairCount * 2}}$`).test(digits)) return null
+  return digits.match(/\d{2}/g)
+}
 const CAR_REGISTRATION_GENERATORS = new Set([
   'GEN-CAR-REG',
   'GEN-AB12CD-REG-FORMAT',
@@ -847,8 +859,8 @@ function App() {
     const invalidLines = []
 
     lines.forEach((line, index) => {
-      const pairs = line.split(',').map((pair) => pair.trim())
-      if (pairs.length !== 3 || pairs.some((pair) => !/^\d{2}$/.test(pair))) {
+      const pairs = parsePairFilterLine(line, 3)
+      if (!pairs) {
         invalidLines.push(index + 1)
         return
       }
@@ -861,7 +873,7 @@ function App() {
         ? setCarRegistrationUniquePairFilterError
         : setCarRegistrationPairFilterError
       setFilterError(
-        `Enter exactly three two-digit pairs separated by commas on each line. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
+        `Enter exactly three two-digit pairs per line, separated by commas or entered together. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
       )
       return
     }
@@ -897,8 +909,8 @@ function App() {
     const invalidLines = []
 
     lines.forEach((line, index) => {
-      const pairs = line.split(',').map((pair) => pair.trim())
-      if (pairs.length !== 4 || pairs.some((pair) => !/^\d{2}$/.test(pair))) {
+      const pairs = parsePairFilterLine(line, 4)
+      if (!pairs) {
         invalidLines.push(index + 1)
         return
       }
@@ -908,7 +920,7 @@ function App() {
 
     if (invalidLines.length > 0) {
       setMobileUniquePairFilterError(
-        `Enter exactly four two-digit pairs separated by commas on each line. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
+        `Enter exactly four two-digit pairs per line, separated by commas or entered together. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
       )
       return
     }
@@ -1451,7 +1463,7 @@ function App() {
                           </div>
                           <form onSubmit={applyMobileUniquePairFilter}>
                             <label htmlFor="mobile-unique-pair-filter-input">
-                              Enter four pairs per line, separated by commas.
+                              Enter four pairs per line, separated by commas or entered together.
                             </label>
                             <textarea
                               id="mobile-unique-pair-filter-input"
@@ -1807,7 +1819,7 @@ function App() {
                           </div>
                           <form onSubmit={applyCarRegistrationPairFilter}>
                             <label htmlFor="car-reg-pair-filter-input">
-                              Enter three pairs per line, separated by commas.
+                              Enter three pairs per line, separated by commas or entered together.
                             </label>
                             <textarea
                               id="car-reg-pair-filter-input"
@@ -1869,7 +1881,7 @@ function App() {
                           </div>
                           <form onSubmit={(event) => applyCarRegistrationPairFilter(event, 'unique')}>
                             <label htmlFor="car-reg-unique-pair-filter-input">
-                              Enter three pairs per line, separated by commas.
+                              Enter three pairs per line, separated by commas or entered together.
                             </label>
                             <textarea
                               id="car-reg-unique-pair-filter-input"
