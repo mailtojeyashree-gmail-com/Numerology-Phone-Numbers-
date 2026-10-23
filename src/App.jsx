@@ -291,6 +291,10 @@ function App() {
   const [carRegistrationPairFilterDraft, setCarRegistrationPairFilterDraft] = useState('')
   const [carRegistrationPairFilters, setCarRegistrationPairFilters] = useState([])
   const [carRegistrationPairFilterError, setCarRegistrationPairFilterError] = useState('')
+  const [carRegistrationUniquePairFilterOpen, setCarRegistrationUniquePairFilterOpen] = useState(false)
+  const [carRegistrationUniquePairFilterDraft, setCarRegistrationUniquePairFilterDraft] = useState('')
+  const [carRegistrationUniquePairFilters, setCarRegistrationUniquePairFilters] = useState([])
+  const [carRegistrationUniquePairFilterError, setCarRegistrationUniquePairFilterError] = useState('')
   const [includeMjMobile85, setIncludeMjMobile85] = useState(true)
   const [manualCombinationTarget, setManualCombinationTarget] = useState('')
   const [manualCombinationResults, setManualCombinationResults] = useState(null)
@@ -631,6 +635,8 @@ function App() {
           && !carRegistrationLuckyPairFilters.includes(match.pair))
         || (carRegistrationPairFilters.length > 0
           && !carRegistrationPairFilters.includes(getCanonicalPairChecks(match.checks)))
+        || (carRegistrationUniquePairFilters.length > 0
+          && !carRegistrationUniquePairFilters.includes(getCanonicalPairChecks(match.checks)))
       ) return false
 
       return true
@@ -688,6 +694,7 @@ function App() {
     carRegistrationDigitSumFilters,
     carRegistrationLuckyPairFilters,
     carRegistrationPairFilters,
+    carRegistrationUniquePairFilters,
     carRegistrationSortDirection,
   ])
   const {
@@ -760,9 +767,13 @@ function App() {
     })
   }
 
-  function applyCarRegistrationPairFilter(event) {
+  function applyCarRegistrationPairFilter(event, filterType = 'checks') {
     event.preventDefault()
-    const lines = carRegistrationPairFilterDraft
+    const isUniquePairFilter = filterType === 'unique'
+    const draft = isUniquePairFilter
+      ? carRegistrationUniquePairFilterDraft
+      : carRegistrationPairFilterDraft
+    const lines = draft
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean)
@@ -775,23 +786,39 @@ function App() {
         invalidLines.push(index + 1)
         return
       }
-      const filter = pairs.join(',')
+      const filter = getCanonicalPairChecks(pairs)
       if (!parsedFilters.includes(filter)) parsedFilters.push(filter)
     })
 
     if (invalidLines.length > 0) {
-      setCarRegistrationPairFilterError(
+      const setFilterError = isUniquePairFilter
+        ? setCarRegistrationUniquePairFilterError
+        : setCarRegistrationPairFilterError
+      setFilterError(
         `Enter exactly three two-digit pairs separated by commas on each line. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
       )
       return
     }
 
-    setCarRegistrationPairFilters(parsedFilters)
+    const setFilters = isUniquePairFilter
+      ? setCarRegistrationUniquePairFilters
+      : setCarRegistrationPairFilters
+    const setFilterError = isUniquePairFilter
+      ? setCarRegistrationUniquePairFilterError
+      : setCarRegistrationPairFilterError
+    const setFilterDraft = isUniquePairFilter
+      ? setCarRegistrationUniquePairFilterDraft
+      : setCarRegistrationPairFilterDraft
+    const setFilterOpen = isUniquePairFilter
+      ? setCarRegistrationUniquePairFilterOpen
+      : setCarRegistrationPairFilterOpen
+    setFilters(parsedFilters)
     setCarRegistrationPage(0)
     setCarRegistrationCombinationPage(0)
     setFilteredCarRegistrationPage(0)
-    setCarRegistrationPairFilterError('')
-    setCarRegistrationPairFilterOpen(false)
+    setFilterDraft(parsedFilters.map((filter) => filter.replaceAll(',', ', ')).join('\n'))
+    setFilterError('')
+    setFilterOpen(false)
   }
 
   return (
@@ -997,8 +1024,11 @@ function App() {
                           setCarRegistrationDigitSumFilters([])
                           setCarRegistrationLuckyPairFilters([])
                           setCarRegistrationPairFilters([])
+                          setCarRegistrationUniquePairFilters([])
                           setCarRegistrationPairFilterDraft('')
+                          setCarRegistrationUniquePairFilterDraft('')
                           setCarRegistrationPairFilterError('')
+                          setCarRegistrationUniquePairFilterError('')
                           setCarRegistrationPage(0)
                           setCarRegistrationCombinationPage(0)
                           setFilteredCarRegistrationPage(0)
@@ -1160,14 +1190,14 @@ function App() {
                     : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
                       ? 'Every number starts with 074; all four following pairs and the digit total must be in the selected initials lucky numbers'
                       : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
-                        ? 'All matching registrations with three valid pair checks and a valid digit sum'
+                        ? 'Registrations matching the active filters'
                       : 'Total includes combinations with repeated values; distinct count excludes repeats'}>
                     {manithaNaadiCombinationResults.generator === 'GEN-5'
                       ? `${manithaNaadiCombinationResults.matches.length} NUMBERS`
                       : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
                         ? `${manithaNaadiCombinationResults.matches.length} MATCHES`
                         : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
-                          ? `${manithaNaadiCombinationResults.matches.length.toLocaleString()} REGISTRATIONS`
+                          ? `${visibleCarRegistrationMatches.length.toLocaleString()} REGISTRATIONS`
                           : `${manithaNaadiCombinationResults.possibleCombinationsWithRepetition.toLocaleString()} POSSIBLE WITH REPEATS · ${manithaNaadiCombinationResults.combinationsChecked.toLocaleString()} DISTINCT${manithaNaadiCombinationResults.generator === 'GEN-4' && manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : manithaNaadiCombinationResults.generator === 'GEN-6' && manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : ''}`}
                   </span>
                 </div>
@@ -1365,7 +1395,29 @@ function App() {
                                 </button>
                               </div>
                             </th>
-                            <th scope="col">Unique pairs</th>
+                            <th scope="col">
+                              <div className="car-reg-pair-checks-heading">
+                                <span>Unique pairs</span>
+                                <button
+                                  className="car-reg-pair-filter-button"
+                                  type="button"
+                                  aria-label="Filter car registrations by unique pairs"
+                                  onClick={() => {
+                                    setCarRegistrationUniquePairFilterDraft(
+                                      carRegistrationUniquePairFilters
+                                        .map((filter) => filter.replaceAll(',', ', '))
+                                        .join('\n'),
+                                    )
+                                    setCarRegistrationUniquePairFilterError('')
+                                    setCarRegistrationUniquePairFilterOpen(true)
+                                  }}
+                                >
+                                  {carRegistrationUniquePairFilters.length > 0
+                                    ? `Filter (${carRegistrationUniquePairFilters.length})`
+                                    : 'Filter'}
+                                </button>
+                              </div>
+                            </th>
                             <th scope="col">Rajanilai calculation</th>
                             <th scope="col">Rajanilai match</th>
                             <th scope="col">Pair bhavam</th>
@@ -1568,6 +1620,68 @@ function App() {
                         </section>
                       </div>
                     )}
+                    {carRegistrationUniquePairFilterOpen && (
+                      <div className="car-reg-pair-filter-backdrop">
+                        <section
+                          className="car-reg-pair-filter-dialog"
+                          role="dialog"
+                          aria-modal="true"
+                          aria-labelledby="car-reg-unique-pair-filter-title"
+                        >
+                          <div className="car-reg-pair-filter-dialog-heading">
+                            <h3 id="car-reg-unique-pair-filter-title">Filter by unique pairs</h3>
+                            <button
+                              className="car-reg-pair-filter-close"
+                              type="button"
+                              aria-label="Close unique pairs filter"
+                              onClick={() => setCarRegistrationUniquePairFilterOpen(false)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <form onSubmit={(event) => applyCarRegistrationPairFilter(event, 'unique')}>
+                            <label htmlFor="car-reg-unique-pair-filter-input">
+                              Enter three pairs per line, separated by commas.
+                            </label>
+                            <textarea
+                              id="car-reg-unique-pair-filter-input"
+                              rows={5}
+                              placeholder={'32, 64, 14\n85, 68, 68'}
+                              value={carRegistrationUniquePairFilterDraft}
+                              onChange={(event) => {
+                                setCarRegistrationUniquePairFilterDraft(event.target.value)
+                                setCarRegistrationUniquePairFilterError('')
+                              }}
+                            />
+                            {carRegistrationUniquePairFilterError && (
+                              <p className="car-reg-pair-filter-error" role="alert">
+                                {carRegistrationUniquePairFilterError}
+                              </p>
+                            )}
+                            <div className="car-reg-pair-filter-actions">
+                              <button className="combination-generate-button" type="submit">
+                                Apply filter
+                              </button>
+                              <button
+                                className="car-reg-pair-filter-clear"
+                                type="button"
+                                onClick={() => {
+                                  setCarRegistrationUniquePairFilters([])
+                                  setCarRegistrationPage(0)
+                                  setCarRegistrationCombinationPage(0)
+                                  setFilteredCarRegistrationPage(0)
+                                  setCarRegistrationUniquePairFilterDraft('')
+                                  setCarRegistrationUniquePairFilterError('')
+                                  setCarRegistrationUniquePairFilterOpen(false)
+                                }}
+                              >
+                                Clear filter
+                              </button>
+                            </div>
+                          </form>
+                        </section>
+                      </div>
+                    )}
                     {visibleCarRegistrationMatches.length > 0 && (
                       <section className="car-reg-selected-combinations" aria-label="Selected registration combinations">
                         <h3>Selected combinations</h3>
@@ -1600,7 +1714,9 @@ function App() {
                         />
                       </section>
                     )}
-                    {(carRegistrationPairFilters.length > 0 || carRegistrationLuckyPairFilters.length > 0) && (
+                    {(carRegistrationPairFilters.length > 0
+                      || carRegistrationUniquePairFilters.length > 0
+                      || carRegistrationLuckyPairFilters.length > 0) && (
                       <section className="car-reg-filtered-registrations" aria-label="Filtered registrations">
                         <div className="workspace-results-heading">
                           <h2>Filtered registrations</h2>
