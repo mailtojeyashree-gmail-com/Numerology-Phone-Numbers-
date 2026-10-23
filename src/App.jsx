@@ -1551,7 +1551,7 @@ function App() {
                       <section className="car-reg-selected-combinations" aria-label="Selected registration combinations">
                         <h3>Selected combinations</h3>
                         <label className="car-reg-combinations-copy-field" htmlFor="car-reg-unique-pairs-copy">
-                          <span>Copy unique pairs</span>
+                          <span>Unique pairs</span>
                           <textarea
                             id="car-reg-unique-pairs-copy"
                             rows={4}
@@ -1564,22 +1564,12 @@ function App() {
                             <thead>
                               <tr>
                                 <th scope="col">Combination ({carRegistrationCombinationCounts.size})</th>
-                                <th scope="col">Unique pairs</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {pagedCarRegistrationCombinationEntries.map(([combination], index) => (
+                              {pagedCarRegistrationCombinationEntries.map(([combination]) => (
                                 <tr key={combination}>
                                   <td>{combination}</td>
-                                  {index === 0 && (
-                                    <td rowSpan={Math.min(
-                                      CAR_REGISTRATION_PAGE_SIZE,
-                                      carRegistrationCombinationEntries.length
-                                        - carRegistrationCombinationPage * CAR_REGISTRATION_PAGE_SIZE,
-                                    )}>
-                                      {carRegistrationUniquePairs.join(', ')}
-                                    </td>
-                                  )}
                                 </tr>
                               ))}
                             </tbody>
