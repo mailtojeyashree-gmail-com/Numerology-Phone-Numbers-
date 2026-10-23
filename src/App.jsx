@@ -298,6 +298,7 @@ function App() {
   const [manithaNaadiEmailResults, setManithaNaadiEmailResults] = useState(null)
   const [activeManithaNaadiGenerator, setActiveManithaNaadiGenerator] = useState(null)
   const [manithaNaadiDigitSumFilter, setManithaNaadiDigitSumFilter] = useState('')
+  const [mobileDigitSumFilters, setMobileDigitSumFilters] = useState([])
   const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
   const [carRegistrationDigitSumFilters, setCarRegistrationDigitSumFilters] = useState([])
   const [carRegistrationLuckyPairFilters, setCarRegistrationLuckyPairFilters] = useState([])
@@ -639,8 +640,11 @@ function App() {
   }
   const manithaNaadiTableRows = getManithaNaadiTableRows()
   const visibleManithaNaadiTableRows = manithaNaadiTableRows.filter((row) => (
-    (!manithaNaadiDigitSumFilter.trim()
-      || String(row[3]) === manithaNaadiDigitSumFilter.trim())
+    (manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
+      ? mobileDigitSumFilters.length === 0
+        || mobileDigitSumFilters.includes(String(row[3]))
+      : !manithaNaadiDigitSumFilter.trim()
+        || String(row[3]) === manithaNaadiDigitSumFilter.trim())
     && (manithaNaadiCombinationResults?.generator !== 'GEN-MOBILE-NUMBERS'
       || mobileUniquePairFilters.length === 0
       || mobileUniquePairFilters.includes(getCanonicalPairChecks(
@@ -1333,6 +1337,35 @@ function App() {
                                         : 'Filter'}
                                     </button>
                                   </div>
+                                ) : heading === 'Digit sum'
+                                  && manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' ? (
+                                  <div className="car-reg-digit-sum-filter" role="group" aria-label="Filter mobile numbers by digit sum">
+                                    <span>{heading}</span>
+                                    <div className="car-reg-digit-sum-options">
+                                      {manithaNaadiUniqueDigitSums.map((digitSum) => {
+                                        const value = String(digitSum)
+                                        return (
+                                          <label key={value}>
+                                            <input
+                                              type="checkbox"
+                                              checked={mobileDigitSumFilters.includes(value)}
+                                              onChange={(event) => {
+                                                const { checked } = event.target
+                                                setMobileDigitSumFilters((selected) => (
+                                                  checked
+                                                    ? [...selected, value]
+                                                    : selected.filter((selectedValue) => selectedValue !== value)
+                                                ))
+                                                setMobileNumberPage(0)
+                                                setMobileUniqueCombinationPage(0)
+                                              }}
+                                            />
+                                            {digitSum}
+                                          </label>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
                                 ) : heading === 'Digit sum' ? (
                                   <span className="digit-sum-filter-heading">
                                     <span>{heading}</span>
@@ -1362,7 +1395,9 @@ function App() {
                             <tr>
                               <td colSpan={manithaNaadiTableHeaders.length
                                 + (manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' ? 1 : 0)}>
-                                {manithaNaadiDigitSumFilter.trim() || mobileUniquePairFilters.length > 0
+                                {manithaNaadiDigitSumFilter.trim()
+                                  || mobileDigitSumFilters.length > 0
+                                  || mobileUniquePairFilters.length > 0
                                   ? 'No results match the selected filters.'
                                   : 'No results to display.'}
                               </td>
