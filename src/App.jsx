@@ -17,6 +17,9 @@ import {
 } from './rasiChartData'
 
 const CAR_REGISTRATION_PAGE_SIZE = 100
+const getCanonicalPairChecks = (checks) => [...checks]
+  .sort((first, second) => Number(first) - Number(second))
+  .join(',')
 const CAR_REGISTRATION_GENERATORS = new Set([
   'GEN-CAR-REG',
   'GEN-AB12CD-REG-FORMAT',
@@ -615,7 +618,6 @@ function App() {
       .sort((first, second) => first - second)
     const luckyPairs = [...new Set(matches.map((match) => match.pair))]
       .sort((first, second) => Number(first) - Number(second))
-    const seenCombinations = new Set()
     const visibleMatches = matches.filter((match) => {
       if (
         (carRegistrationDigitSumFilters.length > 0
@@ -623,23 +625,35 @@ function App() {
         || (carRegistrationLuckyPairFilters.length > 0
           && !carRegistrationLuckyPairFilters.includes(match.pair))
         || (carRegistrationPairFilters.length > 0
-          && !carRegistrationPairFilters.includes(match.checks.join(',')))
+          && !carRegistrationPairFilters.includes(getCanonicalPairChecks(match.checks)))
       ) return false
 
-      const combinationKey = [...match.checks].sort().join(',')
-      if (seenCombinations.has(combinationKey)) return false
-      seenCombinations.add(combinationKey)
       return true
     })
+    const pairSortedMatches = [...visibleMatches].sort((first, second) => (
+      getCanonicalPairChecks(first.checks).localeCompare(
+        getCanonicalPairChecks(second.checks),
+        undefined,
+        { numeric: true },
+      )
+    ))
     const alphabeticalMatches = [...visibleMatches].sort((first, second) => (
       first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
     ))
     const sortedMatches = carRegistrationSortDirection
-      ? [...visibleMatches].sort((first, second) => (
-        first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
-        * (carRegistrationSortDirection === 'asc' ? 1 : -1)
+      ? [...pairSortedMatches].sort((first, second) => (
+        getCanonicalPairChecks(first.checks).localeCompare(
+          getCanonicalPairChecks(second.checks),
+          undefined,
+          { numeric: true },
+        )
+        || first.registration.localeCompare(
+          second.registration,
+          undefined,
+          { numeric: true, sensitivity: 'base' },
+        ) * (carRegistrationSortDirection === 'asc' ? 1 : -1)
       ))
-      : visibleMatches
+      : pairSortedMatches
     const alphabetStarts = new Map()
     alphabeticalMatches.forEach((match, index) => {
       const letter = match.registration[0]?.toUpperCase()
@@ -1346,6 +1360,7 @@ function App() {
                                 </button>
                               </div>
                             </th>
+                            <th scope="col">Unique pairs</th>
                             <th scope="col">Rajanilai calculation</th>
                             <th scope="col">Rajanilai match</th>
                             <th scope="col">Pair bhavam</th>
@@ -1388,6 +1403,7 @@ function App() {
                               <td>{match.pair}</td>
                               <td><strong>{match.registration}</strong></td>
                               <td>{match.checks.join(', ')}</td>
+                              <td>{getCanonicalPairChecks(match.checks).replaceAll(',', ', ')}</td>
                               <td>
                                 <div className="car-reg-rajanilai-calculation">
                                   {match.checks.map((check, checkIndex) => {
