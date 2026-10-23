@@ -615,14 +615,22 @@ function App() {
       .sort((first, second) => first - second)
     const luckyPairs = [...new Set(matches.map((match) => match.pair))]
       .sort((first, second) => Number(first) - Number(second))
-    const visibleMatches = matches.filter((match) => (
-      (carRegistrationDigitSumFilters.length === 0
-        || carRegistrationDigitSumFilters.includes(String(match.digitSum)))
-      && (carRegistrationLuckyPairFilters.length === 0
-        || carRegistrationLuckyPairFilters.includes(match.pair))
-      && (carRegistrationPairFilters.length === 0
-        || carRegistrationPairFilters.includes(match.checks.join(',')))
-    ))
+    const seenCombinations = new Set()
+    const visibleMatches = matches.filter((match) => {
+      if (
+        (carRegistrationDigitSumFilters.length > 0
+          && !carRegistrationDigitSumFilters.includes(String(match.digitSum)))
+        || (carRegistrationLuckyPairFilters.length > 0
+          && !carRegistrationLuckyPairFilters.includes(match.pair))
+        || (carRegistrationPairFilters.length > 0
+          && !carRegistrationPairFilters.includes(match.checks.join(',')))
+      ) return false
+
+      const combinationKey = [...match.checks].sort().join(',')
+      if (seenCombinations.has(combinationKey)) return false
+      seenCombinations.add(combinationKey)
+      return true
+    })
     const alphabeticalMatches = [...visibleMatches].sort((first, second) => (
       first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
     ))
@@ -1542,6 +1550,15 @@ function App() {
                     {visibleCarRegistrationMatches.length > 0 && (
                       <section className="car-reg-selected-combinations" aria-label="Selected registration combinations">
                         <h3>Selected combinations</h3>
+                        <label className="car-reg-combinations-copy-field" htmlFor="car-reg-unique-pairs-copy">
+                          <span>Copy unique pairs</span>
+                          <textarea
+                            id="car-reg-unique-pairs-copy"
+                            rows={4}
+                            readOnly
+                            value={carRegistrationUniquePairs.join(', ')}
+                          />
+                        </label>
                         <div className="car-reg-selected-table-wrap">
                           <table className="car-reg-selected-table">
                             <thead>
@@ -1551,9 +1568,9 @@ function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              {pagedCarRegistrationCombinationEntries.map(([combination, count], index) => (
+                              {pagedCarRegistrationCombinationEntries.map(([combination], index) => (
                                 <tr key={combination}>
-                                  <td>{combination} ({count})</td>
+                                  <td>{combination}</td>
                                   {index === 0 && (
                                     <td rowSpan={Math.min(
                                       CAR_REGISTRATION_PAGE_SIZE,

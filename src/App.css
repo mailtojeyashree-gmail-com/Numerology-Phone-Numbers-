@@ -1514,6 +1514,27 @@
   font-weight: 800;
 }
 
+.car-reg-combinations-copy-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.car-reg-combinations-copy-field textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 500 13px/1.5 'SFMono-Regular', Consolas, monospace;
+  resize: vertical;
+}
+
 .car-reg-selected-table-wrap {
   max-width: 100%;
   overflow-x: auto;
