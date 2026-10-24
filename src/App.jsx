@@ -8,8 +8,9 @@ import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
 import PanjaPatchiPage from './PanjaPatchiPage'
 import Name2NumberPage from './Name2NumberPage'
 import PasswordPage from './PasswordPage'
-import { carRegNumberChart } from './carRegistrationGenerator'
-import RasiChart from './RasiChart'
+import LuckyNumbersOverview from './LuckyNumbersOverview'
+import VipNumbersPage from './VipNumbersPage'
+import { manithaNaadiRajanilaiNumbers } from './manithaNaadiRajanilai'
 import {
   rasiChartClockwiseOrder,
   rasiChartSigns,
@@ -82,10 +83,7 @@ const manithaNaadiLuckyNumberDefaults = {
   MA: '06, 16, 33, 42, 51, 52, 73, 79, 84, 85, 87, 88, 93, 97, 99, 92, 54',
   M: '10, 14, 20, 32, 45, 54, 56, 64, 74, 80, 89, 92, 95, 68, 41, 04, 08',
 }
-const manithaNaadiRajanilaiNumbers = new Set([
-  2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 26, 32, 33, 39, 41, 42, 45, 51, 52, 54,
-  56, 64, 66, 68, 72, 73, 74, 77, 79, 80, 84, 85, 87, 88, 89, 92, 93, 95, 97, 99,
-])
+
 const manithaNaadiGen5NumerologistNumbers = {
   MA: new Set(['73887', '99887', '42887', '51887', '73797', '99797']),
   M: new Set(['68685', '95685', '89664', '32414', '29414', '89414']),
@@ -974,71 +972,35 @@ function App() {
           >
             name2number
           </button>
+          <a
+            className={`page-switch page-switch-link${activePage === 'vipnumbers' ? ' page-switch-active' : ''}`}
+            href="#vipnumbers"
+            aria-current={activePage === 'vipnumbers' ? 'page' : undefined}
+            onClick={() => setActivePage('vipnumbers')}
+          >
+            vipnumbers.com
+          </a>
         </nav>
       </header>
       <section className="workspace" id="top">
         {activePage === 'manitha-naadi' ? (
           <section className="matching-numbers-page" aria-labelledby="manitha-naadi-title">
-            <div className="page-heading">
-              <h1 id="manitha-naadi-title">மனித நாடி <em>lucky numbers</em></h1>
-            </div>
-            <label className="combination-profile-select" htmlFor="manitha-naadi-initials">
-              <span>INITIALS</span>
-              <select
-                id="manitha-naadi-initials"
-                value={selectedManithaNaadiInitials}
-                onChange={(event) => setSelectedManithaNaadiInitials(event.target.value)}
-              >
-                {Object.keys(manithaNaadiLuckyNumberDefaults).map((initials) => (
-                  <option value={initials} key={initials}>{initials}</option>
-                ))}
-              </select>
-            </label>
-            <div className="column-field matching-phone-field">
-              <span className="column-title">LUCKY NUMBERS · {selectedManithaNaadiInitials}</span>
-              <textarea
-                id="manitha-naadi-lucky-numbers"
-                aria-label={`Lucky numbers · ${selectedManithaNaadiInitials}`}
-                value={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
-                onChange={(event) => setManithaNaadiLuckyNumbers((currentValues) => ({
-                  ...currentValues,
-                  [selectedManithaNaadiInitials]: event.target.value,
-                }))}
-                rows={4}
-                spellCheck="false"
-              />
-              <label className="gen8-exclude-field" htmlFor="gen8-exclude-numbers">
-                <span>Exclude from lucky numbers</span>
-                <input
-                  id="gen8-exclude-numbers"
-                  type="text"
-                  value={manithaNaadiGen8ExcludedNumbers[selectedManithaNaadiInitials]}
-                  onChange={(event) => setManithaNaadiGen8ExcludedNumbers((currentValues) => ({
-                    ...currentValues,
-                    [selectedManithaNaadiInitials]: event.target.value,
-                  }))}
-                  autoComplete="off"
-                  spellCheck="false"
-                />
-              </label>
-            </div>
-            <div className="rasi-chart-layout">
-              <RasiChart initials={selectedManithaNaadiInitials} />
-              <div className="car-reg-chart-wrap">
-                <table className="car-reg-chart" aria-label="Number to letter chart">
-                  <tbody>
-                    {carRegNumberChart.map((row) => (
-                      <tr className={`car-reg-chart-row car-reg-chart-row-${row.value}`} key={row.value}>
-                        <th scope="row">{row.value}</th>
-                        {Array.from({ length: 5 }, (_, index) => (
-                          <td key={index}>{row.letters[index] ?? ''}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <LuckyNumbersOverview
+              heading={<><span id="manitha-naadi-title">மனித நாடி </span><em>lucky numbers</em></>}
+              profiles={Object.keys(manithaNaadiLuckyNumberDefaults)}
+              initials={selectedManithaNaadiInitials}
+              onInitialsChange={setSelectedManithaNaadiInitials}
+              luckyNumbers={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
+              onLuckyNumbersChange={(value) => setManithaNaadiLuckyNumbers((currentValues) => ({
+                ...currentValues,
+                [selectedManithaNaadiInitials]: value,
+              }))}
+              excludedNumbers={manithaNaadiGen8ExcludedNumbers[selectedManithaNaadiInitials]}
+              onExcludedNumbersChange={(value) => setManithaNaadiGen8ExcludedNumbers((currentValues) => ({
+                ...currentValues,
+                [selectedManithaNaadiInitials]: value,
+              }))}
+            />
             <div className="combination-generate">
               <span className="column-selection-label">GENERATE COMBINATIONS (MOBILE STARTS 074; EVERY PAIR AND THE DIGIT TOTAL MUST MATCH LUCKY NUMBERS)</span>
               <div className="combination-generate-buttons">
@@ -2120,6 +2082,23 @@ function App() {
               ) : null}
             </section>
           </section>
+        ) : activePage === 'vipnumbers' ? (
+          <VipNumbersPage
+            heading={<span id="vipnumbers-title">vipnumbers.com</span>}
+            profiles={Object.keys(manithaNaadiLuckyNumberDefaults)}
+            initials={selectedManithaNaadiInitials}
+            onInitialsChange={setSelectedManithaNaadiInitials}
+            luckyNumbers={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
+            onLuckyNumbersChange={(value) => setManithaNaadiLuckyNumbers((currentValues) => ({
+              ...currentValues,
+              [selectedManithaNaadiInitials]: value,
+            }))}
+            excludedNumbers={manithaNaadiGen8ExcludedNumbers[selectedManithaNaadiInitials]}
+            onExcludedNumbersChange={(value) => setManithaNaadiGen8ExcludedNumbers((currentValues) => ({
+              ...currentValues,
+              [selectedManithaNaadiInitials]: value,
+            }))}
+          />
         ) : activePage === 'password' ? (
           <PasswordPage />
         ) : activePage === 'name2number' ? (
@@ -2130,7 +2109,7 @@ function App() {
       </section>
 
       <footer className="page-footer">
-        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : 'மனித நாடி LUCKY NUMBERS'}</span>
+        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'VIPNUMBERS.COM' : 'மனித நாடி LUCKY NUMBERS'}</span>
         <span>EDITABLE IN THIS BROWSER</span>
       </footer>
       {isButtonActionLoading && (

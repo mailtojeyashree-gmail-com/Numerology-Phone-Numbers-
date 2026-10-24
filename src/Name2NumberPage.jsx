@@ -300,6 +300,7 @@ export default function Name2NumberPage() {
   const [regNumberInputA, setRegNumberInputA] = useState('')
   const [regNumberInputB, setRegNumberInputB] = useState('')
   const [unusedRegNumbers, setUnusedRegNumbers] = useState(null)
+  const [unusedRegNumberCopyStatus, setUnusedRegNumberCopyStatus] = useState({})
   const [generatedNames, setGeneratedNames] = useState(null)
   const [selectedInitials, setSelectedInitials] = useState('MJ')
   const [bhavamFilter, setBhavamFilter] = useState('')
@@ -412,6 +413,31 @@ export default function Name2NumberPage() {
 
   function findUnusedRegNumbers() {
     setUnusedRegNumbers(compareRegistrationLists(regNumberInputA, regNumberInputB))
+    setUnusedRegNumberCopyStatus({})
+  }
+
+  async function copyUnusedRegNumbers(listKey) {
+    const text = unusedRegNumbers?.[listKey].join('\n') ?? ''
+    if (!text) return
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard access is unavailable in this browser.')
+      }
+      await navigator.clipboard.writeText(text)
+      setUnusedRegNumberCopyStatus((current) => ({
+        ...current,
+        [listKey]: { success: true, message: 'List copied to clipboard.' },
+      }))
+    } catch (error) {
+      setUnusedRegNumberCopyStatus((current) => ({
+        ...current,
+        [listKey]: {
+          success: false,
+          message: error instanceof Error ? error.message : 'Could not copy the list.',
+        },
+      }))
+    }
   }
 
   function downloadExcel() {
@@ -1177,12 +1203,56 @@ export default function Name2NumberPage() {
             ) : null}
             <div className="name2number-unused-regnumber-results" aria-live="polite">
               <section aria-labelledby="name2number-unused-regnumber-not-in-b-title">
-                <h3 id="name2number-unused-regnumber-not-in-b-title">Unused RegNumber not in B</h3>
+                <div className="name2number-regnumber-result-heading">
+                  <h3 id="name2number-unused-regnumber-not-in-b-title">Unused RegNumber not in B</h3>
+                  <button
+                    className="name2number-button name2number-regnumber-copy-button"
+                    type="button"
+                    disabled={unusedRegNumbers.unusedA.length === 0}
+                    onClick={() => copyUnusedRegNumbers('unusedA')}
+                  >
+                    {unusedRegNumberCopyStatus.unusedA?.success ? 'Copied' : 'Copy list'}
+                  </button>
+                </div>
                 <pre>{unusedRegNumbers.unusedA.length > 0 ? unusedRegNumbers.unusedA.join('\n') : 'None'}</pre>
+                <div className="name2number-regnumber-copy-action">
+                  {unusedRegNumberCopyStatus.unusedA ? (
+                    <span
+                      className={unusedRegNumberCopyStatus.unusedA.success
+                        ? 'name2number-copy-success'
+                        : 'name2number-copy-error'}
+                      role="status"
+                    >
+                      {unusedRegNumberCopyStatus.unusedA.message}
+                    </span>
+                  ) : null}
+                </div>
               </section>
               <section aria-labelledby="name2number-unused-regnumber-not-in-a-title">
-                <h3 id="name2number-unused-regnumber-not-in-a-title">Unused RegNumber not in A</h3>
+                <div className="name2number-regnumber-result-heading">
+                  <h3 id="name2number-unused-regnumber-not-in-a-title">Unused RegNumber not in A</h3>
+                  <button
+                    className="name2number-button name2number-regnumber-copy-button"
+                    type="button"
+                    disabled={unusedRegNumbers.unusedB.length === 0}
+                    onClick={() => copyUnusedRegNumbers('unusedB')}
+                  >
+                    {unusedRegNumberCopyStatus.unusedB?.success ? 'Copied' : 'Copy list'}
+                  </button>
+                </div>
                 <pre>{unusedRegNumbers.unusedB.length > 0 ? unusedRegNumbers.unusedB.join('\n') : 'None'}</pre>
+                <div className="name2number-regnumber-copy-action">
+                  {unusedRegNumberCopyStatus.unusedB ? (
+                    <span
+                      className={unusedRegNumberCopyStatus.unusedB.success
+                        ? 'name2number-copy-success'
+                        : 'name2number-copy-error'}
+                      role="status"
+                    >
+                      {unusedRegNumberCopyStatus.unusedB.message}
+                    </span>
+                  ) : null}
+                </div>
               </section>
             </div>
           </>

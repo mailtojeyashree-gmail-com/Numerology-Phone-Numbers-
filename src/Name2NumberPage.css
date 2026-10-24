@@ -178,10 +178,23 @@
   background: rgb(255 255 255 / 28%);
 }
 
+.name2number-regnumber-result-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
 .name2number-unused-regnumber-results h3 {
   margin: 0 0 12px;
   color: var(--forest);
   font-size: 18px;
+}
+
+.name2number-regnumber-result-heading h3 {
+  margin: 0;
 }
 
 .name2number-unused-regnumber-results pre {
@@ -190,6 +203,35 @@
   font: 700 18px/1.6 'SFMono-Regular', Consolas, monospace;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.name2number-regnumber-copy-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-height: 18px;
+  margin-top: 8px;
+}
+
+.name2number-regnumber-copy-button {
+  min-height: 38px;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.name2number-copy-success,
+.name2number-copy-error {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.name2number-copy-success {
+  color: var(--moss);
+}
+
+.name2number-copy-error {
+  color: #c62828;
 }
 
 .name2number-non-rajanilai-results p {
