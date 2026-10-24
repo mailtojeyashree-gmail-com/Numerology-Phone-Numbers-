@@ -188,7 +188,7 @@ export default function VipNumbersPage(props) {
           <section className="vip-phone-numbers-list" aria-label="Saved phone numbers">
             <div className="workspace-results-heading">
               <div>
-                <span className="results-kicker">VIPNUMBERS.COM · {props.initials}</span>
+                <span className="results-kicker">phoneovernet · {props.initials}</span>
                 <h2>Saved phone numbers</h2>
               </div>
               <span className="results-count">{visibleRows.length.toLocaleString()} / {phoneNumbers.length.toLocaleString()} NUMBERS</span>

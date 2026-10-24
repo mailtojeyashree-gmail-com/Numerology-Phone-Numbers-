@@ -978,7 +978,7 @@ function App() {
             aria-current={activePage === 'vipnumbers' ? 'page' : undefined}
             onClick={() => setActivePage('vipnumbers')}
           >
-            vipnumbers.com
+            phoneovernet
           </a>
         </nav>
       </header>
@@ -2084,7 +2084,7 @@ function App() {
           </section>
         ) : activePage === 'vipnumbers' ? (
           <VipNumbersPage
-            heading={<span id="vipnumbers-title">vipnumbers.com</span>}
+            heading={<span id="vipnumbers-title">phoneovernet</span>}
             profiles={Object.keys(manithaNaadiLuckyNumberDefaults)}
             initials={selectedManithaNaadiInitials}
             onInitialsChange={setSelectedManithaNaadiInitials}
@@ -2109,7 +2109,7 @@ function App() {
       </section>
 
       <footer className="page-footer">
-        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'VIPNUMBERS.COM' : 'மனித நாடி LUCKY NUMBERS'}</span>
+        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : 'மனித நாடி LUCKY NUMBERS'}</span>
         <span>EDITABLE IN THIS BROWSER</span>
       </footer>
       {isButtonActionLoading && (
