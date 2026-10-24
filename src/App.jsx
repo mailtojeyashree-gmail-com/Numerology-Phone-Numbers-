@@ -9,8 +9,9 @@ import PanjaPatchiPage from './PanjaPatchiPage'
 import Name2NumberPage from './Name2NumberPage'
 import PasswordPage from './PasswordPage'
 import LuckyNumbersOverview from './LuckyNumbersOverview'
-import VipNumbersPage from './VipNumbersPage'
+import RegNumbersPage from './RegNumbers'
 import { manithaNaadiRajanilaiNumbers } from './manithaNaadiRajanilai'
+import { carRegLetterValueMap } from './numerologyLetterValues'
 import {
   rasiChartClockwiseOrder,
   rasiChartSigns,
@@ -18,6 +19,11 @@ import {
 } from './rasiChartData'
 
 const CAR_REGISTRATION_PAGE_SIZE = 100
+const toRegNumberCalculationDigits = (number) => [...number].map((character) => (
+  /\d/.test(character)
+    ? character
+    : carRegLetterValueMap.get(character)
+)).join('')
 const getCanonicalPairChecks = (checks) => [...checks]
   .sort((first, second) => Number(first) - Number(second))
   .join(',')
@@ -979,6 +985,14 @@ function App() {
             onClick={() => setActivePage('vipnumbers')}
           >
             phoneovernet
+          </a>
+          <a
+            className={`page-switch page-switch-link${activePage === 'regnumbers' ? ' page-switch-active' : ''}`}
+            href="#regnumbers"
+            aria-current={activePage === 'regnumbers' ? 'page' : undefined}
+            onClick={() => setActivePage('regnumbers')}
+          >
+            REGNUMBERS
           </a>
         </nav>
       </header>
@@ -2083,8 +2097,38 @@ function App() {
             </section>
           </section>
         ) : activePage === 'vipnumbers' ? (
-          <VipNumbersPage
+          <RegNumbersPage
             heading={<span id="vipnumbers-title">phoneovernet</span>}
+            profiles={Object.keys(manithaNaadiLuckyNumberDefaults)}
+            initials={selectedManithaNaadiInitials}
+            onInitialsChange={setSelectedManithaNaadiInitials}
+            luckyNumbers={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
+            onLuckyNumbersChange={(value) => setManithaNaadiLuckyNumbers((currentValues) => ({
+              ...currentValues,
+              [selectedManithaNaadiInitials]: value,
+            }))}
+            excludedNumbers={manithaNaadiGen8ExcludedNumbers[selectedManithaNaadiInitials]}
+            onExcludedNumbersChange={(value) => setManithaNaadiGen8ExcludedNumbers((currentValues) => ({
+              ...currentValues,
+              [selectedManithaNaadiInitials]: value,
+            }))}
+          />
+        ) : activePage === 'regnumbers' ? (
+          <RegNumbersPage
+            pageId="regnumbers"
+            titleId="regnumbers-title"
+            heading={<span id="regnumbers-title">REGNUMBERS</span>}
+            loadNumbers={async () => (await import('../regnumbers.json')).default}
+            numberPattern={/^P88[A-Z]{3}$/}
+            toCalculationDigits={toRegNumberCalculationDigits}
+            pairStartIndex={0}
+            registrationLayout
+            prefixLength={4}
+            brandName="REGNUMBERS"
+            itemName="registration numbers"
+            buttonName="RegNumbers"
+            headingItemName="RegNumbers"
+            countLabel="REGNUMBERS"
             profiles={Object.keys(manithaNaadiLuckyNumberDefaults)}
             initials={selectedManithaNaadiInitials}
             onInitialsChange={setSelectedManithaNaadiInitials}
@@ -2109,7 +2153,7 @@ function App() {
       </section>
 
       <footer className="page-footer">
-        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : 'மனித நாடி LUCKY NUMBERS'}</span>
+        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : activePage === 'regnumbers' ? 'REGNUMBERS' : 'மனித நாடி LUCKY NUMBERS'}</span>
         <span>EDITABLE IN THIS BROWSER</span>
       </footer>
       {isButtonActionLoading && (
