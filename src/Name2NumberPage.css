@@ -112,6 +112,86 @@
   margin-top: 16px;
 }
 
+.name2number-unused-regnumbers {
+  margin: 28px 0 0;
+}
+
+.name2number-unused-regnumbers > h2 {
+  margin: 0 0 18px;
+  color: var(--forest);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.name2number-regnumber-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.name2number-regnumber-field {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+  color: var(--forest);
+  font-size: 30px;
+  font-weight: 850;
+}
+
+.name2number-regnumber-field textarea {
+  width: 100%;
+  min-height: 315px;
+  padding: 24px 28px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  outline: none;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 700 20px/1.5 'SFMono-Regular', Consolas, monospace;
+  resize: vertical;
+}
+
+.name2number-regnumber-field textarea:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
+}
+
+.name2number-unused-regnumber-button {
+  min-height: 95px;
+  margin-top: 28px;
+  padding: 20px 40px;
+  font-size: 24px;
+}
+
+.name2number-unused-regnumber-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.name2number-unused-regnumber-results section {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 28%);
+}
+
+.name2number-unused-regnumber-results h3 {
+  margin: 0 0 12px;
+  color: var(--forest);
+  font-size: 18px;
+}
+
+.name2number-unused-regnumber-results pre {
+  margin: 0;
+  color: var(--ink);
+  font: 700 18px/1.6 'SFMono-Regular', Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .name2number-non-rajanilai-results p {
   margin: 0 0 8px;
   color: var(--ink);
@@ -724,6 +804,33 @@
 
   .name2number-mobile-fields {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .name2number-regnumber-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .name2number-unused-regnumber-results {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .name2number-regnumber-field {
+    gap: 8px;
+    font-size: 22px;
+  }
+
+  .name2number-regnumber-field textarea {
+    min-height: 200px;
+    padding: 16px;
+    font-size: 16px;
+  }
+
+  .name2number-unused-regnumber-button {
+    min-height: 60px;
+    margin-top: 18px;
+    padding: 12px 18px;
+    font-size: 18px;
   }
 
   .name2number-unused-button {

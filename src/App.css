@@ -1269,6 +1269,14 @@
   margin-top: 22px;
 }
 
+.car-reg-filtered-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .car-reg-filtered-registrations .car-reg-selected-table-wrap {
   margin-top: 12px;
 }
@@ -1521,6 +1529,39 @@
   color: var(--ink);
   font-size: 12px;
   font-weight: 700;
+}
+
+.car-reg-copy-field-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.car-reg-copy-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.car-reg-copy-button {
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.car-reg-copy-success,
+.car-reg-copy-error {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.car-reg-copy-success {
+  color: var(--forest);
+}
+
+.car-reg-copy-error {
+  color: #b42318;
 }
 
 .car-reg-combinations-copy-field textarea {

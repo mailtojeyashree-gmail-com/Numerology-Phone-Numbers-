@@ -200,6 +200,48 @@ function compareNumberLists(textA, textB) {
   }
 }
 
+function parseRegistrationList(text) {
+  const registrations = []
+  const invalidLines = []
+  const seen = new Set()
+
+  text.split(/\r?\n/).forEach((line, index) => {
+    const trimmedLine = line.trim()
+    if (!trimmedLine) return
+
+    const entries = trimmedLine.split(',').map((entry) => entry.replace(/\s/g, '').toUpperCase())
+    if (entries.some((entry) => !/^[A-Z0-9]+$/.test(entry))) {
+      invalidLines.push(index + 1)
+      return
+    }
+
+    entries.forEach((entry) => {
+      if (seen.has(entry)) return
+      seen.add(entry)
+      registrations.push(entry)
+    })
+  })
+
+  return { registrations, invalidLines }
+}
+
+function compareRegistrationLists(textA, textB) {
+  const parsedA = parseRegistrationList(textA)
+  const parsedB = parseRegistrationList(textB)
+  const isRepresented = (registration, otherRegistrations) => otherRegistrations.some(
+    (other) => registration.startsWith(other) || other.startsWith(registration),
+  )
+
+  return {
+    unusedA: parsedA.registrations
+      .filter((registration) => !isRepresented(registration, parsedB.registrations)),
+    unusedB: parsedB.registrations
+      .filter((registration) => !isRepresented(registration, parsedA.registrations)),
+    invalidA: parsedA.invalidLines,
+    invalidB: parsedB.invalidLines,
+  }
+}
+
 function filterCombinationsByExcludedNumbers(combinationText, excludedText) {
   const excludedNumbers = new Set(
     excludedText
@@ -255,6 +297,9 @@ export default function Name2NumberPage() {
   const [digitSumInput, setDigitSumInput] = useState('')
   const [digitSumResults, setDigitSumResults] = useState(null)
   const [invalidDigitSumEntries, setInvalidDigitSumEntries] = useState([])
+  const [regNumberInputA, setRegNumberInputA] = useState('')
+  const [regNumberInputB, setRegNumberInputB] = useState('')
+  const [unusedRegNumbers, setUnusedRegNumbers] = useState(null)
   const [generatedNames, setGeneratedNames] = useState(null)
   const [selectedInitials, setSelectedInitials] = useState('MJ')
   const [bhavamFilter, setBhavamFilter] = useState('')
@@ -363,6 +408,10 @@ export default function Name2NumberPage() {
 
   function findUnusedCustomNumbers() {
     setUnusedCustomNumbers(compareNumberLists(customListA, customListB))
+  }
+
+  function findUnusedRegNumbers() {
+    setUnusedRegNumbers(compareRegistrationLists(regNumberInputA, regNumberInputB))
   }
 
   function downloadExcel() {
@@ -1074,6 +1123,69 @@ export default function Name2NumberPage() {
               <p>No valid whole numbers were entered.</p>
             )}
           </div>
+        ) : null}
+      </section>
+      <section className="name2number-unused-regnumbers" aria-labelledby="name2number-unused-regnumbers-title">
+        <h2 id="name2number-unused-regnumbers-title">Unused RegNumber</h2>
+        <div className="name2number-regnumber-fields">
+          <label className="name2number-regnumber-field" htmlFor="name2number-regnumber-a">
+            <span>Input A</span>
+            <textarea
+              id="name2number-regnumber-a"
+              value={regNumberInputA}
+              onChange={(event) => {
+                setRegNumberInputA(event.target.value)
+                setUnusedRegNumbers(null)
+              }}
+              rows={8}
+              spellCheck="false"
+            />
+          </label>
+          <label className="name2number-regnumber-field" htmlFor="name2number-regnumber-b">
+            <span>Input B</span>
+            <textarea
+              id="name2number-regnumber-b"
+              value={regNumberInputB}
+              onChange={(event) => {
+                setRegNumberInputB(event.target.value)
+                setUnusedRegNumbers(null)
+              }}
+              rows={8}
+              spellCheck="false"
+            />
+          </label>
+        </div>
+        <button
+          className="name2number-button name2number-unused-regnumber-button"
+          type="button"
+          onClick={findUnusedRegNumbers}
+          disabled={!regNumberInputA.trim() && !regNumberInputB.trim()}
+        >
+          Custom unused numbers
+        </button>
+        {unusedRegNumbers ? (
+          <>
+            {unusedRegNumbers.invalidA.length > 0 || unusedRegNumbers.invalidB.length > 0 ? (
+              <p className="name2number-message" role="alert">
+                Invalid registrations were skipped
+                {unusedRegNumbers.invalidA.length > 0
+                  ? ` in Input A on lines ${unusedRegNumbers.invalidA.join(', ')}` : ''}
+                {unusedRegNumbers.invalidB.length > 0
+                  ? ` in Input B on lines ${unusedRegNumbers.invalidB.join(', ')}` : ''}.
+                Use letters and digits, one registration per line or comma-separated.
+              </p>
+            ) : null}
+            <div className="name2number-unused-regnumber-results" aria-live="polite">
+              <section aria-labelledby="name2number-unused-regnumber-not-in-b-title">
+                <h3 id="name2number-unused-regnumber-not-in-b-title">Unused RegNumber not in B</h3>
+                <pre>{unusedRegNumbers.unusedA.length > 0 ? unusedRegNumbers.unusedA.join('\n') : 'None'}</pre>
+              </section>
+              <section aria-labelledby="name2number-unused-regnumber-not-in-a-title">
+                <h3 id="name2number-unused-regnumber-not-in-a-title">Unused RegNumber not in A</h3>
+                <pre>{unusedRegNumbers.unusedB.length > 0 ? unusedRegNumbers.unusedB.join('\n') : 'None'}</pre>
+              </section>
+            </div>
+          </>
         ) : null}
       </section>
     </section>
