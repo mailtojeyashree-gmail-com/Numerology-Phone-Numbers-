@@ -134,11 +134,18 @@ export default function RegNumbersPage(props) {
   )
   const selectedUniquePairs = [...new Set(visibleRows.flatMap((row) => row.digitPairs))]
   const selectedCombinations = new Map()
+  const pairChecksCombinations = new Map()
   visibleRows.forEach((row) => {
     const combination = getCanonicalPairs(row.digitPairs).replaceAll(',', '')
     selectedCombinations.set(combination, (selectedCombinations.get(combination) ?? 0) + 1)
+    const pairChecksCombination = row.digitPairs.join('')
+    pairChecksCombinations.set(
+      pairChecksCombination,
+      (pairChecksCombinations.get(pairChecksCombination) ?? 0) + 1,
+    )
   })
   const combinationText = [...selectedCombinations.keys()].join('\n')
+  const pairChecksCombinationText = [...pairChecksCombinations.keys()].join('\n')
   const filteredRegistrations = [...new Set(visibleRows.map((row) => row.number))]
   const hasRegistrationFilters = registrationLayout && (
     digitSumFilters.length > 0
@@ -631,7 +638,7 @@ export default function RegNumbersPage(props) {
                 </div>
                 <div className="car-reg-combinations-copy-field">
                   <div className="car-reg-copy-field-heading">
-                    <span>Combination ({selectedCombinations.size})</span>
+                    <span>Unique pairs Combination ({selectedCombinations.size})</span>
                     <div className="car-reg-copy-action">
                       <button
                         className="combination-generate-button car-reg-copy-button"
@@ -656,6 +663,43 @@ export default function RegNumbersPage(props) {
                     rows={Math.min(12, Math.max(4, selectedCombinations.size))}
                     readOnly
                     value={combinationText}
+                  />
+                </div>
+              </section>
+            ) : null}
+            {registrationLayout ? (
+              <section className="car-reg-selected-combinations" aria-label="Pair checks combination">
+                <div className="car-reg-combinations-copy-field">
+                  <div className="car-reg-copy-field-heading">
+                    <span>Pair checks combination ({pairChecksCombinations.size})</span>
+                    <div className="car-reg-copy-action">
+                      <button
+                        className="combination-generate-button car-reg-copy-button"
+                        type="button"
+                        disabled={!pairChecksCombinationText}
+                        onClick={() => copyList('pairChecksCombination', pairChecksCombinationText)}
+                      >
+                        {copyFeedback.pairChecksCombination?.success
+                          ? 'Copied'
+                          : copyFeedback.pairChecksCombination ? 'Copy failed' : 'Copy list'}
+                      </button>
+                      {copyFeedback.pairChecksCombination ? (
+                        <span
+                          className={copyFeedback.pairChecksCombination.success
+                            ? 'car-reg-copy-success'
+                            : 'car-reg-copy-error'}
+                          role="status"
+                        >
+                          {copyFeedback.pairChecksCombination.message}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <textarea
+                    aria-label="Pair checks combination"
+                    rows={Math.min(12, Math.max(4, pairChecksCombinations.size))}
+                    readOnly
+                    value={pairChecksCombinationText}
                   />
                 </div>
               </section>
