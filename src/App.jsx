@@ -312,6 +312,7 @@ function App() {
   )
   const [manithaNaadiCombinationResults, setManithaNaadiCombinationResults] = useState(null)
   const [manithaNaadiEmailResults, setManithaNaadiEmailResults] = useState(null)
+  const [inputMobileNumbersText, setInputMobileNumbersText] = useState('')
   const [activeManithaNaadiGenerator, setActiveManithaNaadiGenerator] = useState(null)
   const [manithaNaadiDigitSumFilter, setManithaNaadiDigitSumFilter] = useState('')
   const [mobileDigitSumFilters, setMobileDigitSumFilters] = useState([])
@@ -344,6 +345,22 @@ function App() {
   const [manualCombinationError, setManualCombinationError] = useState('')
 
   useEffect(() => () => carRegistrationWorkerRef.current?.terminate(), [])
+
+  function navigateToPage(page) {
+    carRegistrationWorkerRef.current?.terminate()
+    carRegistrationWorkerRef.current = null
+    keepButtonActionLoadingRef.current = false
+    isButtonActionLoadingRef.current = false
+    setIsButtonActionLoading(false)
+    setManithaNaadiCombinationResults(null)
+    setManithaNaadiEmailResults(null)
+    setManualCombinationResults(null)
+    setManualCombinationError('')
+    setActiveManithaNaadiGenerator(null)
+    setCarRegistrationGenerationError('')
+    setCarRegistrationCopyFeedback({})
+    setActivePage(page)
+  }
 
   function finishGeneratorWorker() {
     keepButtonActionLoadingRef.current = false
@@ -950,7 +967,7 @@ function App() {
   return (
     <main className="app-shell" onClickCapture={deferButtonAction}>
       <header className="topbar">
-        <a className="wordmark" href="#top" aria-label="Number Signal home" onClick={() => setActivePage('manitha-naadi')}>
+        <a className="wordmark" href="#top" aria-label="Number Signal home" onClick={() => navigateToPage('manitha-naadi')}>
           <span className="wordmark-mark" aria-hidden="true">n.</span>
           <span>NUMBER<span className="wordmark-light">SIGNAL</span></span>
         </a>
@@ -960,7 +977,7 @@ function App() {
             className={`page-switch${activePage === 'manitha-naadi' ? ' page-switch-active' : ''}`}
             type="button"
             aria-pressed={activePage === 'manitha-naadi'}
-            onClick={() => setActivePage('manitha-naadi')}
+            onClick={() => navigateToPage('manitha-naadi')}
           >
             மனித நாடி
           </button>
@@ -968,7 +985,7 @@ function App() {
             className={`page-switch${activePage === 'password' ? ' page-switch-active' : ''}`}
             type="button"
             aria-pressed={activePage === 'password'}
-            onClick={() => setActivePage('password')}
+            onClick={() => navigateToPage('password')}
           >
             Password
           </button>
@@ -976,7 +993,7 @@ function App() {
             className={`page-switch${activePage === 'panja-patchi' ? ' page-switch-active' : ''}`}
             type="button"
             aria-pressed={activePage === 'panja-patchi'}
-            onClick={() => setActivePage('panja-patchi')}
+            onClick={() => navigateToPage('panja-patchi')}
           >
             பஞ்ச பட்சி
           </button>
@@ -984,7 +1001,7 @@ function App() {
             className={`page-switch${activePage === 'name2number' ? ' page-switch-active' : ''}`}
             type="button"
             aria-pressed={activePage === 'name2number'}
-            onClick={() => setActivePage('name2number')}
+            onClick={() => navigateToPage('name2number')}
           >
             name2number
           </button>
@@ -992,15 +1009,23 @@ function App() {
             className={`page-switch page-switch-link${activePage === 'vipnumbers' ? ' page-switch-active' : ''}`}
             href="#vipnumbers"
             aria-current={activePage === 'vipnumbers' ? 'page' : undefined}
-            onClick={() => setActivePage('vipnumbers')}
+            onClick={() => navigateToPage('vipnumbers')}
           >
             phoneovernet
+          </a>
+          <a
+            className={`page-switch page-switch-link${activePage === 'inputmobilenumbers' ? ' page-switch-active' : ''}`}
+            href="#inputmobilenumbers"
+            aria-current={activePage === 'inputmobilenumbers' ? 'page' : undefined}
+            onClick={() => navigateToPage('inputmobilenumbers')}
+          >
+            inputmobilenumbers
           </a>
           <a
             className={`page-switch page-switch-link${activePage === 'regnumbers' ? ' page-switch-active' : ''}`}
             href="#regnumbers"
             aria-current={activePage === 'regnumbers' ? 'page' : undefined}
-            onClick={() => setActivePage('regnumbers')}
+            onClick={() => navigateToPage('regnumbers')}
           >
             REGNUMBERS
           </a>
@@ -2131,7 +2156,36 @@ function App() {
           </section>
         ) : activePage === 'vipnumbers' ? (
           <RegNumbersPage
+            key="phoneovernet"
             heading={<span id="vipnumbers-title">phoneovernet</span>}
+            profiles={Object.keys(manithaNaadiLuckyNumberDefaults)}
+            initials={selectedManithaNaadiInitials}
+            onInitialsChange={setSelectedManithaNaadiInitials}
+            luckyNumbers={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
+            onLuckyNumbersChange={(value) => setManithaNaadiLuckyNumbers((currentValues) => ({
+              ...currentValues,
+              [selectedManithaNaadiInitials]: value,
+            }))}
+            excludedNumbers={manithaNaadiGen8ExcludedNumbers[selectedManithaNaadiInitials]}
+            onExcludedNumbersChange={(value) => setManithaNaadiGen8ExcludedNumbers((currentValues) => ({
+              ...currentValues,
+              [selectedManithaNaadiInitials]: value,
+            }))}
+          />
+        ) : activePage === 'inputmobilenumbers' ? (
+          <RegNumbersPage
+            key="inputmobilenumbers"
+            pageId="inputmobilenumbers"
+            titleId="inputmobilenumbers-title"
+            heading={<span id="inputmobilenumbers-title">inputmobilenumbers</span>}
+            inputNumbers
+            inputNumbersText={inputMobileNumbersText}
+            onInputNumbersTextChange={setInputMobileNumbersText}
+            brandName="INPUTMOBILENUMBERS"
+            itemName="mobile numbers"
+            buttonName="Mobile numbers"
+            headingItemName="mobile numbers"
+            countLabel="NUMBERS"
             profiles={Object.keys(manithaNaadiLuckyNumberDefaults)}
             initials={selectedManithaNaadiInitials}
             onInitialsChange={setSelectedManithaNaadiInitials}
@@ -2148,6 +2202,7 @@ function App() {
           />
         ) : activePage === 'regnumbers' ? (
           <RegNumbersPage
+            key="regnumbers"
             pageId="regnumbers"
             titleId="regnumbers-title"
             heading={<span id="regnumbers-title">REGNUMBERS</span>}
@@ -2186,7 +2241,7 @@ function App() {
       </section>
 
       <footer className="page-footer">
-        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : activePage === 'regnumbers' ? 'REGNUMBERS' : 'மனித நாடி LUCKY NUMBERS'}</span>
+        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : activePage === 'inputmobilenumbers' ? 'INPUTMOBILENUMBERS' : activePage === 'regnumbers' ? 'REGNUMBERS' : 'மனித நாடி LUCKY NUMBERS'}</span>
         <span>EDITABLE IN THIS BROWSER</span>
       </footer>
       {isButtonActionLoading && (

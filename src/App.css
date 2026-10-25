@@ -1803,6 +1803,34 @@
   border-top: 1px solid var(--line);
 }
 
+.vip-number-input {
+  display: grid;
+  max-width: 620px;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.vip-number-input textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 500 13px/1.5 'SFMono-Regular', Consolas, monospace;
+  resize: vertical;
+}
+
+.vip-number-input textarea:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgba(71, 111, 90, 0.12);
+  outline: none;
+}
+
 .vip-phone-numbers-toggle {
   min-height: 38px;
 }

@@ -204,6 +204,42 @@ export default function RegNumbersPage(props) {
   }
 
   async function togglePhoneNumbers() {
+    if (props.inputNumbers) {
+      setPhoneNumbersError('')
+      const inputLines = String(props.inputNumbersText ?? '').split(/\r?\n/)
+      const entries = inputLines
+        .map((line) => line.trim())
+        .filter(Boolean)
+      const invalidLines = inputLines.flatMap((line, index) => {
+        const value = line.trim()
+        return value && !(props.numberPattern ?? /^07\d{9}$/).test(value) ? [index + 1] : []
+      })
+
+      if (entries.length === 0) {
+        setPhoneNumbersError('Paste one or more UK mobile numbers, one number per line.')
+        setShowPhoneNumbers(false)
+        return
+      }
+      if (invalidLines.length > 0) {
+        setPhoneNumbersError(
+          `Enter one 11-digit UK mobile number starting with 07 per line. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
+        )
+        setShowPhoneNumbers(false)
+        return
+      }
+
+      setPhoneNumbers(entries)
+      setShowPhoneNumbers(true)
+      setPage(0)
+      setDigitSumFilters([])
+      setNumberPrefixFilters([])
+      setAllPairChecksFilter(false)
+      setAllRajanilaiCalculationsFilter(false)
+      setUniquePairFilters([])
+      setPairCheckFilters([])
+      return
+    }
+
     if (showPhoneNumbers) {
       setShowPhoneNumbers(false)
       return
@@ -331,13 +367,34 @@ export default function RegNumbersPage(props) {
     >
       <LuckyNumbersOverview {...props} />
       <div className="vip-phone-numbers">
+        {props.inputNumbers ? (
+          <div className="vip-number-input">
+            <label htmlFor="input-mobile-numbers">
+              Paste UK mobile numbers, one number per line (11 digits, starting with 07).
+            </label>
+            <textarea
+              id="input-mobile-numbers"
+              aria-label="Paste mobile numbers"
+              rows={8}
+              placeholder={'07123456789\n07987654321'}
+              value={props.inputNumbersText ?? ''}
+              onChange={(event) => {
+                props.onInputNumbersTextChange(event.target.value)
+                setPhoneNumbersError('')
+                setShowPhoneNumbers(false)
+              }}
+            />
+          </div>
+        ) : null}
         <button
           className="combination-generate-button vip-phone-numbers-toggle"
           type="button"
           onClick={togglePhoneNumbers}
           disabled={isLoadingPhoneNumbers}
         >
-          {isLoadingPhoneNumbers
+          {props.inputNumbers
+            ? 'Analyze numbers'
+            : isLoadingPhoneNumbers
             ? `Loading ${props.itemName ?? 'phone numbers'}...`
             : showPhoneNumbers
               ? `Hide ${props.buttonName ?? 'Phone numbers'}`
