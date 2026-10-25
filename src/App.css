@@ -1022,6 +1022,84 @@
   white-space: nowrap;
 }
 
+.car-reg-filter-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--moss);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.car-reg-filter-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--line);
+  border-top-color: var(--moss);
+  border-radius: 50%;
+  animation: car-reg-filter-spin 700ms linear infinite;
+}
+
+@keyframes car-reg-filter-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.car-reg-starting-letter-filter {
+  min-width: 330px;
+  margin: 8px 0 0;
+  padding: 4px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.car-reg-starting-letter-filter legend {
+  padding: 0 3px;
+  color: var(--soft-ink);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.car-reg-letter-filter-group + .car-reg-letter-filter-group {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.car-reg-letter-filter-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.car-reg-starting-letter-options {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px 4px;
+}
+
+.car-reg-starting-letter-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.car-reg-starting-letter-options input {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  accent-color: var(--moss);
+}
+
 .combination-generator-option {
   display: contents;
 }
@@ -1204,6 +1282,21 @@
   color: var(--ink);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+
+.manitha-car-reg-results-table {
+  width: max-content;
+  min-width: 1500px;
+}
+
+.manitha-car-reg-results-table th:nth-child(3),
+.manitha-car-reg-results-table td:nth-child(3) {
+  min-width: 360px;
+}
+
+.manitha-car-reg-results-table th:nth-child(10) {
+  min-width: 105px;
+  white-space: normal;
 }
 
 .password-generator-results .manitha-results-table {

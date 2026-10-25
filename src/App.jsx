@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import EmailGeneratorOption, { EmailGeneratorResults } from './EmailGeneratorOption'
 import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
@@ -19,6 +19,10 @@ import {
 } from './rasiChartData'
 
 const CAR_REGISTRATION_PAGE_SIZE = 100
+const CAR_REGISTRATION_STARTING_LETTERS = Array.from(
+  { length: 26 },
+  (_, index) => String.fromCharCode(65 + index),
+)
 const toRegNumberCalculationDigits = (number) => [...number].map((character) => (
   /\d/.test(character)
     ? character
@@ -302,6 +306,10 @@ function App() {
   const allowButtonActionRef = useRef(false)
   const keepButtonActionLoadingRef = useRef(false)
   const carRegistrationWorkerRef = useRef(null)
+  const carRegistrationFilterWorkerRef = useRef(null)
+  const carRegistrationFilterStartupErrorRef = useRef('')
+  const carRegistrationFilterRequestRef = useRef(0)
+  const cachedCarRegistrationMatchesRef = useRef(null)
   const [activePage, setActivePage] = useState('manitha-naadi')
   const [selectedManithaNaadiInitials, setSelectedManithaNaadiInitials] = useState('MJ')
   const [manithaNaadiLuckyNumbers, setManithaNaadiLuckyNumbers] = useState(
@@ -330,6 +338,22 @@ function App() {
   const [mobileUniquePairFilters, setMobileUniquePairFilters] = useState([])
   const [mobileUniquePairFilterError, setMobileUniquePairFilterError] = useState('')
   const [carRegistrationGenerationError, setCarRegistrationGenerationError] = useState('')
+  const [carRegistrationFilterLoading, setCarRegistrationFilterLoading] = useState(false)
+  const [carRegistrationFilterError, setCarRegistrationFilterError] = useState('')
+  const [carRegistrationData, setCarRegistrationData] = useState({
+    matchesCount: 0,
+    digitSums: [],
+    luckyPairs: [],
+    visibleCount: 0,
+    pageMatches: [],
+    alphabetStarts: [],
+    uniquePairs: [],
+    combinationEntries: [],
+    pairChecksCombinationEntries: [],
+    filteredRegistrations: [],
+  })
+  const [excludedCarRegistrationStartingLetters, setExcludedCarRegistrationStartingLetters] = useState([])
+  const [excludedCarRegistrationAnywhereLetters, setExcludedCarRegistrationAnywhereLetters] = useState([])
   const [carRegistrationPairFilterOpen, setCarRegistrationPairFilterOpen] = useState(false)
   const [carRegistrationPairFilterDraft, setCarRegistrationPairFilterDraft] = useState('')
   const [carRegistrationPairFilters, setCarRegistrationPairFilters] = useState([])
@@ -346,9 +370,107 @@ function App() {
 
   useEffect(() => () => carRegistrationWorkerRef.current?.terminate(), [])
 
+  useEffect(() => {
+    let worker
+    try {
+      worker = new Worker(new URL('./carRegistration.worker.js', import.meta.url), { type: 'module' })
+      carRegistrationFilterWorkerRef.current = worker
+      worker.onmessage = (event) => {
+        if (event.data.type === 'error') {
+          setCarRegistrationFilterError(event.data.error)
+          setCarRegistrationFilterLoading(false)
+          return
+        }
+        if (event.data.type !== 'filtered'
+          || event.data.requestId !== carRegistrationFilterRequestRef.current) return
+        setCarRegistrationData(event.data.data)
+        setCarRegistrationFilterError('')
+        setCarRegistrationFilterLoading(false)
+      }
+      worker.onerror = (event) => {
+        event.preventDefault()
+        const errorMessage = event.message || 'Could not filter car registrations.'
+        carRegistrationFilterStartupErrorRef.current = errorMessage
+        carRegistrationFilterWorkerRef.current = null
+        setCarRegistrationFilterError(errorMessage)
+        setCarRegistrationFilterLoading(false)
+      }
+      worker.onmessageerror = () => {
+        const errorMessage = 'Could not read the filtered car-registration results.'
+        carRegistrationFilterStartupErrorRef.current = errorMessage
+        carRegistrationFilterWorkerRef.current = null
+        setCarRegistrationFilterError(errorMessage)
+        setCarRegistrationFilterLoading(false)
+      }
+    } catch (error) {
+      carRegistrationFilterStartupErrorRef.current = error instanceof Error
+        ? error.message
+        : 'Could not start car-registration filtering.'
+    }
+
+    return () => {
+      worker?.terminate()
+      carRegistrationFilterWorkerRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const generatorResults = isCarRegistrationGenerator(manithaNaadiCombinationResults?.generator)
+      ? manithaNaadiCombinationResults
+      : null
+    if (!generatorResults) return undefined
+    const worker = carRegistrationFilterWorkerRef.current
+    if (!worker) return undefined
+
+    const requestId = carRegistrationFilterRequestRef.current + 1
+    carRegistrationFilterRequestRef.current = requestId
+    if (cachedCarRegistrationMatchesRef.current !== generatorResults.matches) {
+      worker.postMessage({ type: 'set-data', matches: generatorResults.matches })
+      cachedCarRegistrationMatchesRef.current = generatorResults.matches
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      try {
+        worker.postMessage({
+          type: 'filter',
+          requestId,
+          filters: {
+            excludedStartingLetters: excludedCarRegistrationStartingLetters,
+            excludedAnywhereLetters: excludedCarRegistrationAnywhereLetters,
+            digitSumFilters: carRegistrationDigitSumFilters,
+            luckyPairFilters: carRegistrationLuckyPairFilters,
+            pairFilters: carRegistrationPairFilters,
+            uniquePairFilters: carRegistrationUniquePairFilters,
+            sortDirection: carRegistrationSortDirection,
+            page: carRegistrationPage,
+            pageSize: CAR_REGISTRATION_PAGE_SIZE,
+          },
+        })
+      } catch (error) {
+        setCarRegistrationFilterError(
+          error instanceof Error ? error.message : 'Could not filter car registrations.',
+        )
+        setCarRegistrationFilterLoading(false)
+      }
+    }, 40)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [
+    manithaNaadiCombinationResults,
+    excludedCarRegistrationStartingLetters,
+    excludedCarRegistrationAnywhereLetters,
+    carRegistrationDigitSumFilters,
+    carRegistrationLuckyPairFilters,
+    carRegistrationPairFilters,
+    carRegistrationUniquePairFilters,
+    carRegistrationSortDirection,
+    carRegistrationPage,
+  ])
+
   function navigateToPage(page) {
     carRegistrationWorkerRef.current?.terminate()
     carRegistrationWorkerRef.current = null
+    setCarRegistrationFilterLoading(false)
     keepButtonActionLoadingRef.current = false
     isButtonActionLoadingRef.current = false
     setIsButtonActionLoading(false)
@@ -370,8 +492,18 @@ function App() {
     setIsButtonActionLoading(false)
   }
 
-  function generateInWorker(generator, luckyNumbers, profile, include85 = true) {
+  function generateInWorker(
+    generator,
+    luckyNumbers,
+    profile,
+    include85 = true,
+  ) {
     setCarRegistrationGenerationError('')
+    const shouldFilterRegistrations = isCarRegistrationGenerator(generator)
+    setCarRegistrationFilterError(shouldFilterRegistrations && !carRegistrationFilterWorkerRef.current
+      ? carRegistrationFilterStartupErrorRef.current || 'Car-registration filtering is unavailable.'
+      : '')
+    setCarRegistrationFilterLoading(shouldFilterRegistrations && Boolean(carRegistrationFilterWorkerRef.current))
     setManithaNaadiCombinationResults(null)
     keepButtonActionLoadingRef.current = true
     isButtonActionLoadingRef.current = true
@@ -387,11 +519,12 @@ function App() {
         if (carRegistrationWorkerRef.current !== worker) return
         if (event.data.error) {
           setCarRegistrationGenerationError(event.data.error)
+          setCarRegistrationFilterLoading(false)
           finishGeneratorWorker()
           return
         }
         const generatorResults = event.data.results
-        if (generator !== 'GEN-MOBILE-NUMBERS') {
+        if (generator !== 'GEN-MOBILE-NUMBERS' && !isCarRegistrationGenerator(generator)) {
           generatorResults.generatedNumbers = [...new Set(
             [...generatorResults.matches, ...generatorResults.repeatedMatches]
               .map((result) => result.number ?? result.registration ?? result.values.join('')),
@@ -402,6 +535,9 @@ function App() {
           profile,
           ...generatorResults,
         })
+        if (isCarRegistrationGenerator(generator) && carRegistrationFilterWorkerRef.current) {
+          setCarRegistrationFilterLoading(true)
+        }
         finishGeneratorWorker()
       }
       worker.onerror = (event) => {
@@ -410,11 +546,13 @@ function App() {
         setCarRegistrationGenerationError(
           event.message || `${generator} generation failed. Please try again.`,
         )
+        setCarRegistrationFilterLoading(false)
         finishGeneratorWorker()
       }
       worker.onmessageerror = () => {
         if (carRegistrationWorkerRef.current !== worker) return
         setCarRegistrationGenerationError(`Could not read the ${generator} generation results.`)
+        setCarRegistrationFilterLoading(false)
         finishGeneratorWorker()
       }
       worker.postMessage({
@@ -430,6 +568,7 @@ function App() {
       setCarRegistrationGenerationError(
         error instanceof Error ? error.message : `Could not start ${generator} generation.`,
       )
+      setCarRegistrationFilterLoading(false)
       finishGeneratorWorker()
     }
   }
@@ -509,7 +648,15 @@ function App() {
     const exportRows = isCarRegistration
       ? [
         ['Initials', 'Lucky pair', 'Registration', 'Pair checks', 'Rajanilai calculation', 'Rajanilai match', 'Pair bhavam', 'Digit sum', 'Sum bhavam'],
-        ...manithaNaadiCombinationResults.matches.map((match) => [
+        ...manithaNaadiCombinationResults.matches
+          .filter(({ registration }) => {
+            const normalizedRegistration = registration.toUpperCase()
+            return !excludedCarRegistrationStartingLetters.includes(normalizedRegistration[0])
+              && !excludedCarRegistrationAnywhereLetters.some((letter) => (
+                normalizedRegistration.includes(letter)
+              ))
+          })
+          .map((match) => [
           manithaNaadiCombinationResults.profile,
           match.pair,
           match.registration,
@@ -575,9 +722,7 @@ function App() {
   }
 
   function exportFilteredCarRegistrations() {
-    const registrations = [...new Set(
-      visibleCarRegistrationMatches.map((match) => match.registration),
-    )]
+    const registrations = filteredCarRegistrations
     const xmlEscape = (value) => String(value).replace(/[&<>"']/g, (character) => ({
       '&': '&amp;',
       '<': '&lt;',
@@ -718,110 +863,19 @@ function App() {
       (mobileUniqueCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
     )
     : uniqueGeneratedCombinations
-  const carRegistrationData = useMemo(() => {
-    const matches = isCarRegistrationGenerator(manithaNaadiCombinationResults?.generator)
-      ? manithaNaadiCombinationResults.matches
-      : []
-    const digitSums = [...new Set(matches.map((match) => match.digitSum))]
-      .sort((first, second) => first - second)
-    const luckyPairs = [...new Set(matches.map((match) => match.pair))]
-      .sort((first, second) => Number(first) - Number(second))
-    const visibleMatches = matches.filter((match) => {
-      if (
-        (carRegistrationDigitSumFilters.length > 0
-          && !carRegistrationDigitSumFilters.includes(String(match.digitSum)))
-        || (carRegistrationLuckyPairFilters.length > 0
-          && !carRegistrationLuckyPairFilters.includes(match.pair))
-        || (carRegistrationPairFilters.length > 0
-          && !carRegistrationPairFilters.includes(getCanonicalPairChecks(match.checks)))
-        || (carRegistrationUniquePairFilters.length > 0
-          && !carRegistrationUniquePairFilters.includes(getCanonicalPairChecks(match.checks)))
-      ) return false
-
-      return true
-    })
-    const pairSortedMatches = [...visibleMatches].sort((first, second) => (
-      getCanonicalPairChecks(first.checks).localeCompare(
-        getCanonicalPairChecks(second.checks),
-        undefined,
-        { numeric: true },
-      )
-    ))
-    const alphabeticalMatches = [...visibleMatches].sort((first, second) => (
-      first.registration.localeCompare(second.registration, undefined, { numeric: true, sensitivity: 'base' })
-    ))
-    const sortedMatches = carRegistrationSortDirection
-      ? [...pairSortedMatches].sort((first, second) => (
-        getCanonicalPairChecks(first.checks).localeCompare(
-          getCanonicalPairChecks(second.checks),
-          undefined,
-          { numeric: true },
-        )
-        || first.registration.localeCompare(
-          second.registration,
-          undefined,
-          { numeric: true, sensitivity: 'base' },
-        ) * (carRegistrationSortDirection === 'asc' ? 1 : -1)
-      ))
-      : pairSortedMatches
-    const alphabetStarts = new Map()
-    alphabeticalMatches.forEach((match, index) => {
-      const letter = match.registration[0]?.toUpperCase()
-      if (letter && !alphabetStarts.has(letter)) alphabetStarts.set(letter, index)
-    })
-    const uniquePairs = [...new Set(visibleMatches.flatMap((match) => match.checks))]
-    const combinationCounts = new Map()
-    const pairChecksCombinationCounts = new Map()
-    visibleMatches.forEach((match) => {
-      const combination = getCanonicalPairChecks(match.checks).replaceAll(',', '')
-      combinationCounts.set(combination, (combinationCounts.get(combination) ?? 0) + 1)
-      const pairChecksCombination = match.checks.join('')
-      pairChecksCombinationCounts.set(
-        pairChecksCombination,
-        (pairChecksCombinationCounts.get(pairChecksCombination) ?? 0) + 1,
-      )
-    })
-
-    return {
-      matches,
-      digitSums,
-      luckyPairs,
-      visibleMatches,
-      sortedMatches,
-      alphabetStarts,
-      uniquePairs,
-      combinationCounts,
-      combinationEntries: [...combinationCounts],
-      pairChecksCombinationCounts,
-      pairChecksCombinationEntries: [...pairChecksCombinationCounts],
-      filteredRegistrations: [...new Set(visibleMatches.map((match) => match.registration))],
-    }
-  }, [
-    manithaNaadiCombinationResults,
-    carRegistrationDigitSumFilters,
-    carRegistrationLuckyPairFilters,
-    carRegistrationPairFilters,
-    carRegistrationUniquePairFilters,
-    carRegistrationSortDirection,
-  ])
   const {
-    matches: carRegistrationMatches,
+    matchesCount: carRegistrationMatchesCount,
     digitSums: carRegistrationDigitSums,
     luckyPairs: carRegistrationLuckyPairs,
-    visibleMatches: visibleCarRegistrationMatches,
-    sortedMatches: sortedCarRegistrationMatches,
-    alphabetStarts: carRegistrationAlphabetStarts,
+    visibleCount: visibleCarRegistrationCount,
+    pageMatches: pagedCarRegistrationMatches,
+    alphabetStarts: alphabetStartsEntries,
     uniquePairs: carRegistrationUniquePairs,
-    combinationCounts: carRegistrationCombinationCounts,
     combinationEntries: carRegistrationCombinationEntries,
-    pairChecksCombinationCounts: carRegistrationPairChecksCombinationCounts,
     pairChecksCombinationEntries: carRegistrationPairChecksCombinationEntries,
     filteredRegistrations: filteredCarRegistrations,
   } = carRegistrationData
-  const pagedCarRegistrationMatches = sortedCarRegistrationMatches.slice(
-    carRegistrationPage * CAR_REGISTRATION_PAGE_SIZE,
-    (carRegistrationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
-  )
+  const carRegistrationAlphabetStarts = new Map(alphabetStartsEntries)
   const pagedCarRegistrationCombinationEntries = carRegistrationCombinationEntries.slice(
     carRegistrationCombinationPage * CAR_REGISTRATION_PAGE_SIZE,
     (carRegistrationCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
@@ -1299,7 +1353,13 @@ function App() {
               </p>
             )}
             {manithaNaadiCombinationResults && (
-              <section className="combination-results" aria-live="polite" aria-label={`${manithaNaadiCombinationResults.generator} results`}>
+              <section
+                className="combination-results"
+                aria-live="polite"
+                aria-busy={isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
+                  && carRegistrationFilterLoading}
+                aria-label={`${manithaNaadiCombinationResults.generator} results`}
+              >
                 <div className="workspace-results-heading">
                   <div>
                     <span className="results-kicker">{manithaNaadiCombinationResults.generator} · {manithaNaadiCombinationResults.profile} VALUES</span>
@@ -1315,15 +1375,29 @@ function App() {
                       : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
                         ? 'Registrations matching the active filters'
                       : 'Total includes combinations with repeated values; distinct count excludes repeats'}>
-                    {manithaNaadiCombinationResults.generator === 'GEN-5'
+                    {isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
+                      && carRegistrationFilterLoading
+                      ? (
+                        <span className="car-reg-filter-loading" role="status">
+                          <span className="car-reg-filter-spinner" aria-hidden="true" />
+                          Filtering registrations…
+                        </span>
+                      )
+                      : manithaNaadiCombinationResults.generator === 'GEN-5'
                       ? `${manithaNaadiCombinationResults.matches.length} NUMBERS`
                       : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
                         ? `${manithaNaadiCombinationResults.matches.length} MATCHES`
                         : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
-                          ? `${visibleCarRegistrationMatches.length.toLocaleString()} REGISTRATIONS`
+                          ? `${visibleCarRegistrationCount.toLocaleString()} REGISTRATIONS`
                           : `${manithaNaadiCombinationResults.possibleCombinationsWithRepetition.toLocaleString()} POSSIBLE WITH REPEATS · ${manithaNaadiCombinationResults.combinationsChecked.toLocaleString()} DISTINCT${manithaNaadiCombinationResults.generator === 'GEN-4' && manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : manithaNaadiCombinationResults.generator === 'GEN-6' && manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : ''}`}
                   </span>
                 </div>
+                {isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
+                  && carRegistrationFilterError && (
+                    <p className="car-reg-generation-error" role="alert">
+                      {carRegistrationFilterError}
+                    </p>
+                )}
                 {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS'].includes(manithaNaadiCombinationResults.generator) ? (
                   <>
                     <div className="manitha-results-table-wrap">
@@ -1624,6 +1698,55 @@ function App() {
                                     : carRegistrationSortDirection === 'desc' ? ' ↓' : ' ↕'}
                                 </span>
                               </button>
+                              <fieldset className="car-reg-starting-letter-filter">
+                                <legend>Exclude registrations</legend>
+                                {[
+                                  {
+                                    label: 'Start with',
+                                    selectedLetters: excludedCarRegistrationStartingLetters,
+                                    setSelectedLetters: setExcludedCarRegistrationStartingLetters,
+                                  },
+                                  {
+                                    label: 'Anywhere',
+                                    selectedLetters: excludedCarRegistrationAnywhereLetters,
+                                    setSelectedLetters: setExcludedCarRegistrationAnywhereLetters,
+                                  },
+                                ].map(({ label, selectedLetters, setSelectedLetters }) => (
+                                  <div className="car-reg-letter-filter-group" key={label}>
+                                    <span className="car-reg-letter-filter-label">{label}</span>
+                                    <div
+                                      className="car-reg-starting-letter-options"
+                                      role="group"
+                                      aria-label={`Exclude registrations that ${label.toLowerCase()} these letters`}
+                                    >
+                                      {CAR_REGISTRATION_STARTING_LETTERS.map((letter) => (
+                                        <label key={letter}>
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedLetters.includes(letter)}
+                                            onChange={(event) => {
+                                              const canFilter = Boolean(carRegistrationFilterWorkerRef.current)
+                                              setCarRegistrationFilterLoading(canFilter)
+                                              setCarRegistrationFilterError(canFilter
+                                                ? ''
+                                                : carRegistrationFilterStartupErrorRef.current
+                                                  || 'Car-registration filtering is unavailable.')
+                                              setSelectedLetters((selected) => (
+                                                event.target.checked
+                                                  ? [...selected, letter]
+                                                  : selected.filter((selectedLetter) => selectedLetter !== letter)
+                                              ))
+                                              setCarRegistrationPage(0)
+                                              setFilteredCarRegistrationPage(0)
+                                            }}
+                                          />
+                                          {letter}
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </fieldset>
                             </th>
                             <th scope="col">
                               <div className="car-reg-pair-checks-heading">
@@ -1762,12 +1885,14 @@ function App() {
                               </td>
                             </tr>
                           ))}
-                          {visibleCarRegistrationMatches.length === 0 ? (
+                          {visibleCarRegistrationCount === 0 ? (
                             <tr>
                               <td colSpan={9}>
-                                {carRegistrationMatches.length === 0
-                                  ? 'No registrations were generated.'
-                                  : 'No registrations match the selected digit sums.'}
+                                {carRegistrationFilterLoading
+                                  ? 'Filtering registrations…'
+                                  : carRegistrationMatchesCount === 0
+                                    ? 'No registrations were generated.'
+                                    : 'No registrations match the selected filters.'}
                               </td>
                             </tr>
                           ) : null}
@@ -1777,11 +1902,11 @@ function App() {
                     <ResultPagination
                       page={carRegistrationPage}
                       pageSize={CAR_REGISTRATION_PAGE_SIZE}
-                      totalItems={visibleCarRegistrationMatches.length}
+                      totalItems={visibleCarRegistrationCount}
                       onPageChange={setCarRegistrationPage}
                       label="Car registrations"
                     />
-                    {visibleCarRegistrationMatches.length > 0 && (
+                    {visibleCarRegistrationCount > 0 && (
                       <nav className="car-reg-alphabet-pagination" aria-label="Jump to registrations by starting letter">
                         <span>Start at letter</span>
                         <div>
@@ -1933,7 +2058,7 @@ function App() {
                         </section>
                       </div>
                     )}
-                    {visibleCarRegistrationMatches.length > 0 && (
+                    {visibleCarRegistrationCount > 0 && (
                       <section className="car-reg-selected-combinations" aria-label="Selected registration combinations">
                         <h3>Selected combinations</h3>
                         <div className="car-reg-combinations-copy-field">
@@ -1957,7 +2082,7 @@ function App() {
                         </div>
                         <div className="car-reg-combinations-copy-field">
                           <div className="car-reg-copy-field-heading">
-                            <span>Unique pairs Combination ({carRegistrationCombinationCounts.size})</span>
+                            <span>Unique pairs Combination ({carRegistrationCombinationEntries.length})</span>
                             <CopyListButton
                               copyKey="combinations"
                               label="all combinations"
@@ -1987,7 +2112,7 @@ function App() {
                         />
                         <div className="car-reg-combinations-copy-field">
                           <div className="car-reg-copy-field-heading">
-                            <span>Pair checks combination ({carRegistrationPairChecksCombinationCounts.size})</span>
+                            <span>Pair checks combination ({carRegistrationPairChecksCombinationEntries.length})</span>
                             <CopyListButton
                               copyKey="pairChecksCombinations"
                               label="pair checks combinations"
@@ -2028,7 +2153,7 @@ function App() {
                               className="combination-generate-button"
                               type="button"
                               onClick={exportFilteredCarRegistrations}
-                              disabled={visibleCarRegistrationMatches.length === 0}
+                              disabled={visibleCarRegistrationCount === 0}
                             >
                               Download as Excel
                             </button>
@@ -2043,7 +2168,7 @@ function App() {
                               {pagedFilteredCarRegistrations.map((registration) => (
                                 <tr key={registration}><td>{registration}</td></tr>
                               ))}
-                              {visibleCarRegistrationMatches.length === 0 && (
+                              {visibleCarRegistrationCount === 0 && (
                                 <tr><td>No registrations match the selected filters.</td></tr>
                               )}
                             </tbody>
