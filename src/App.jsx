@@ -754,9 +754,15 @@ function App() {
     })
     const uniquePairs = [...new Set(visibleMatches.flatMap((match) => match.checks))]
     const combinationCounts = new Map()
+    const pairChecksCombinationCounts = new Map()
     visibleMatches.forEach((match) => {
       const combination = getCanonicalPairChecks(match.checks).replaceAll(',', '')
       combinationCounts.set(combination, (combinationCounts.get(combination) ?? 0) + 1)
+      const pairChecksCombination = match.checks.join('')
+      pairChecksCombinationCounts.set(
+        pairChecksCombination,
+        (pairChecksCombinationCounts.get(pairChecksCombination) ?? 0) + 1,
+      )
     })
 
     return {
@@ -769,6 +775,8 @@ function App() {
       uniquePairs,
       combinationCounts,
       combinationEntries: [...combinationCounts],
+      pairChecksCombinationCounts,
+      pairChecksCombinationEntries: [...pairChecksCombinationCounts],
       filteredRegistrations: [...new Set(visibleMatches.map((match) => match.registration))],
     }
   }, [
@@ -789,6 +797,8 @@ function App() {
     uniquePairs: carRegistrationUniquePairs,
     combinationCounts: carRegistrationCombinationCounts,
     combinationEntries: carRegistrationCombinationEntries,
+    pairChecksCombinationCounts: carRegistrationPairChecksCombinationCounts,
+    pairChecksCombinationEntries: carRegistrationPairChecksCombinationEntries,
     filteredRegistrations: filteredCarRegistrations,
   } = carRegistrationData
   const pagedCarRegistrationMatches = sortedCarRegistrationMatches.slice(
@@ -1922,7 +1932,7 @@ function App() {
                         </div>
                         <div className="car-reg-combinations-copy-field">
                           <div className="car-reg-copy-field-heading">
-                            <span>Combination ({carRegistrationCombinationCounts.size})</span>
+                            <span>Unique pairs Combination ({carRegistrationCombinationCounts.size})</span>
                             <CopyListButton
                               copyKey="combinations"
                               label="all combinations"
@@ -1950,6 +1960,29 @@ function App() {
                           onPageChange={setCarRegistrationCombinationPage}
                           label="Registration combinations"
                         />
+                        <div className="car-reg-combinations-copy-field">
+                          <div className="car-reg-copy-field-heading">
+                            <span>Pair checks combination ({carRegistrationPairChecksCombinationCounts.size})</span>
+                            <CopyListButton
+                              copyKey="pairChecksCombinations"
+                              label="pair checks combinations"
+                              status={carRegistrationCopyFeedback.pairChecksCombinations}
+                              text={carRegistrationPairChecksCombinationEntries
+                                .map(([combination]) => combination)
+                                .join('\n')}
+                              onCopy={copyCarRegistrationList}
+                            />
+                          </div>
+                          <textarea
+                            id="car-reg-pair-checks-combinations-list"
+                            aria-label="Pair checks combination"
+                            rows={Math.min(12, Math.max(4, carRegistrationPairChecksCombinationEntries.length))}
+                            readOnly
+                            value={carRegistrationPairChecksCombinationEntries
+                              .map(([combination]) => combination)
+                              .join('\n')}
+                          />
+                        </div>
                       </section>
                     )}
                     {(carRegistrationPairFilters.length > 0
