@@ -675,12 +675,18 @@ function App() {
           [
             ...manithaNaadiTableHeaders.slice(0, 2),
             'Unique pairs',
-            ...manithaNaadiTableHeaders.slice(2),
+            'Number',
+            'Last 6 digits',
+            'Last 7 digits',
+            ...manithaNaadiTableHeaders.slice(3),
           ],
           ...getManithaNaadiTableRows().map((row) => [
             ...row.slice(0, 2),
             row[6],
-            ...row.slice(2, 6),
+            row[2],
+            row[2].slice(-6),
+            row[2].slice(-7),
+            ...row.slice(3, 6),
           ]),
         ]
         : [manithaNaadiTableHeaders, ...getManithaNaadiTableRows()]
@@ -1430,7 +1436,10 @@ function App() {
                               ? [
                                 ...manithaNaadiTableHeaders.slice(0, 2),
                                 'Unique pairs',
-                                ...manithaNaadiTableHeaders.slice(2),
+                                'Number',
+                                'Last 6 digits',
+                                'Last 7 digits',
+                                ...manithaNaadiTableHeaders.slice(3),
                               ]
                               : manithaNaadiTableHeaders).map((heading) => (
                               <th scope="col" key={heading}>
@@ -1513,7 +1522,7 @@ function App() {
                           {visibleManithaNaadiTableRows.length === 0 ? (
                             <tr>
                               <td colSpan={manithaNaadiTableHeaders.length
-                                + (manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' ? 1 : 0)}>
+                                + (manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' ? 3 : 0)}>
                                 {manithaNaadiDigitSumFilter.trim()
                                   || mobileDigitSumFilters.length > 0
                                   || mobileUniquePairFilters.length > 0
@@ -1541,6 +1550,12 @@ function App() {
                                   <td>{row[6]}</td>
                                 )}
                                 <td>{row[2]}</td>
+                                {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
+                                  <>
+                                    <td>{row[2].slice(-6)}</td>
+                                    <td>{row[2].slice(-7)}</td>
+                                  </>
+                                )}
                                 <td>{row[3]}</td>
                                 <td><strong>{row[4]}</strong></td>
                                 <td><strong>{row[5]}</strong></td>
