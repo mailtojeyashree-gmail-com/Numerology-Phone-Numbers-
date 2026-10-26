@@ -246,7 +246,22 @@ function countCombinationsWithRepetition(count, length) {
   return Math.floor(total)
 }
 
-const manithaNaadiTableHeaders = ['Initials', 'Pair values', 'Number', 'Digit sum', 'Rasi chart', 'Bhavam']
+const manithaNaadiTableHeaders = [
+  'Initials',
+  'Pair values',
+  'Number',
+  'Digit sum',
+  'Rasi chart',
+  'Unique rasi chart',
+  'Bhavam',
+]
+const getUniqueRasiChart = (rasiChart) => {
+  const chartNumbers = rasiChart.match(/\d+/g) ?? []
+  return chartNumbers
+    .sort((first, second) => Number(first) - Number(second))
+    .join('-') || '—'
+}
+
 function calculateCombinationMatches(values, expectedValue, pairCount = 2, allowRepeats = false, matchByDigitSum = false) {
   const entries = [...new Set(parseEntries(values, true))]
   const expectedTotals = new Set(parseEntries(expectedValue, true).map(Number))
@@ -323,8 +338,9 @@ function App() {
   const [manithaNaadiEmailResults, setManithaNaadiEmailResults] = useState(null)
   const [inputMobileNumbersText, setInputMobileNumbersText] = useState('')
   const [activeManithaNaadiGenerator, setActiveManithaNaadiGenerator] = useState(null)
-  const [manithaNaadiDigitSumFilter, setManithaNaadiDigitSumFilter] = useState('')
+  const [manithaNaadiDigitSumFilters, setManithaNaadiDigitSumFilters] = useState([])
   const [mobileDigitSumFilters, setMobileDigitSumFilters] = useState([])
+  const [manithaNaadiUniqueRasiChartFilters, setManithaNaadiUniqueRasiChartFilters] = useState([])
   const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
   const [carRegistrationDigitSumFilters, setCarRegistrationDigitSumFilters] = useState([])
   const [carRegistrationLuckyPairFilters, setCarRegistrationLuckyPairFilters] = useState([])
@@ -599,6 +615,9 @@ function App() {
         number,
         digitSum,
         combination.values.map((value) => rasiChartNumbersByPair.get(value)?.join('/') ?? '—').join('-'),
+        getUniqueRasiChart(
+          combination.values.map((value) => rasiChartNumbersByPair.get(value)?.join('/') ?? '—').join('-'),
+        ),
         rasiChartNumbersByPair.get(String(digitSum).padStart(2, '0'))?.join('/') ?? '—',
       ]
     })
@@ -682,11 +701,11 @@ function App() {
           ],
           ...getManithaNaadiTableRows().map((row) => [
             ...row.slice(0, 2),
-            row[6],
+            row[7],
             row[2],
             row[2].slice(-6),
             row[2].slice(-7),
-            ...row.slice(3, 6),
+            ...row.slice(3, 7),
           ]),
         ]
         : [manithaNaadiTableHeaders, ...getManithaNaadiTableRows()]
@@ -825,6 +844,7 @@ function App() {
         number,
         digitSum,
         values.map((value) => rasiChartNumbersByPair.get(value)?.join('/') ?? '—').join('-'),
+        getUniqueRasiChart(values.map((value) => rasiChartNumbersByPair.get(value)?.join('/') ?? '—').join('-')),
         rasiChartNumbersByPair.get(String(sumLookup).padStart(2, '0'))?.join('/') ?? '—',
       ]
       return isMobile
@@ -837,12 +857,14 @@ function App() {
     (manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
       ? mobileDigitSumFilters.length === 0
         || mobileDigitSumFilters.includes(String(row[3]))
-      : !manithaNaadiDigitSumFilter.trim()
-        || String(row[3]) === manithaNaadiDigitSumFilter.trim())
+      : manithaNaadiDigitSumFilters.length === 0
+        || manithaNaadiDigitSumFilters.includes(String(row[3])))
+    && (manithaNaadiUniqueRasiChartFilters.length === 0
+      || manithaNaadiUniqueRasiChartFilters.includes(row[5]))
     && (manithaNaadiCombinationResults?.generator !== 'GEN-MOBILE-NUMBERS'
       || mobileUniquePairFilters.length === 0
       || mobileUniquePairFilters.includes(getCanonicalPairChecks(
-        row[6].split(',').map((pair) => pair.trim()),
+        row[7].split(',').map((pair) => pair.trim()),
       )))
   ))
   const pagedManithaNaadiTableRows = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
@@ -853,6 +875,8 @@ function App() {
     : visibleManithaNaadiTableRows
   const manithaNaadiUniqueDigitSums = [...new Set(manithaNaadiTableRows.map((row) => row[3]))]
     .sort((first, second) => first - second)
+  const manithaNaadiUniqueRasiCharts = [...new Set(manithaNaadiTableRows.map((row) => row[5]))]
+    .sort((first, second) => first.localeCompare(second, undefined, { numeric: true }))
   const generatedNumberSet = new Set(manithaNaadiCombinationResults?.generatedNumbers ?? [])
   const uniqueGeneratedCombinations = [...new Set(
     visibleManithaNaadiTableRows
@@ -863,7 +887,7 @@ function App() {
         || generatedNumberSet.has(row[2]))
       .map((row) => {
         if (manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS') {
-          return row[6].split(',').map((pair) => pair.trim()).join('')
+          return row[7].split(',').map((pair) => pair.trim()).join('')
         }
         const pairs = row[1]
           .split(',')
@@ -1230,6 +1254,7 @@ function App() {
                           setFilteredCarRegistrationPage(0)
                         }
                         setManithaNaadiUniqueDigitSumSelection('')
+                        setManithaNaadiUniqueRasiChartFilters([])
                         setManithaNaadiEmailResults(null)
                         const luckyNumbers = manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]
                         const excludedNumbers = new Set(parseEntries(
@@ -1465,54 +1490,51 @@ function App() {
                                         : 'Filter'}
                                     </button>
                                   </div>
-                                ) : heading === 'Digit sum'
-                                  && manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' ? (
-                                  <div className="car-reg-digit-sum-filter" role="group" aria-label="Filter mobile numbers by digit sum">
+                                ) : heading === 'Digit sum' || heading === 'Unique rasi chart' ? (
+                                  <div
+                                    className="car-reg-digit-sum-filter"
+                                    role="group"
+                                    aria-label={`Filter ${manithaNaadiCombinationResults.generator} results by ${heading.toLowerCase()}`}
+                                  >
                                     <span>{heading}</span>
                                     <div className="car-reg-digit-sum-options">
-                                      {manithaNaadiUniqueDigitSums.map((digitSum) => {
-                                        const value = String(digitSum)
+                                      {(heading === 'Digit sum'
+                                        ? manithaNaadiUniqueDigitSums.map(String)
+                                        : manithaNaadiUniqueRasiCharts).map((value) => {
+                                        const isMobile = manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
+                                        const isDigitSum = heading === 'Digit sum'
+                                        const selectedFilters = isDigitSum
+                                          ? isMobile ? mobileDigitSumFilters : manithaNaadiDigitSumFilters
+                                          : manithaNaadiUniqueRasiChartFilters
                                         return (
                                           <label key={value}>
                                             <input
                                               type="checkbox"
-                                              checked={mobileDigitSumFilters.includes(value)}
+                                              checked={selectedFilters.includes(value)}
                                               onChange={(event) => {
                                                 const { checked } = event.target
-                                                setMobileDigitSumFilters((selected) => (
+                                                const setSelectedFilters = !isDigitSum
+                                                  ? setManithaNaadiUniqueRasiChartFilters
+                                                  : isMobile
+                                                    ? setMobileDigitSumFilters
+                                                    : setManithaNaadiDigitSumFilters
+                                                setSelectedFilters((selected) => (
                                                   checked
                                                     ? [...selected, value]
                                                     : selected.filter((selectedValue) => selectedValue !== value)
                                                 ))
-                                                setMobileNumberPage(0)
-                                                setMobileUniqueCombinationPage(0)
+                                                if (isMobile) {
+                                                  setMobileNumberPage(0)
+                                                  setMobileUniqueCombinationPage(0)
+                                                }
                                               }}
                                             />
-                                            {digitSum}
+                                            {value}
                                           </label>
                                         )
                                       })}
                                     </div>
                                   </div>
-                                ) : heading === 'Digit sum' ? (
-                                  <span className="digit-sum-filter-heading">
-                                    <span>{heading}</span>
-                                    <input
-                                      className="digit-sum-filter-input"
-                                      type="search"
-                                      inputMode="numeric"
-                                      aria-label="Filter results by digit sum"
-                                      placeholder="Filter"
-                                      value={manithaNaadiDigitSumFilter}
-                                      onChange={(event) => {
-                                        setManithaNaadiDigitSumFilter(event.target.value)
-                                        if (manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS') {
-                                          setMobileNumberPage(0)
-                                          setMobileUniqueCombinationPage(0)
-                                        }
-                                      }}
-                                    />
-                                  </span>
                                 ) : heading}
                               </th>
                             ))}
@@ -1523,11 +1545,12 @@ function App() {
                             <tr>
                               <td colSpan={manithaNaadiTableHeaders.length
                                 + (manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' ? 3 : 0)}>
-                                {manithaNaadiDigitSumFilter.trim()
-                                  || mobileDigitSumFilters.length > 0
-                                  || mobileUniquePairFilters.length > 0
-                                  ? 'No results match the selected filters.'
-                                  : 'No results to display.'}
+                                {(manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
+                                  ? mobileDigitSumFilters.length > 0 || mobileUniquePairFilters.length > 0
+                                  : manithaNaadiDigitSumFilters.length > 0)
+                                    || manithaNaadiUniqueRasiChartFilters.length > 0
+                                    ? 'No results match the selected filters.'
+                                    : 'No results to display.'}
                               </td>
                             </tr>
                           ) : pagedManithaNaadiTableRows.map((row, index) => (
@@ -1547,7 +1570,7 @@ function App() {
                               <td>{row[0]}</td>
                               <td>{row[1]}</td>
                                 {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
-                                  <td>{row[6]}</td>
+                                  <td>{row[7]}</td>
                                 )}
                                 <td>{row[2]}</td>
                                 {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
@@ -1559,6 +1582,7 @@ function App() {
                                 <td>{row[3]}</td>
                                 <td><strong>{row[4]}</strong></td>
                                 <td><strong>{row[5]}</strong></td>
+                                <td><strong>{row[6]}</strong></td>
                             </tr>
                           ))}
                         </tbody>
@@ -2298,7 +2322,7 @@ function App() {
                           </thead>
                           <tbody>
                             {rows.length === 0 ? (
-                              <tr><td colSpan={5}>No combinations found for {manualCombinationResults.targets.join(', ')}.</td></tr>
+                              <tr><td colSpan={manithaNaadiTableHeaders.length - 1}>No combinations found for {manualCombinationResults.targets.join(', ')}.</td></tr>
                             ) : rows.map((row, index) => (
                               <tr key={`${row[1]}-${index}`}>
                                 {row.map((value, columnIndex) => (

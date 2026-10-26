@@ -1540,39 +1540,25 @@
   font-size: 18px;
 }
 
-.digit-sum-filter-heading {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.digit-sum-filter-input {
-  width: 64px;
-  min-height: 26px;
-  padding: 3px 6px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  background: #fffdf8;
-  color: var(--ink);
-  font: inherit;
-  font-size: 10px;
-  text-align: left;
-}
-
-.digit-sum-filter-input::placeholder {
-  color: var(--soft-ink);
-  opacity: 0.75;
-}
-
 .manitha-results-table td:nth-child(2),
 .manitha-results-table th:nth-child(2),
 .manitha-results-table td:nth-child(3),
 .manitha-results-table th:nth-child(3),
 .manitha-results-table td:nth-child(4),
 .manitha-results-table th:nth-child(4),
+.manitha-results-table td:nth-child(5),
+.manitha-results-table th:nth-child(5),
 .manitha-results-table td:nth-child(6),
-.manitha-results-table th:nth-child(6) {
-  text-align: right;
+.manitha-results-table th:nth-child(6),
+.manitha-results-table td:nth-child(7),
+.manitha-results-table th:nth-child(7),
+.manitha-results-table td:nth-child(8),
+.manitha-results-table th:nth-child(8),
+.manitha-results-table td:nth-child(9),
+.manitha-results-table th:nth-child(9),
+.manitha-results-table td:nth-child(10),
+.manitha-results-table th:nth-child(10) {
+  text-align: center;
 }
 
 .password-generator-results .manitha-results-table th:nth-child(2),
