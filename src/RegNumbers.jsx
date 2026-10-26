@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import LuckyNumbersOverview from './LuckyNumbersOverview'
+import CopyTextButton from './CopyTextButton'
 import { getRasiBhavam } from './rasiChartData'
 import { manithaNaadiRajanilaiNumbers } from './manithaNaadiRajanilai'
 
@@ -408,7 +409,13 @@ export default function RegNumbersPage(props) {
                 <span className="results-kicker">{props.brandName ?? 'phoneovernet'} · {props.initials}</span>
                 <h2>{registrationLayout ? 'Generated registrations' : `Saved ${props.headingItemName ?? 'phone numbers'}`}</h2>
               </div>
-              <span className="results-count">{visibleRows.length.toLocaleString()} / {phoneNumbers.length.toLocaleString()} {props.countLabel ?? 'NUMBERS'}</span>
+              <div className="workspace-results-actions">
+                <CopyTextButton
+                  label={registrationLayout ? 'registrations' : 'phone numbers'}
+                  text={filteredRegistrations.join('\n')}
+                />
+                <span className="results-count">{visibleRows.length.toLocaleString()} / {phoneNumbers.length.toLocaleString()} {props.countLabel ?? 'NUMBERS'}</span>
+              </div>
             </div>
             {!registrationLayout ? <div className="vip-result-check-filters" role="group" aria-label="Filter numbers by pair match results">
               <label>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { generatePasswords } from './manithaNaadiPasswords'
+import CopyTextButton from './CopyTextButton'
 
 const tableHeaders = ['Initials', 'Pair values', 'Number', 'Digit sum', 'Bhavam']
 
@@ -34,9 +35,15 @@ export default function ManithaNaadiPasswordGenerator({
               <span className="results-kicker">GEN-PASSWORD · {initials} VALUES</span>
               <h2>Generated passwords</h2>
             </div>
-            <span className="results-count" title="Each password's letter values add up to one of the selected lucky numbers">
-              {visiblePasswords.matches.length} PASSWORDS · LUCKY TOTALS
-            </span>
+            <div className="workspace-results-actions">
+              <span className="results-count" title="Each password's letter values add up to one of the selected lucky numbers">
+                {visiblePasswords.matches.length} PASSWORDS · LUCKY TOTALS
+              </span>
+              <CopyTextButton
+                label="passwords"
+                text={visiblePasswords.matches.map(({ password }) => password).join('\n')}
+              />
+            </div>
           </div>
           <p className="password-generator-note">
             Each name starts with a letter pair that matches a lucky pair, then gets the initials-specific number suffix. The name and suffix values must total another lucky number. Ten names are shown per total where possible. These examples are not secure account passwords.

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { generateEmails } from './manithaNaadiPasswords'
+import CopyTextButton from './CopyTextButton'
 
 const tableHeaders = ['Initials', 'Pair values', 'Email', 'Digit sum', 'Bhavam']
 const rajanilaiNumbers = new Set([
@@ -65,9 +66,15 @@ export function EmailGeneratorResults({ initials, results, rasiChartNumbersByPai
           <span className="results-kicker">GEN-EMAIL · {initials} VALUES</span>
           <h2>Generated email addresses</h2>
         </div>
-        <span className="results-count" title="Names, suffix and optionally gmail.com letters match each lucky total">
-          {results.matches.length} EMAILS · LUCKY TOTALS
-        </span>
+        <div className="workspace-results-actions">
+          <span className="results-count" title="Names, suffix and optionally gmail.com letters match each lucky total">
+            {results.matches.length} EMAILS · LUCKY TOTALS
+          </span>
+          <CopyTextButton
+            label="email addresses"
+            text={results.matches.map(({ email }) => email).join('\n')}
+          />
+        </div>
       </div>
       <p className="password-generator-note">
         Addresses use readable combinations of the provided names. The first two name letters must match a lucky pair, and the name and initials suffix are counted

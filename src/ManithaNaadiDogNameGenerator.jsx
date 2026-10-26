@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { carRegLetterValueMap } from './numerologyLetterValues'
+import CopyTextButton from './CopyTextButton'
 
 const defaultRajanilaiNumbers = `2
 4
@@ -160,7 +161,13 @@ export default function ManithaNaadiDogNameGenerator({
               <span className="results-kicker">GEN-DOG-NAMES · LETTER-VALUE TOTALS</span>
               <h2>Female dog names</h2>
             </div>
-            <span className="results-count">{matchCount} REAL NAMES · UP TO 10 PER TOTAL</span>
+            <div className="workspace-results-actions">
+              <span className="results-count">{matchCount} REAL NAMES · UP TO 10 PER TOTAL</span>
+              <CopyTextButton
+                label="dog names"
+                text={matchesByTotal.flatMap(({ matches }) => matches.map(({ name }) => name)).join('\n')}
+              />
+            </div>
           </div>
           <div className="manitha-results-table-wrap">
             <table className="manitha-results-table">

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import './Name2NumberPage.css'
+import CopyTextButton from './CopyTextButton'
 import { carRegLetterValueMap, carRegLetterValues } from './numerologyLetterValues'
 import RasiChart from './RasiChart'
 import { getRasiBhavam, rasiChartStartingSigns } from './rasiChartData'
@@ -563,6 +564,10 @@ export default function Name2NumberPage() {
       <div id="name2number-output">
         {validResults.length > 0 ? (
           <section className="name2number-result" aria-live="polite" aria-label="Name number result">
+            <CopyTextButton
+              label="name number results"
+              text={filteredValidResults.map(({ name: resultName, name2number }) => `${resultName}\t${name2number}`).join('\n')}
+            />
             <div className="name2number-result-table-wrap">
               <table className="name2number-result-table">
                 <thead>
@@ -757,6 +762,10 @@ export default function Name2NumberPage() {
                 ) : null}
                 {uniqueCombinations.length > 0 ? (
                   <>
+                    <CopyTextButton
+                      label="unique combinations"
+                      text={uniqueCombinationsWithSums.map(({ combination }) => combination).join('\n')}
+                    />
                     <div className="name2number-unique-table-wrap">
                       <table className="name2number-unique-table">
                         <thead>
@@ -797,6 +806,7 @@ export default function Name2NumberPage() {
                     <p className="name2number-unique-number-list" aria-label="Unique numbers">
                       <strong>Unique numbers:</strong> {uniqueNumbers.join(', ')}
                     </p>
+                    <CopyTextButton label="unique numbers" text={uniqueNumbers.join('\n')} />
                     <div className="name2number-including-number-filter">
                       <span>Filter by “Including {numberToInclude || 'number'}” total</span>
                       <details
@@ -839,6 +849,10 @@ export default function Name2NumberPage() {
                     {selectedIncludingNumberTotals.length > 0 ? (
                       <div className="name2number-selected-combinations">
                         <p>Selected combinations</p>
+                        <CopyTextButton
+                          label="selected combinations"
+                          text={selectedCombinations.map(({ combination }) => combination).join('\n')}
+                        />
                         <div className="name2number-unique-table-wrap">
                           <table className="name2number-unique-table">
                             <thead>
@@ -1042,24 +1056,30 @@ export default function Name2NumberPage() {
           <div className="name2number-non-rajanilai-results" aria-live="polite">
             <p>{nonRajanilaiResults.length.toLocaleString()} matching numbers (up to 10)</p>
             {nonRajanilaiResults.length > 0 ? (
-              <div className="name2number-non-rajanilai-table-wrap">
-                <table className="name2number-non-rajanilai-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Number</th>
-                      <th scope="col">Digit sum calculation</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {nonRajanilaiResults.map(({ number, digitSumCalculation }) => (
-                      <tr key={number}>
-                        <td>{number}</td>
-                        <td>{digitSumCalculation}</td>
+              <>
+                <CopyTextButton
+                  label="generated numbers"
+                  text={nonRajanilaiResults.map(({ number }) => number).join('\n')}
+                />
+                <div className="name2number-non-rajanilai-table-wrap">
+                  <table className="name2number-non-rajanilai-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Number</th>
+                        <th scope="col">Digit sum calculation</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {nonRajanilaiResults.map(({ number, digitSumCalculation }) => (
+                        <tr key={number}>
+                          <td>{number}</td>
+                          <td>{digitSumCalculation}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             ) : (
               <p>No valid numbers were found for this first pair and Rajanilai list.</p>
             )}
@@ -1125,26 +1145,32 @@ export default function Name2NumberPage() {
               </p>
             )}
             {digitSumResults.length > 0 ? (
-              <div className="name2number-non-rajanilai-table-wrap">
-                <table className="name2number-non-rajanilai-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Number</th>
-                      <th scope="col">Digit sum calculation</th>
-                      <th scope="col">Digit sum</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {digitSumResults.map(({ number, digitSumCalculation, digitSum }, index) => (
-                      <tr key={`${number}-${index}`}>
-                        <td>{number}</td>
-                        <td>{digitSumCalculation}</td>
-                        <td>{digitSum}</td>
+              <>
+                <CopyTextButton
+                  label="digit sum results"
+                  text={digitSumResults.map(({ number, digitSumCalculation, digitSum }) => `${number}\t${digitSumCalculation}\t${digitSum}`).join('\n')}
+                />
+                <div className="name2number-non-rajanilai-table-wrap">
+                  <table className="name2number-non-rajanilai-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Number</th>
+                        <th scope="col">Digit sum calculation</th>
+                        <th scope="col">Digit sum</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {digitSumResults.map(({ number, digitSumCalculation, digitSum }, index) => (
+                        <tr key={`${number}-${index}`}>
+                          <td>{number}</td>
+                          <td>{digitSumCalculation}</td>
+                          <td>{digitSum}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             ) : (
               <p>No valid whole numbers were entered.</p>
             )}

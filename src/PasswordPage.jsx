@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import './PasswordPage.css'
+import CopyTextButton from './CopyTextButton'
 
 const digitLetterRows = [
   { digit: '1', letters: ['A', 'I', 'J', 'Y', 'Q'], color: 'pink' },
@@ -94,6 +95,7 @@ export default function PasswordPage() {
             <div className="password-page-results-heading">
               <h2 id="password-results-title">Generated password</h2>
               <span>One letter per digit</span>
+              <CopyTextButton label="generated password" text={generatedPassword} />
             </div>
             <p className="password-page-message">
               Each digit uses the first letter in its row, in the same order as entered.

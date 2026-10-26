@@ -10,6 +10,7 @@ import Name2NumberPage from './Name2NumberPage'
 import PasswordPage from './PasswordPage'
 import LuckyNumbersOverview from './LuckyNumbersOverview'
 import RegNumbersPage from './RegNumbers'
+import CopyTextButton from './CopyTextButton'
 import { manithaNaadiRajanilaiNumbers } from './manithaNaadiRajanilai'
 import { carRegLetterValueMap } from './numerologyLetterValues'
 import {
@@ -647,7 +648,7 @@ function App() {
     const isCarRegistration = isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
     const exportRows = isCarRegistration
       ? [
-        ['Initials', 'Lucky pair', 'Registration', 'Pair checks', 'Rajanilai calculation', 'Rajanilai match', 'Pair bhavam', 'Digit sum', 'Sum bhavam'],
+        ['Initials', 'Lucky pair', 'Registration', 'Pair checks', 'Unique pairs', 'Rajanilai calculation', 'Rajanilai match', 'Pair bhavam', 'Digit sum', 'Sum bhavam'],
         ...manithaNaadiCombinationResults.matches
           .filter(({ registration }) => {
             const normalizedRegistration = registration.toUpperCase()
@@ -661,6 +662,7 @@ function App() {
           match.pair,
           match.registration,
           match.checks.join(', '),
+          getCanonicalPairChecks(match.checks).replaceAll(',', ', '),
           match.checks.map((check) => `${check} ${manithaNaadiRajanilaiNumbers.has(Number(check)) ? '✓' : '✗'}`).join(' '),
           `${match.digitSum} ${manithaNaadiRajanilaiNumbers.has(match.digitSum) ? '✓✓' : '✗✗'}`,
           match.checks.map((check) => rasiChartNumbersByPair.get(check)?.join('/') ?? '—').join(', '),
@@ -670,8 +672,16 @@ function App() {
       ]
       : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
         ? [
-          [...manithaNaadiTableHeaders, 'Unique pairs'],
-          ...getManithaNaadiTableRows(),
+          [
+            ...manithaNaadiTableHeaders.slice(0, 2),
+            'Unique pairs',
+            ...manithaNaadiTableHeaders.slice(2),
+          ],
+          ...getManithaNaadiTableRows().map((row) => [
+            ...row.slice(0, 2),
+            row[6],
+            ...row.slice(2, 6),
+          ]),
         ]
         : [manithaNaadiTableHeaders, ...getManithaNaadiTableRows()]
     const highlightedNumbers = manithaNaadiCombinationResults.generator === 'GEN-4'
@@ -682,18 +692,18 @@ function App() {
           ? manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile]
           : null
     const headerRow = exportRows[0].map((value, index) => {
-      const isRightAligned = (isCarRegistration ? [1, 7] : [1, 2, 3, 5]).includes(index)
+      const isRightAligned = (isCarRegistration ? [1, 8] : [1, 2, 3, 5]).includes(index)
       return `<Cell ss:StyleID="${isRightAligned ? 'HeaderRight' : 'HeaderLeft'}"><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`
     }).join('')
     const dataRows = exportRows.slice(1).map((row) => {
       const isHighlighted = !isCarRegistration && highlightedNumbers?.has(row[2])
       const cells = row.map((value, index) => {
-        const isRightAligned = (isCarRegistration ? [1, 7] : [1, 2, 3, 5]).includes(index)
+        const isRightAligned = (isCarRegistration ? [1, 8] : [1, 2, 3, 5]).includes(index)
         const isBold = isCarRegistration
-          ? index === 2 || index === 8
+          ? index === 2 || index === 9
           : index === 4 || index === 5 || (isHighlighted && [1, 2].includes(index))
-        const styleId = isCarRegistration && index === 5
-          ? manithaNaadiRajanilaiNumbers.has(Number(row[7]))
+        const styleId = isCarRegistration && index === 6
+          ? manithaNaadiRajanilaiNumbers.has(Number(row[8]))
             ? 'RajanilaiMatchLeft'
             : 'RajanilaiMissLeft'
           : isHighlighted
@@ -704,7 +714,7 @@ function App() {
             ? isBold ? 'CarBold' : 'Body'
             : isBold ? 'BodyBold' : 'Body'
         const alignment = isRightAligned ? 'Right' : 'Left'
-        const cellStyleId = isCarRegistration && index === 5 ? styleId : `${styleId}${alignment}`
+        const cellStyleId = isCarRegistration && index === 6 ? styleId : `${styleId}${alignment}`
         return `<Cell ss:StyleID="${cellStyleId}"><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`
       }).join('')
       return `<Row>${cells}</Row>`
@@ -1019,7 +1029,10 @@ function App() {
   }
 
   return (
-    <main className="app-shell" onClickCapture={deferButtonAction}>
+    <main
+      className={`app-shell${activePage === 'manitha-naadi' && isCarRegistrationGenerator(activeManithaNaadiGenerator) ? ' app-shell-car-registration' : ''}`}
+      onClickCapture={deferButtonAction}
+    >
       <header className="topbar">
         <a className="wordmark" href="#top" aria-label="Number Signal home" onClick={() => navigateToPage('manitha-naadi')}>
           <span className="wordmark-mark" aria-hidden="true">n.</span>
@@ -1328,15 +1341,6 @@ function App() {
                     </div>
                   )
                 ))}
-                {isCarRegistrationGenerator(manithaNaadiCombinationResults?.generator) && (
-                  <button
-                    className="combination-generate-button car-reg-toolbar-download"
-                    type="button"
-                    onClick={exportManithaNaadiResults}
-                  >
-                    Download as Excel
-                  </button>
-                )}
               </div>
               {activeManithaNaadiGenerator === 'GEN-EMAIL'
                 && manithaNaadiEmailResults?.initials === selectedManithaNaadiInitials && (
@@ -1368,29 +1372,47 @@ function App() {
                       ? isCarRegistrationGenerator(manithaNaadiCombinationResults.generator) ? 'Generated registrations' : 'Generated numbers'
                       : 'Combination sum results'}</h2>
                   </div>
-                  <span className="results-count" title={manithaNaadiCombinationResults.generator === 'GEN-5'
-                    ? 'Numbers matching the selected-initial pair and shared-pool checks'
-                    : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
-                      ? 'Every number starts with 074; all four following pairs and the digit total must be in the selected initials lucky numbers'
-                      : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
-                        ? 'Registrations matching the active filters'
-                      : 'Total includes combinations with repeated values; distinct count excludes repeats'}>
-                    {isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
-                      && carRegistrationFilterLoading
-                      ? (
-                        <span className="car-reg-filter-loading" role="status">
-                          <span className="car-reg-filter-spinner" aria-hidden="true" />
-                          Filtering registrations…
-                        </span>
-                      )
-                      : manithaNaadiCombinationResults.generator === 'GEN-5'
-                      ? `${manithaNaadiCombinationResults.matches.length} NUMBERS`
+                  <div className="workspace-results-actions">
+                    <CopyTextButton
+                      label={isCarRegistrationGenerator(manithaNaadiCombinationResults.generator) ? 'registrations' : 'numbers'}
+                      text={isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
+                        ? filteredCarRegistrations.join('\n')
+                        : visibleManithaNaadiTableRows.map((row) => row[2]).join('\n')}
+                    />
+                    <span className="results-count" title={manithaNaadiCombinationResults.generator === 'GEN-5'
+                      ? 'Numbers matching the selected-initial pair and shared-pool checks'
                       : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
-                        ? `${manithaNaadiCombinationResults.matches.length} MATCHES`
+                        ? 'Every number starts with 074; all four following pairs and the digit total must be in the selected initials lucky numbers'
                         : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
-                          ? `${visibleCarRegistrationCount.toLocaleString()} REGISTRATIONS`
-                          : `${manithaNaadiCombinationResults.possibleCombinationsWithRepetition.toLocaleString()} POSSIBLE WITH REPEATS · ${manithaNaadiCombinationResults.combinationsChecked.toLocaleString()} DISTINCT${manithaNaadiCombinationResults.generator === 'GEN-4' && manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : manithaNaadiCombinationResults.generator === 'GEN-6' && manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : ''}`}
-                  </span>
+                          ? 'Registrations matching the active filters'
+                        : 'Total includes combinations with repeated values; distinct count excludes repeats'}>
+                      {isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
+                        && carRegistrationFilterLoading
+                        ? (
+                          <span className="car-reg-filter-loading" role="status">
+                            <span className="car-reg-filter-spinner" aria-hidden="true" />
+                            Filtering registrations…
+                          </span>
+                        )
+                        : manithaNaadiCombinationResults.generator === 'GEN-5'
+                        ? `${manithaNaadiCombinationResults.matches.length} NUMBERS`
+                        : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
+                          ? `${manithaNaadiCombinationResults.matches.length} MATCHES`
+                          : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
+                            ? `${visibleCarRegistrationCount.toLocaleString()} REGISTRATIONS`
+                            : `${manithaNaadiCombinationResults.possibleCombinationsWithRepetition.toLocaleString()} POSSIBLE WITH REPEATS · ${manithaNaadiCombinationResults.combinationsChecked.toLocaleString()} DISTINCT${manithaNaadiCombinationResults.generator === 'GEN-4' && manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : manithaNaadiCombinationResults.generator === 'GEN-6' && manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : ''}`}
+                    </span>
+                    {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS'].includes(manithaNaadiCombinationResults.generator)
+                      || isCarRegistrationGenerator(manithaNaadiCombinationResults.generator) ? (
+                      <button
+                        className="combination-generate-button manitha-results-download"
+                        type="button"
+                        onClick={exportManithaNaadiResults}
+                      >
+                        Download as Excel
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 {isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
                   && carRegistrationFilterError && (
@@ -1613,9 +1635,15 @@ function App() {
                           </select>
                         </label>
                       )}
-                      <span className="results-kicker">
-                        UNIQUE COMBINATIONS · {uniqueGeneratedCombinations.length}
-                      </span>
+                      <div className="unique-combination-heading">
+                        <span className="results-kicker">
+                          UNIQUE COMBINATIONS · {uniqueGeneratedCombinations.length}
+                        </span>
+                        <CopyTextButton
+                          label="unique combinations"
+                          text={uniqueGeneratedCombinations.join('\n')}
+                        />
+                      </div>
                       <p>
                         {pagedUniqueGeneratedCombinations.length > 0
                           ? pagedUniqueGeneratedCombinations.join('\n')
@@ -1631,13 +1659,6 @@ function App() {
                         label="Unique mobile-number combinations"
                       />
                     )}
-                    <button
-                      className="combination-generate-button manitha-results-download"
-                      type="button"
-                      onClick={exportManithaNaadiResults}
-                    >
-                      Download as Excel
-                    </button>
                   </>
                 ) : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator) ? (
                   <>

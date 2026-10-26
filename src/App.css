@@ -1,9 +1,13 @@
 .app-shell {
-  width: min(1200px, 100% - 96px);
+  width: min(1280px, 100% - 96px);
   min-height: 100svh;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+}
+
+.app-shell-car-registration {
+  width: min(1600px, 100% - 48px);
 }
 
 .button-action-loading-overlay {
@@ -569,6 +573,10 @@
     width: min(680px, 100% - 48px);
   }
 
+  .app-shell-car-registration {
+    width: calc(100% - 48px);
+  }
+
   .workspace {
     grid-template-columns: 1fr;
     gap: 45px;
@@ -590,6 +598,10 @@
 
 @media (max-width: 560px) {
   .app-shell {
+    width: calc(100% - 36px);
+  }
+
+  .app-shell-car-registration {
     width: calc(100% - 36px);
   }
 
@@ -1018,10 +1030,6 @@
   margin-top: 10px;
 }
 
-.car-reg-toolbar-download {
-  white-space: nowrap;
-}
-
 .car-reg-filter-loading {
   display: inline-flex;
   align-items: center;
@@ -1287,6 +1295,26 @@
 .manitha-car-reg-results-table {
   width: max-content;
   min-width: 1500px;
+}
+
+.app-shell-car-registration .manitha-car-reg-results-table {
+  min-width: 1800px;
+}
+
+.app-shell-car-registration .manitha-car-reg-results-table thead th:nth-child(9),
+.app-shell-car-registration .manitha-car-reg-results-table thead th:nth-child(10) {
+  position: sticky;
+  background: var(--paper-deep);
+  z-index: 2;
+}
+
+.app-shell-car-registration .manitha-car-reg-results-table thead th:nth-child(9) {
+  right: 105px;
+  min-width: 230px;
+}
+
+.app-shell-car-registration .manitha-car-reg-results-table thead th:nth-child(10) {
+  right: 0;
 }
 
 .manitha-car-reg-results-table th:nth-child(3),
@@ -1605,7 +1633,7 @@
 }
 
 .manitha-results-download {
-  margin-top: 12px;
+  white-space: nowrap;
 }
 
 .car-reg-selected-combinations {
@@ -1809,6 +1837,13 @@
   border: 1px solid var(--line);
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.35);
+}
+
+.unique-combination-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .unique-digit-sum-select {
@@ -2065,6 +2100,14 @@
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 23px;
   font-weight: 400;
+}
+
+.workspace-results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .workspace-match-list {
