@@ -332,6 +332,13 @@ export default function Name2NumberPage() {
   const [rajanilaiSumInput, setRajanilaiSumInput] = useState('')
   const [rajanilaiSumResults, setRajanilaiSumResults] = useState(null)
   const [rajanilaiSumError, setRajanilaiSumError] = useState('')
+  const [rajanilaiSubtractInput, setRajanilaiSubtractInput] = useState('')
+  const [rajanilaiSubtractResults, setRajanilaiSubtractResults] = useState(null)
+  const [rajanilaiSubtractError, setRajanilaiSubtractError] = useState('')
+  const [rajanilaiMatchInputA, setRajanilaiMatchInputA] = useState('')
+  const [rajanilaiMatchInputC, setRajanilaiMatchInputC] = useState('')
+  const [rajanilaiMatchResults, setRajanilaiMatchResults] = useState(null)
+  const [rajanilaiMatchError, setRajanilaiMatchError] = useState('')
   const [nonRajanilaiPrefix, setNonRajanilaiPrefix] = useState('')
   const [nonRajanilaiResults, setNonRajanilaiResults] = useState(null)
   const [digitSumInput, setDigitSumInput] = useState('')
@@ -398,6 +405,62 @@ export default function Name2NumberPage() {
 
     setRajanilaiSumError('')
     setRajanilaiSumResults({ generator, combinations })
+  }
+
+  function findRajanilaiSubtractions(event) {
+    event.preventDefault()
+    const input = rajanilaiSubtractInput.trim()
+    const minuend = Number(input)
+    if (!/^\d+$/.test(input) || !Number.isSafeInteger(minuend) || minuend < 1) {
+      setRajanilaiSubtractError('Enter a positive whole-number Rajanilai number.')
+      setRajanilaiSubtractResults(null)
+      return
+    }
+
+    const results = [...rajanilaiSet]
+      .map(Number)
+      .filter((rajanilaiNumber) => {
+        const difference = rajanilaiNumber - minuend
+        return rajanilaiNumber > minuend && rajanilaiSet.has(String(difference))
+      })
+      .map((rajanilaiNumber) => ({
+        rajanilaiNumber,
+        subtractedNumber: minuend,
+        resultantRajanilai: rajanilaiNumber - minuend,
+      }))
+
+    setRajanilaiSubtractError('')
+    setRajanilaiSubtractResults(results)
+  }
+
+  function findRajanilaiMatches(event) {
+    event.preventDefault()
+    const inputA = rajanilaiMatchInputA.trim()
+    const inputC = rajanilaiMatchInputC.trim()
+    const valueA = Number(inputA)
+    const valueC = Number(inputC)
+    if (![inputA, inputC].every((value) => /^\d+$/.test(value))
+      || !Number.isSafeInteger(valueA)
+      || !Number.isSafeInteger(valueC)
+      || !rajanilaiSet.has(String(valueA))
+      || !rajanilaiSet.has(String(valueC))) {
+      setRajanilaiMatchError('Enter Rajanilai numbers from the configured Rajanilai Numbers list in boxes A and C.')
+      setRajanilaiMatchResults(null)
+      return
+    }
+
+    const results = [...rajanilaiSet]
+      .map(Number)
+      .sort((first, second) => first - second)
+      .flatMap((valueB) => {
+        const firstResult = valueA + valueB
+        const finalResult = firstResult + valueC
+        if (!rajanilaiSet.has(String(firstResult)) || !rajanilaiSet.has(String(finalResult))) return []
+        return [{ valueB, firstResult, finalResult }]
+      })
+
+    setRajanilaiMatchError('')
+    setRajanilaiMatchResults(results)
   }
   const validResults = results.filter(({ characterValues }) => characterValues.length > 0)
   const filteredValidResults = validResults.filter((result) => {
@@ -590,6 +653,10 @@ export default function Name2NumberPage() {
             setNonRajanilaiResults(null)
             setRajanilaiSumResults(null)
             setRajanilaiSumError('')
+            setRajanilaiSubtractResults(null)
+            setRajanilaiSubtractError('')
+            setRajanilaiMatchResults(null)
+            setRajanilaiMatchError('')
           }}
           autoComplete="off"
           spellCheck="false"
@@ -1406,6 +1473,128 @@ export default function Name2NumberPage() {
             {rajanilaiSumResults.combinations.length > 0
               ? <pre>{rajanilaiSumResults.combinations.join('\n')}</pre>
               : <p>No {rajanilaiSumResults.generator} combinations match this sum.</p>}
+          </div>
+        ) : null}
+      </section>
+      <section
+        className="name2number-rajanilai-sum"
+        aria-labelledby="name2number-rajanilai-subtract-title"
+      >
+        <h2 id="name2number-rajanilai-subtract-title">Subtract and Resultant Rajanilai</h2>
+        <form className="name2number-rajanilai-sum-form" onSubmit={findRajanilaiSubtractions}>
+          <label htmlFor="name2number-rajanilai-subtract-input">
+            <span>Input Rajanilai number</span>
+            <input
+              id="name2number-rajanilai-subtract-input"
+              type="number"
+              min="1"
+              step="1"
+              inputMode="numeric"
+              value={rajanilaiSubtractInput}
+              onChange={(event) => {
+                setRajanilaiSubtractInput(event.target.value)
+                setRajanilaiSubtractResults(null)
+                setRajanilaiSubtractError('')
+              }}
+            />
+          </label>
+          <button className="name2number-button" type="submit">
+            Find Rajanilai Subtractions
+          </button>
+        </form>
+        {rajanilaiSubtractError ? (
+          <p className="name2number-message" role="alert">{rajanilaiSubtractError}</p>
+        ) : null}
+        {rajanilaiSubtractResults ? (
+          <div className="name2number-rajanilai-sum-results" aria-live="polite">
+            {rajanilaiSubtractResults.length > 0
+              ? (
+                <div className="name2number-rajanilai-subtract-results">
+                  <div className="name2number-rajanilai-subtract-row name2number-rajanilai-subtract-heading">
+                    <span>Rajanilai number</span>
+                    <span>Subtracted number</span>
+                    <span>Resultant Rajanilai</span>
+                  </div>
+                  {rajanilaiSubtractResults.map((result) => (
+                    <div className="name2number-rajanilai-subtract-row" key={result.rajanilaiNumber}>
+                      <span>{result.rajanilaiNumber}</span>
+                      <span>{result.subtractedNumber}</span>
+                      <span>{result.resultantRajanilai}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+              : <p>No subtractions result in a configured Rajanilai number.</p>}
+          </div>
+        ) : null}
+      </section>
+      <section
+        className="name2number-rajanilai-sum"
+        aria-labelledby="name2number-rajanilai-match-title"
+      >
+        <h2 id="name2number-rajanilai-match-title">Match Rajanilai</h2>
+        <form className="name2number-rajanilai-match-form" onSubmit={findRajanilaiMatches}>
+          <label htmlFor="name2number-rajanilai-match-a">
+            <span>Box A</span>
+            <input
+              id="name2number-rajanilai-match-a"
+              type="number"
+              min="1"
+              step="1"
+              inputMode="numeric"
+              value={rajanilaiMatchInputA}
+              onChange={(event) => {
+                setRajanilaiMatchInputA(event.target.value)
+                setRajanilaiMatchResults(null)
+                setRajanilaiMatchError('')
+              }}
+            />
+          </label>
+          <label htmlFor="name2number-rajanilai-match-c">
+            <span>Box C</span>
+            <input
+              id="name2number-rajanilai-match-c"
+              type="number"
+              min="1"
+              step="1"
+              inputMode="numeric"
+              value={rajanilaiMatchInputC}
+              onChange={(event) => {
+                setRajanilaiMatchInputC(event.target.value)
+                setRajanilaiMatchResults(null)
+                setRajanilaiMatchError('')
+              }}
+            />
+          </label>
+          <button className="name2number-button" type="submit">Find Rajanilai Matches</button>
+        </form>
+        {rajanilaiMatchError ? (
+          <p className="name2number-message" role="alert">{rajanilaiMatchError}</p>
+        ) : null}
+        {rajanilaiMatchResults ? (
+          <div className="name2number-rajanilai-sum-results" aria-live="polite">
+            {rajanilaiMatchResults.length > 0
+              ? (
+                <div className="name2number-rajanilai-match-results">
+                  <div className="name2number-rajanilai-match-row name2number-rajanilai-match-heading">
+                    <span>Box A</span>
+                    <span>Box B</span>
+                    <span>First matched Rajanilai</span>
+                    <span>Box C</span>
+                    <span>New matched Rajanilai</span>
+                  </div>
+                  {rajanilaiMatchResults.map(({ valueB, firstResult, finalResult }) => (
+                    <div className="name2number-rajanilai-match-row" key={valueB}>
+                      <span>{rajanilaiMatchInputA}</span>
+                      <span>{String(valueB).padStart(2, '0')}</span>
+                      <span>{firstResult}</span>
+                      <span>{rajanilaiMatchInputC}</span>
+                      <span>{finalResult}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+              : <p>No Box B value makes both sums a configured Rajanilai number.</p>}
           </div>
         ) : null}
       </section>

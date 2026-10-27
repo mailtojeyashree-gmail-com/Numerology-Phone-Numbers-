@@ -138,6 +138,42 @@
   gap: 12px;
 }
 
+.name2number-rajanilai-match-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+
+.name2number-rajanilai-match-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--forest);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.name2number-rajanilai-match-form input {
+  width: min(100%, 220px);
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  outline: none;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 700 16px 'SFMono-Regular', Consolas, monospace;
+}
+
+.name2number-rajanilai-match-form input:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
+}
+
+.name2number-rajanilai-match-form button {
+  min-height: 48px;
+}
+
 .name2number-rajanilai-sum-form label {
   display: grid;
   gap: 6px;
@@ -200,6 +236,53 @@
   margin: 0;
   color: var(--soft-ink);
   font-size: 13px;
+}
+
+.name2number-rajanilai-match-results {
+  display: grid;
+  overflow-x: auto;
+}
+
+.name2number-rajanilai-subtract-results {
+  display: grid;
+  overflow-x: auto;
+}
+
+.name2number-rajanilai-subtract-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 12px;
+  min-width: 420px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font: 700 15px/1.6 'SFMono-Regular', Consolas, monospace;
+}
+
+.name2number-rajanilai-subtract-heading {
+  color: var(--soft-ink);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.name2number-rajanilai-match-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(100px, 1fr));
+  gap: 12px;
+  min-width: 600px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font: 700 15px/1.6 'SFMono-Regular', Consolas, monospace;
+}
+
+.name2number-rajanilai-match-heading {
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
 }
 
 .name2number-unused-regnumbers > h2 {
