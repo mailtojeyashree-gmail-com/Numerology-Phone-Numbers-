@@ -232,6 +232,30 @@
   white-space: pre-wrap;
 }
 
+.name2number-rajanilai-combination-results {
+  display: grid;
+  overflow-x: auto;
+}
+
+.name2number-rajanilai-combination-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, 0.7fr);
+  gap: 12px;
+  min-width: 300px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font: 700 15px/1.6 'SFMono-Regular', Consolas, monospace;
+}
+
+.name2number-rajanilai-combination-heading {
+  color: var(--soft-ink);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .name2number-rajanilai-sum-results p {
   margin: 0;
   color: var(--soft-ink);

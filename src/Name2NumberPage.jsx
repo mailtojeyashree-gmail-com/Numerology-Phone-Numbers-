@@ -105,8 +105,13 @@ function parseRajanilaiNumbers(value) {
 function findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength) {
   const numbers = [...rajanilaiSet]
     .map(Number)
-    .filter((number) => Number.isSafeInteger(number) && number > 0 && number <= target)
+    .filter((number) => Number.isSafeInteger(number) && number > 0)
     .sort((first, second) => first - second)
+    .map((number) => ({
+      value: number,
+      digitSum: [...String(number)].reduce((sum, digit) => sum + Number(digit), 0),
+    }))
+    .filter(({ digitSum }) => digitSum <= target)
   const combinations = []
   const selectedNumbers = []
 
@@ -114,15 +119,16 @@ function findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength) {
     if (selectedNumbers.length === combinationLength) {
       if (remaining !== 0) return false
       if (combinations.length === MAX_RAJANILAI_SUM_COMBINATIONS) return true
-      combinations.push(selectedNumbers.map((number) => String(number).padStart(2, '0')).join(', '))
+      const values = selectedNumbers.map((number) => String(number).padStart(2, '0'))
+      combinations.push({ values, digitSum: target })
       return false
     }
 
     for (let index = startIndex; index < numbers.length; index += 1) {
-      const number = numbers[index]
-      if (number > remaining) break
-      selectedNumbers.push(number)
-      const exceededLimit = visit(index, remaining - number)
+      const { value, digitSum } = numbers[index]
+      if (digitSum > remaining) continue
+      selectedNumbers.push(value)
+      const exceededLimit = visit(index, remaining - digitSum)
       selectedNumbers.pop()
       if (exceededLimit) return true
     }
@@ -1427,7 +1433,7 @@ export default function Name2NumberPage() {
         ) : null}
       </section>
       <section className="name2number-rajanilai-sum" aria-labelledby="name2number-rajanilai-sum-title">
-        <h2 id="name2number-rajanilai-sum-title">Find combination for Rajanilai Sum</h2>
+        <h2 id="name2number-rajanilai-sum-title">Find combination for Digit Sum</h2>
         <form
           className="name2number-rajanilai-sum-form"
           onSubmit={(event) => matchRajanilaiSum(
@@ -1436,7 +1442,7 @@ export default function Name2NumberPage() {
           )}
         >
           <label htmlFor="name2number-rajanilai-sum-input">
-            <span>Rajanilai sum</span>
+            <span>Digit sum</span>
             <input
               id="name2number-rajanilai-sum-input"
               type="number"
@@ -1472,7 +1478,20 @@ export default function Name2NumberPage() {
           <div className="name2number-rajanilai-sum-results" aria-live="polite">
             <h3>{rajanilaiSumResults.generator} combinations · {rajanilaiSumResults.combinations.length}</h3>
             {rajanilaiSumResults.combinations.length > 0
-              ? <pre>{rajanilaiSumResults.combinations.join('\n')}</pre>
+              ? (
+                <div className="name2number-rajanilai-combination-results">
+                  <div className="name2number-rajanilai-combination-row name2number-rajanilai-combination-heading">
+                    <span>Combination</span>
+                    <span>Digit sum</span>
+                  </div>
+                  {rajanilaiSumResults.combinations.map(({ values, digitSum }) => (
+                    <div className="name2number-rajanilai-combination-row" key={values.join(',')}>
+                      <span>{values.join(', ')}</span>
+                      <span>{digitSum}</span>
+                    </div>
+                  ))}
+                </div>
+              )
               : <p>No {rajanilaiSumResults.generator} combinations match this sum.</p>}
           </div>
         ) : null}
