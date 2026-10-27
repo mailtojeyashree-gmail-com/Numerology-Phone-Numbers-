@@ -35,6 +35,8 @@ const defaultMobileListB = `04, 32, 73, 90
 29, 73, 89`
 
 const defaultRajanilaiNumbers = '2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 26, 32, 33, 39, 41, 42, 45, 51, 52, 54, 56, 64, 66, 68, 72, 73, 74, 77, 79, 80, 84, 85, 87, 88, 89, 92, 93, 95, 97, 99'
+const MAX_RAJANILAI_SUM = 999
+const MAX_RAJANILAI_SUM_COMBINATIONS = 10000
 
 function xmlEscape(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
@@ -98,6 +100,40 @@ function parseRajanilaiNumbers(value) {
       .filter((number) => /^\d+$/.test(number))
       .map((number) => number.replace(/^0+(?=\d)/, '')),
   )
+}
+
+function findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength) {
+  const numbers = [...rajanilaiSet]
+    .map(Number)
+    .filter((number) => Number.isSafeInteger(number) && number > 0 && number <= target)
+    .sort((first, second) => first - second)
+  const combinations = []
+  const selectedNumbers = []
+
+  function visit(startIndex, remaining) {
+    if (selectedNumbers.length === combinationLength) {
+      if (remaining !== 0) return false
+      if (combinations.length === MAX_RAJANILAI_SUM_COMBINATIONS) return true
+      combinations.push(selectedNumbers.map((number) => String(number).padStart(2, '0')).join(', '))
+      return false
+    }
+
+    for (let index = startIndex; index < numbers.length; index += 1) {
+      const number = numbers[index]
+      if (number > remaining) break
+      selectedNumbers.push(number)
+      const exceededLimit = visit(index, remaining - number)
+      selectedNumbers.pop()
+      if (exceededLimit) return true
+    }
+
+    return false
+  }
+
+  return {
+    combinations,
+    exceededLimit: visit(0, target),
+  }
 }
 
 function generateNonRajanilaiNumbers(prefix, rajanilaiSet) {
@@ -293,6 +329,9 @@ export default function Name2NumberPage() {
   const [name, setName] = useState('')
   const [rajanilaiNumbers, setRajanilaiNumbers] = useState(defaultRajanilaiNumbers)
   const rajanilaiSet = useMemo(() => parseRajanilaiNumbers(rajanilaiNumbers), [rajanilaiNumbers])
+  const [rajanilaiSumInput, setRajanilaiSumInput] = useState('')
+  const [rajanilaiSumResults, setRajanilaiSumResults] = useState(null)
+  const [rajanilaiSumError, setRajanilaiSumError] = useState('')
   const [nonRajanilaiPrefix, setNonRajanilaiPrefix] = useState('')
   const [nonRajanilaiResults, setNonRajanilaiResults] = useState(null)
   const [digitSumInput, setDigitSumInput] = useState('')
@@ -327,6 +366,39 @@ export default function Name2NumberPage() {
     () => (generatedNames ?? []).map((generatedName) => getNameResult(generatedName, rajanilaiSet)),
     [generatedNames, rajanilaiSet],
   )
+
+  function matchRajanilaiSum(event, generator) {
+    event.preventDefault()
+    const input = rajanilaiSumInput.trim()
+    const target = Number(input)
+    if (!/^\d+$/.test(input) || !Number.isSafeInteger(target) || target < 2) {
+      setRajanilaiSumError('Enter a whole-number Rajanilai sum of at least 2.')
+      setRajanilaiSumResults(null)
+      return
+    }
+    if (target > MAX_RAJANILAI_SUM) {
+      setRajanilaiSumError(`Enter a Rajanilai sum no greater than ${MAX_RAJANILAI_SUM}.`)
+      setRajanilaiSumResults(null)
+      return
+    }
+
+    const combinationLength = generator === 'GEN-4' ? 2 : generator === 'GEN-6' ? 3 : 4
+    const { combinations, exceededLimit } = findRajanilaiSumCombinations(
+      target,
+      rajanilaiSet,
+      combinationLength,
+    )
+    if (exceededLimit) {
+      setRajanilaiSumError(
+        `More than ${MAX_RAJANILAI_SUM_COMBINATIONS.toLocaleString()} combinations match. Enter a lower sum to show all results.`,
+      )
+      setRajanilaiSumResults(null)
+      return
+    }
+
+    setRajanilaiSumError('')
+    setRajanilaiSumResults({ generator, combinations })
+  }
   const validResults = results.filter(({ characterValues }) => characterValues.length > 0)
   const filteredValidResults = validResults.filter((result) => {
     const filters = bhavamFilter.split(',').map((value) => value.trim()).filter(Boolean)
@@ -516,6 +588,8 @@ export default function Name2NumberPage() {
           onChange={(event) => {
             setRajanilaiNumbers(event.target.value)
             setNonRajanilaiResults(null)
+            setRajanilaiSumResults(null)
+            setRajanilaiSumError('')
           }}
           autoComplete="off"
           spellCheck="false"
@@ -1282,6 +1356,57 @@ export default function Name2NumberPage() {
               </section>
             </div>
           </>
+        ) : null}
+      </section>
+      <section className="name2number-rajanilai-sum" aria-labelledby="name2number-rajanilai-sum-title">
+        <h2 id="name2number-rajanilai-sum-title">Find combination for Rajanilai Sum</h2>
+        <form
+          className="name2number-rajanilai-sum-form"
+          onSubmit={(event) => matchRajanilaiSum(
+            event,
+            event.nativeEvent.submitter?.value ?? 'GEN-4',
+          )}
+        >
+          <label htmlFor="name2number-rajanilai-sum-input">
+            <span>Rajanilai sum</span>
+            <input
+              id="name2number-rajanilai-sum-input"
+              type="number"
+              min="2"
+              max={MAX_RAJANILAI_SUM}
+              step="1"
+              inputMode="numeric"
+              value={rajanilaiSumInput}
+              onChange={(event) => {
+                setRajanilaiSumInput(event.target.value)
+                setRajanilaiSumResults(null)
+                setRajanilaiSumError('')
+              }}
+            />
+          </label>
+          <div className="name2number-rajanilai-sum-buttons">
+            {['GEN-4', 'GEN-6', 'GEN-8'].map((generator) => (
+              <button
+                className={`name2number-button name2number-rajanilai-generator-button${rajanilaiSumResults?.generator === generator ? ' name2number-rajanilai-generator-button-active' : ''}`}
+                key={generator}
+                type="submit"
+                value={generator}
+              >
+                {generator}
+              </button>
+            ))}
+          </div>
+        </form>
+        {rajanilaiSumError ? (
+          <p className="name2number-message" role="alert">{rajanilaiSumError}</p>
+        ) : null}
+        {rajanilaiSumResults ? (
+          <div className="name2number-rajanilai-sum-results" aria-live="polite">
+            <h3>{rajanilaiSumResults.generator} combinations · {rajanilaiSumResults.combinations.length}</h3>
+            {rajanilaiSumResults.combinations.length > 0
+              ? <pre>{rajanilaiSumResults.combinations.join('\n')}</pre>
+              : <p>No {rajanilaiSumResults.generator} combinations match this sum.</p>}
+          </div>
         ) : null}
       </section>
     </section>
