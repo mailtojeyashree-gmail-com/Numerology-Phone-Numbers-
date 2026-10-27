@@ -459,10 +459,11 @@ export default function Name2NumberPage() {
     const results = [...rajanilaiSet]
       .map(Number)
       .sort((first, second) => first - second)
-      .flatMap((valueB) => {
-        const firstResult = valueA + valueB
+      .flatMap((firstResult) => {
+        const valueB = firstResult - valueA
+        if (valueB <= 0) return []
         const finalResult = firstResult + valueC
-        if (!rajanilaiSet.has(String(firstResult)) || !rajanilaiSet.has(String(finalResult))) return []
+        if (!rajanilaiSet.has(String(finalResult))) return []
         return [{ valueB, firstResult, finalResult }]
       })
 
