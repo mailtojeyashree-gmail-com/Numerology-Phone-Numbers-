@@ -442,9 +442,10 @@ export default function Name2NumberPage() {
     if (![inputA, inputC].every((value) => /^\d+$/.test(value))
       || !Number.isSafeInteger(valueA)
       || !Number.isSafeInteger(valueC)
-      || !rajanilaiSet.has(String(valueA))
       || !rajanilaiSet.has(String(valueC))) {
-      setRajanilaiMatchError('Enter Rajanilai numbers from the configured Rajanilai Numbers list in boxes A and C.')
+      setRajanilaiMatchError(
+        'Enter a positive whole number in Box A and a configured Rajanilai number in Box C.',
+      )
       setRajanilaiMatchResults(null)
       return
     }
