@@ -205,6 +205,41 @@ export default function RegNumbersPage(props) {
   }
 
   async function togglePhoneNumbers() {
+    if (props.inputRegistrationNumbers) {
+      setPhoneNumbersError('')
+      const numberPattern = props.numberPattern ?? /^P88[A-Z]{3}$/
+      const entries = String(props.inputRegistrationNumbersText ?? '')
+        .split(/[\s,]+/)
+        .filter(Boolean)
+        .map((entry) => entry.toUpperCase())
+      const invalidEntries = entries.filter((entry) => !numberPattern.test(entry))
+
+      if (entries.length === 0) {
+        setPhoneNumbersError('Paste one or more registrations separated by lines, commas, or spaces.')
+        setShowPhoneNumbers(false)
+        return
+      }
+      if (invalidEntries.length > 0) {
+        setPhoneNumbersError(
+          `Each registration must match P88 followed by three letters. Invalid entries: ${invalidEntries.slice(0, 10).join(', ')}${invalidEntries.length > 10 ? ', …' : ''}.`,
+        )
+        setShowPhoneNumbers(false)
+        return
+      }
+
+      setPhoneNumbers(entries)
+      setShowPhoneNumbers(true)
+      setPage(0)
+      setDigitSumFilters([])
+      setNumberPrefixFilters([])
+      setAllPairChecksFilter(false)
+      setAllRajanilaiCalculationsFilter(false)
+      setUniquePairFilters([])
+      setPairCheckFilters([])
+      setRegistrationSortDirection('asc')
+      return
+    }
+
     if (props.inputNumbers) {
       setPhoneNumbersError('')
       const inputLines = String(props.inputNumbersText ?? '').split(/\r?\n/)
@@ -368,6 +403,25 @@ export default function RegNumbersPage(props) {
     >
       <LuckyNumbersOverview {...props} />
       <div className="vip-phone-numbers">
+        {props.inputRegistrationNumbers ? (
+          <div className="vip-number-input">
+            <label htmlFor="input-registration-numbers">
+              Paste registrations separated by lines, commas, or spaces (format: P88ABC).
+            </label>
+            <textarea
+              id="input-registration-numbers"
+              aria-label="Paste registrations to analyze"
+              rows={8}
+              placeholder={'P88DFE\nP88DFN, P88HFM'}
+              value={props.inputRegistrationNumbersText ?? ''}
+              onChange={(event) => {
+                props.onInputRegistrationNumbersTextChange(event.target.value)
+                setPhoneNumbersError('')
+                setShowPhoneNumbers(false)
+              }}
+            />
+          </div>
+        ) : null}
         {props.inputNumbers ? (
           <div className="vip-number-input">
             <label htmlFor="input-mobile-numbers">
@@ -393,7 +447,9 @@ export default function RegNumbersPage(props) {
           onClick={togglePhoneNumbers}
           disabled={isLoadingPhoneNumbers}
         >
-          {props.inputNumbers
+          {props.inputRegistrationNumbers
+            ? 'Analyze registrations'
+            : props.inputNumbers
             ? 'Analyze numbers'
             : isLoadingPhoneNumbers
             ? `Loading ${props.itemName ?? 'phone numbers'}...`

@@ -342,6 +342,7 @@ function App() {
   const [manithaNaadiCombinationResults, setManithaNaadiCombinationResults] = useState(null)
   const [manithaNaadiEmailResults, setManithaNaadiEmailResults] = useState(null)
   const [inputMobileNumbersText, setInputMobileNumbersText] = useState('')
+  const [inputRegistrationNumbersText, setInputRegistrationNumbersText] = useState('')
   const [activeManithaNaadiGenerator, setActiveManithaNaadiGenerator] = useState(null)
   const [manithaNaadiDigitSumFilters, setManithaNaadiDigitSumFilters] = useState([])
   const [mobileDigitSumFilters, setMobileDigitSumFilters] = useState([])
@@ -1130,6 +1131,14 @@ function App() {
             onClick={() => navigateToPage('regnumbers')}
           >
             REGNUMBERS
+          </a>
+          <a
+            className={`page-switch page-switch-link${activePage === 'inputregnumbers' ? ' page-switch-active' : ''}`}
+            href="#inputregnumbers"
+            aria-current={activePage === 'inputregnumbers' ? 'page' : undefined}
+            onClick={() => navigateToPage('inputregnumbers')}
+          >
+            INPUT REGNUMBERS
           </a>
         </nav>
       </header>
@@ -2444,6 +2453,39 @@ function App() {
               [selectedManithaNaadiInitials]: value,
             }))}
           />
+        ) : activePage === 'inputregnumbers' ? (
+          <RegNumbersPage
+            key="inputregnumbers"
+            pageId="inputregnumbers"
+            titleId="inputregnumbers-title"
+            heading={<span id="inputregnumbers-title">INPUT REGNUMBERS</span>}
+            inputRegistrationNumbers
+            inputRegistrationNumbersText={inputRegistrationNumbersText}
+            onInputRegistrationNumbersTextChange={setInputRegistrationNumbersText}
+            numberPattern={/^P88[A-Z]{3}$/}
+            toCalculationDigits={toRegNumberCalculationDigits}
+            pairStartIndex={0}
+            registrationLayout
+            prefixLength={4}
+            brandName="INPUT REGNUMBERS"
+            itemName="registration numbers"
+            buttonName="registrations"
+            headingItemName="registrations"
+            countLabel="REGNUMBERS"
+            profiles={Object.keys(manithaNaadiLuckyNumberDefaults)}
+            initials={selectedManithaNaadiInitials}
+            onInitialsChange={setSelectedManithaNaadiInitials}
+            luckyNumbers={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
+            onLuckyNumbersChange={(value) => setManithaNaadiLuckyNumbers((currentValues) => ({
+              ...currentValues,
+              [selectedManithaNaadiInitials]: value,
+            }))}
+            excludedNumbers={manithaNaadiGen8ExcludedNumbers[selectedManithaNaadiInitials]}
+            onExcludedNumbersChange={(value) => setManithaNaadiGen8ExcludedNumbers((currentValues) => ({
+              ...currentValues,
+              [selectedManithaNaadiInitials]: value,
+            }))}
+          />
         ) : activePage === 'password' ? (
           <PasswordPage initials={selectedManithaNaadiInitials} />
         ) : activePage === 'name2number' ? (
@@ -2454,7 +2496,7 @@ function App() {
       </section>
 
       <footer className="page-footer">
-        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : activePage === 'inputmobilenumbers' ? 'INPUTMOBILENUMBERS' : activePage === 'regnumbers' ? 'REGNUMBERS' : 'மனித நாடி LUCKY NUMBERS'}</span>
+        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : activePage === 'inputmobilenumbers' ? 'INPUTMOBILENUMBERS' : activePage === 'regnumbers' ? 'REGNUMBERS' : activePage === 'inputregnumbers' ? 'INPUT REGNUMBERS' : 'மனித நாடி LUCKY NUMBERS'}</span>
         <span>EDITABLE IN THIS BROWSER</span>
       </footer>
       {isButtonActionLoading && (
