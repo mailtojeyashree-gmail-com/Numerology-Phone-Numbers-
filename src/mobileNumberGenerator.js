@@ -11,6 +11,8 @@ function sumDigits(value) {
     .reduce((total, digit) => total + Number(digit || 0), 0)
 }
 
+const forbiddenPositionPairs = new Set(['33', '99'])
+
 export function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiChartNumbersByPair, include85 = true) {
   const luckyPairs = [...new Set(parseLuckyPairs(luckyNumbers))]
   const allowedValues = new Set(luckyPairs)
@@ -21,6 +23,8 @@ export function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiCh
   function generatePairCombinations() {
     if (selectedPairs.length === 4) {
       combinationsChecked += 1
+      if (forbiddenPositionPairs.has(selectedPairs[0])
+        || forbiddenPositionPairs.has(selectedPairs[3])) return
       const number = `074${selectedPairs.join('')}`
       if (profile === 'MJ' && !include85 && number.includes('85')) return
       const total = sumDigits(number)

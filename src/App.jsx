@@ -5,6 +5,7 @@ import ManithaNaadiDogNameGenerator from './ManithaNaadiDogNameGenerator'
 import ManithaNaadiGen8Generator from './ManithaNaadiGen8Generator'
 import { calculateGen8Matches } from './manithaNaadiGen8Logic'
 import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
+import ManithaNaadiGen12Generator from './ManithaNaadiGen12Generator'
 import PanjaPatchiPage from './PanjaPatchiPage'
 import Name2NumberPage from './Name2NumberPage'
 import PasswordPage from './PasswordPage'
@@ -32,6 +33,10 @@ const toRegNumberCalculationDigits = (number) => [...number].map((character) => 
 const getCanonicalPairChecks = (checks) => [...checks]
   .sort((first, second) => Number(first) - Number(second))
   .join(',')
+const formatMobileNumber = (number) => number.replace(
+  /^(\d)(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/,
+  '$1 $2 $3 $4 $5 $6',
+)
 const parsePairFilterLine = (line, pairCount) => {
   if (line.includes(',')) {
     const pairs = line.split(',').map((pair) => pair.trim())
@@ -822,7 +827,7 @@ function App() {
 
     const isGen5 = manithaNaadiCombinationResults.generator === 'GEN-5'
     const isMobile = manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
-    const isDigitSumGenerator = ['GEN-6', 'GEN-8'].includes(manithaNaadiCombinationResults.generator)
+    const isDigitSumGenerator = ['GEN-6', 'GEN-8', 'GEN-12'].includes(manithaNaadiCombinationResults.generator)
     const combinations = isGen5
       ? manithaNaadiCombinationResults.matches
       : [
@@ -880,7 +885,7 @@ function App() {
   const generatedNumberSet = new Set(manithaNaadiCombinationResults?.generatedNumbers ?? [])
   const uniqueGeneratedCombinations = [...new Set(
     visibleManithaNaadiTableRows
-      .filter((row) => !['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8'].includes(manithaNaadiCombinationResults?.generator)
+      .filter((row) => !['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-12'].includes(manithaNaadiCombinationResults?.generator)
         || !manithaNaadiUniqueDigitSumSelection
         || String(row[3]) === manithaNaadiUniqueDigitSumSelection)
       .filter((row) => manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
@@ -1150,7 +1155,7 @@ function App() {
             <div className="combination-generate">
               <span className="column-selection-label">GENERATE COMBINATIONS (MOBILE STARTS 074; EVERY PAIR AND THE DIGIT TOTAL MUST MATCH LUCKY NUMBERS)</span>
               <div className="combination-generate-buttons">
-                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-AB12CD-REG-FORMAT', 'GEN-1234AB-REG-FORMAT', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
+                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-12', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-AB12CD-REG-FORMAT', 'GEN-1234AB-REG-FORMAT', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
                   generator === 'GEN-8' ? (
                     <ManithaNaadiGen8Generator
                       key={generator}
@@ -1163,6 +1168,27 @@ function App() {
                         setManithaNaadiEmailResults(null)
                         setManithaNaadiCombinationResults({
                           generator: 'GEN-8',
+                          profile: selectedManithaNaadiInitials,
+                          generatedNumbers: [...new Set(
+                            [...generatorResults.matches, ...generatorResults.repeatedMatches]
+                              .map((result) => result.number ?? result.values.join('')),
+                          )],
+                          ...generatorResults,
+                        })
+                      }}
+                    />
+                  ) : generator === 'GEN-12' ? (
+                    <ManithaNaadiGen12Generator
+                      key={generator}
+                      luckyNumbers={manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]}
+                      excludedNumbers={manithaNaadiGen8ExcludedNumbers[selectedManithaNaadiInitials]}
+                      activeGenerator={activeManithaNaadiGenerator}
+                      onGenerate={(generatorResults) => {
+                        setActiveManithaNaadiGenerator('GEN-12')
+                        setManithaNaadiUniqueDigitSumSelection('')
+                        setManithaNaadiEmailResults(null)
+                        setManithaNaadiCombinationResults({
+                          generator: 'GEN-12',
                           profile: selectedManithaNaadiInitials,
                           generatedNumbers: [...new Set(
                             [...generatorResults.matches, ...generatorResults.repeatedMatches]
@@ -1227,7 +1253,7 @@ function App() {
                           ? 'Generate car registrations'
                           : generator === 'GEN-5' ? 'Run GEN-5 three-pair checks' : `Run ${generator} with ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       title={generator === 'GEN-MOBILE-NUMBERS'
-                        ? 'Generate UK mobile numbers from the selected initials lucky pairs'
+                        ? 'Generate UK mobile numbers from the selected initials lucky pairs; the 2nd and 5th pairs after the leading 0 cannot be 33 or 99'
                         : generator === 'GEN-CAR-REG'
                           ? 'Generate A12BCD car registrations from the selected initials lucky numbers'
                           : generator === 'GEN-AB12CD-REG-FORMAT'
@@ -1413,7 +1439,7 @@ function App() {
                     <span className="results-count" title={manithaNaadiCombinationResults.generator === 'GEN-5'
                       ? 'Numbers matching the selected-initial pair and shared-pool checks'
                       : manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
-                        ? 'Every number starts with 074; all four following pairs and the digit total must be in the selected initials lucky numbers'
+                        ? 'Every number starts with 074; all four following pairs and the digit total must be in the selected initials lucky numbers; the 2nd and 5th pairs after the leading 0 cannot be 33 or 99'
                         : isCarRegistrationGenerator(manithaNaadiCombinationResults.generator)
                           ? 'Registrations matching the active filters'
                         : 'Total includes combinations with repeated values; distinct count excludes repeats'}>
@@ -1433,7 +1459,7 @@ function App() {
                             ? `${visibleCarRegistrationCount.toLocaleString()} REGISTRATIONS`
                             : `${manithaNaadiCombinationResults.possibleCombinationsWithRepetition.toLocaleString()} POSSIBLE WITH REPEATS · ${manithaNaadiCombinationResults.combinationsChecked.toLocaleString()} DISTINCT${manithaNaadiCombinationResults.generator === 'GEN-4' && manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen4NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : manithaNaadiCombinationResults.generator === 'GEN-6' && manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile] ? ` · ${manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile].size} GIVEN INCLUDED` : ''}`}
                     </span>
-                    {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS'].includes(manithaNaadiCombinationResults.generator)
+                    {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-12', 'GEN-MOBILE-NUMBERS'].includes(manithaNaadiCombinationResults.generator)
                       || isCarRegistrationGenerator(manithaNaadiCombinationResults.generator) ? (
                       <button
                         className="combination-generate-button manitha-results-download"
@@ -1451,7 +1477,7 @@ function App() {
                       {carRegistrationFilterError}
                     </p>
                 )}
-                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-MOBILE-NUMBERS'].includes(manithaNaadiCombinationResults.generator) ? (
+                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-12', 'GEN-MOBILE-NUMBERS'].includes(manithaNaadiCombinationResults.generator) ? (
                   <>
                     <div className="manitha-results-table-wrap">
                       <table className="manitha-results-table">
@@ -1572,7 +1598,9 @@ function App() {
                                 {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
                                   <td>{row[7]}</td>
                                 )}
-                                <td>{row[2]}</td>
+                                <td>{manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
+                                  ? formatMobileNumber(row[2])
+                                  : row[2]}</td>
                                 {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
                                   <>
                                     <td>{row[2].slice(-6)}</td>
@@ -1659,7 +1687,7 @@ function App() {
                       />
                     )}
                     <div className="unique-combination-numbers" aria-live="polite">
-                      {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8'].includes(manithaNaadiCombinationResults.generator) && (
+                      {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-12'].includes(manithaNaadiCombinationResults.generator) && (
                         <label className="unique-digit-sum-select" htmlFor="unique-digit-sum-select">
                           <span>DIGIT SUM</span>
                           <select

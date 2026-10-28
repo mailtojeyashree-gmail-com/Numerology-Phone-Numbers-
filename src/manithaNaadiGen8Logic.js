@@ -20,7 +20,7 @@ function countCombinationsWithRepetition(count, length) {
   return Math.floor(total)
 }
 
-export function calculateGen8Matches(luckyNumbers, excludedNumbers, targetValues = null) {
+function calculateCombinations(luckyNumbers, excludedNumbers, targetValues, pairCount) {
   const excludedPairs = new Set(parsePairs(excludedNumbers))
   const entries = parsePairs(luckyNumbers).filter((entry) => !excludedPairs.has(entry))
   const expectedTotals = [...new Set((targetValues ?? entries).map(Number))]
@@ -42,7 +42,7 @@ export function calculateGen8Matches(luckyNumbers, excludedNumbers, targetValues
   }
 
   function visit(startIndex, currentDigitSum) {
-    const remaining = 4 - selectedValues.length
+    const remaining = pairCount - selectedValues.length
     if (remaining === 0) {
       if (!expectedTotals.includes(currentDigitSum)) return
 
@@ -78,6 +78,14 @@ export function calculateGen8Matches(luckyNumbers, excludedNumbers, targetValues
     repeatedMatches,
     nonMatches: [],
     combinationsChecked: matches.length + repeatedMatches.length,
-    possibleCombinationsWithRepetition: countCombinationsWithRepetition(entries.length, 4),
+    possibleCombinationsWithRepetition: countCombinationsWithRepetition(entries.length, pairCount),
   }
+}
+
+export function calculateGen8Matches(luckyNumbers, excludedNumbers, targetValues = null) {
+  return calculateCombinations(luckyNumbers, excludedNumbers, targetValues, 4)
+}
+
+export function calculateGen12Matches(luckyNumbers, excludedNumbers, targetValues = null) {
+  return calculateCombinations(luckyNumbers, excludedNumbers, targetValues, 6)
 }
