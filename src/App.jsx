@@ -2445,7 +2445,7 @@ function App() {
             }))}
           />
         ) : activePage === 'password' ? (
-          <PasswordPage />
+          <PasswordPage initials={selectedManithaNaadiInitials} />
         ) : activePage === 'name2number' ? (
           <Name2NumberPage />
         ) : (

@@ -1,6 +1,6 @@
-import { carRegLetterValueMap } from './numerologyLetterValues'
+import { carRegLetterValueMap } from './numerologyLetterValues.js'
 
-const meaningfulWords = [
+export const meaningfulWords = [
   'Abigail', 'Adam', 'Alexander', 'Alice', 'Alex', 'Al', 'Amelia', 'Ama',
   'Ami', 'Amy', 'Ana', 'Anna', 'Anthony', 'Apple', 'Autumn', 'Ava', 'Aiya',
   'Ari', 'Aja', 'Aya', 'Baba', 'Bella', 'Ben', 'Benjamin',

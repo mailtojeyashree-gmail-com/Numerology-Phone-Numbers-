@@ -1,35 +1,69 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import './PasswordPage.css'
 import CopyTextButton from './CopyTextButton'
+import {
+  digitLetterRows,
+  generatePasswordNameSuggestions,
+  loadEnglishWords,
+} from './passwordNameGenerator'
+import { defaultRajanilaiNumbers, getNameResult, parseRajanilaiNumbers } from './name2numberLogic'
+import { getRasiBhavam } from './rasiChartData'
 
-const digitLetterRows = [
-  { digit: '1', letters: ['A', 'I', 'J', 'Y', 'Q'], color: 'pink' },
-  { digit: '2', letters: ['B', 'K', 'R'], color: 'blue' },
-  { digit: '3', letters: ['C', 'G', 'L', 'S'], color: 'yellow' },
-  { digit: '4', letters: ['D', 'M', 'T'], color: 'orange' },
-  { digit: '5', letters: ['E', 'H', 'N', 'X'], color: 'green' },
-  { digit: '6', letters: ['U', 'V', 'W'], color: 'peach' },
-  { digit: '7', letters: ['Z', 'O'], color: 'cream' },
-  { digit: '8', letters: ['F', 'P'], color: 'lavender' },
-]
-function getFirstLetterForDigit(digit) {
-  return digitLetterRows.find((row) => row.digit === digit)?.letters[0] ?? ''
-}
-
-export default function PasswordPage() {
+export default function PasswordPage({ initials = 'MJ' }) {
   const [digits, setDigits] = useState('')
   const [submittedDigits, setSubmittedDigits] = useState(null)
+  const [dictionaryResult, setDictionaryResult] = useState(null)
+  const [dictionaryLoading, setDictionaryLoading] = useState(false)
+  const [dictionaryError, setDictionaryError] = useState('')
+  const dictionaryRequestRef = useRef(0)
   const invalidDigits = submittedDigits !== null && /[^1-8]/.test(submittedDigits)
-  const passwordLetters = useMemo(
-    () => submittedDigits && !invalidDigits
-      ? [...submittedDigits].map((digit) => ({
-        digit,
-        letter: getFirstLetterForDigit(digit),
-      }))
-      : [],
-    [invalidDigits, submittedDigits],
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    const nextDigits = digits.trim()
+    const requestId = dictionaryRequestRef.current + 1
+    dictionaryRequestRef.current = requestId
+    setSubmittedDigits(nextDigits)
+    setDictionaryResult(null)
+    setDictionaryError('')
+    if (/[^1-8]/.test(nextDigits)) {
+      setDictionaryLoading(false)
+      return
+    }
+
+    setDictionaryLoading(true)
+    try {
+      const words = await loadEnglishWords(`${import.meta.env.BASE_URL}english-words.txt`)
+      if (requestId === dictionaryRequestRef.current) {
+        setDictionaryResult({ digits: nextDigits, words })
+      }
+    } catch (error) {
+      if (requestId === dictionaryRequestRef.current) {
+        setDictionaryError(error instanceof Error
+          ? error.message
+          : 'Could not load the English word list.')
+      }
+    } finally {
+      if (requestId === dictionaryRequestRef.current) setDictionaryLoading(false)
+    }
+  }
+  const generatedNames = useMemo(
+    () => dictionaryResult?.digits === submittedDigits
+      ? generatePasswordNameSuggestions(submittedDigits, dictionaryResult.words)
+      : null,
+    [dictionaryResult, submittedDigits],
   )
-  const generatedPassword = passwordLetters.map(({ letter }) => letter).join('')
+  const allNames = useMemo(() => generatedNames
+    ? [...new Set([
+      ...generatedNames.dictionaryMatches,
+      ...generatedNames.curatedMatches,
+      ...generatedNames.pronounceableNames,
+    ])]
+    : [], [generatedNames])
+  const nameResults = useMemo(() => {
+    const rajanilaiSet = parseRajanilaiNumbers(defaultRajanilaiNumbers)
+    return allNames.map((name) => getNameResult(name, rajanilaiSet))
+  }, [allNames])
 
   return (
     <section className="password-page" aria-labelledby="password-page-title">
@@ -38,10 +72,7 @@ export default function PasswordPage() {
       </div>
       <form
         className="password-number-form"
-        onSubmit={(event) => {
-          event.preventDefault()
-          setSubmittedDigits(digits.trim())
-        }}
+        onSubmit={handleSubmit}
       >
         <label className="password-number-field" htmlFor="password-number-input">
           <span>ENTER NUMBERS</span>
@@ -52,18 +83,22 @@ export default function PasswordPage() {
             autoComplete="off"
             value={digits}
             onChange={(event) => {
+              dictionaryRequestRef.current += 1
               setDigits(event.target.value)
               setSubmittedDigits(null)
+              setDictionaryResult(null)
+              setDictionaryLoading(false)
+              setDictionaryError('')
             }}
             placeholder="For example: 111"
             aria-describedby="password-number-help"
           />
           <span id="password-number-help" className="password-number-help">
-            Enter digits from 1 to 8. Each digit can be replaced by any letter in its row.
+            Enter digits from 1 to 8. Every letter in each digit’s row is considered.
           </span>
         </label>
         <button className="password-generate-button" type="submit" disabled={!digits.trim()}>
-          Generate passwords
+          Generate names
         </button>
       </form>
 
@@ -93,34 +128,95 @@ export default function PasswordPage() {
         <section className="password-page-results" aria-live="polite">
           <section aria-labelledby="password-results-title">
             <div className="password-page-results-heading">
-              <h2 id="password-results-title">Generated password</h2>
-              <span>One letter per digit</span>
-              <CopyTextButton label="generated password" text={generatedPassword} />
+              <h2 id="password-results-title">Generated names and words</h2>
+              <span>All letters per digit</span>
+              <CopyTextButton label="generated names and words" text={allNames.join('\n')} />
             </div>
             <p className="password-page-message">
-              Each digit uses the first letter in its row, in the same order as entered.
+              English words, curated names, and pronounceable suggestions are listed with their number and Rajanilai calculations.
             </p>
-            <p className="password-generated-value"><code>{generatedPassword}</code></p>
-            <div className="password-result-table-wrap">
-              <table className="password-result-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Position</th>
-                    <th scope="col">Digit</th>
-                    <th scope="col">Letter</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {passwordLetters.map(({ digit, letter }, index) => (
-                    <tr key={`${index}-${digit}`}>
-                      <td>{index + 1}</td>
-                      <td>{digit}</td>
-                      <td><strong>{letter}</strong></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {dictionaryLoading && <p role="status">Loading the local English dictionary…</p>}
+            {dictionaryError && <p className="password-page-message" role="alert">{dictionaryError}</p>}
+            {generatedNames && (
+              <>
+                <div className="password-result-table-wrap">
+                  <table className="password-result-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Position</th>
+                        <th scope="col">Digit</th>
+                        <th scope="col">Letters considered</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {generatedNames.letterOptions.map(({ digit, letters }, index) => (
+                        <tr key={`${index}-${digit}`}>
+                          <td>{index + 1}</td>
+                          <td>{digit}</td>
+                          <td><strong>{letters.join(', ')}</strong></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <section className="password-name-results" aria-label="Name and word suggestions">
+                  <h3>All suggestions · {nameResults.length}</h3>
+                  {nameResults.length > 0 ? (
+                    <div className="name2number-result-table-wrap">
+                      <table className="name2number-result-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">st</th>
+                            <th scope="col">total</th>
+                            <th scope="col">name2numb</th>
+                            <th scope="col">sum</th>
+                            <th scope="col">bhavam</th>
+                            <th scope="col">Rajanilai calculation</th>
+                            <th scope="col">Rajanilai match</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {nameResults.map((result, index) => (
+                            <tr key={`${result.name}-${index}`}>
+                              <td>{result.name}</td>
+                              <td>{result.st}</td>
+                              <td>{result.total}</td>
+                              <td>{result.name2number}</td>
+                              <td>{result.sum}={result.total}</td>
+                              <td>{getRasiBhavam(result.name2number, initials)}</td>
+                              <td className="name2number-rajanilai-calculation">
+                                {result.rajanilaiPairs.length > 0
+                                  ? result.rajanilaiPairs.map(({ number, matches }, pairIndex) => (
+                                    <span
+                                      className={matches
+                                        ? 'name2number-rajanilai-pair-match'
+                                        : 'name2number-rajanilai-pair-miss'}
+                                      key={`${number}-${pairIndex}`}
+                                    >
+                                      {number} {matches ? '✓' : '✗'}
+                                    </span>
+                                  ))
+                                  : '—'}
+                              </td>
+                              <td className={result.rajanilaiMatch
+                                ? 'name2number-rajanilai-match'
+                                : 'name2number-rajanilai-miss'}
+                              >
+                                {result.total} {result.rajanilaiMatch ? '✓✓' : '✗✗'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p>No candidates were generated for this number.</p>}
+                  {generatedNames.searchLimited && (
+                    <p>Pronounceable suggestions are based on the first 50,000 search steps.</p>
+                  )}
+                </section>
+              </>
+            )}
           </section>
         </section>
       ) : null}
