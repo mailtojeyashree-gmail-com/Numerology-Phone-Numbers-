@@ -915,9 +915,11 @@ function App() {
       (mobileUniqueCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
     )
     : uniqueGeneratedCombinations
-  const mobileUniquePairs = [...new Set(
-    visibleManithaNaadiTableRows.flatMap((row) => row[7].split(',').map((pair) => pair.trim())),
-  )].sort((first, second) => Number(first) - Number(second))
+  const mobileUniquePairs = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
+    ? [...new Set(
+      visibleManithaNaadiTableRows.flatMap((row) => row[7].split(',').map((pair) => pair.trim())),
+    )].sort((first, second) => Number(first) - Number(second))
+    : []
   const mobileCombinationCounts = new Map()
   const mobilePairChecksCombinationCounts = new Map()
   if (manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS') {
