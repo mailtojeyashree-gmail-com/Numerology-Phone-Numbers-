@@ -26,6 +26,7 @@ export function calculateManithaNaadiMobileMatches(profile, luckyNumbers, rasiCh
       if (forbiddenPositionPairs.has(selectedPairs[0])
         || forbiddenPositionPairs.has(selectedPairs[3])) return
       const number = `074${selectedPairs.join('')}`
+      if (profile === 'M' && (selectedPairs[0] === '10' || selectedPairs[3] === '10')) return
       if (profile === 'MJ' && !include85 && number.includes('85')) return
       const total = sumDigits(number)
       if (!allowedValues.has(String(total).padStart(2, '0'))) return
