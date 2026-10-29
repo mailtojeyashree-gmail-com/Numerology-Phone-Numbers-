@@ -357,6 +357,8 @@ function App() {
   const [mobileNumberPage, setMobileNumberPage] = useState(0)
   const [mobileUniqueCombinationPage, setMobileUniqueCombinationPage] = useState(0)
   const [mobilePairChecksCombinationPage, setMobilePairChecksCombinationPage] = useState(0)
+  const [manithaNaadiUniqueCombinationPage, setManithaNaadiUniqueCombinationPage] = useState(0)
+  const [manithaNaadiPairChecksCombinationPage, setManithaNaadiPairChecksCombinationPage] = useState(0)
   const [mobileUniquePairFilterOpen, setMobileUniquePairFilterOpen] = useState(false)
   const [mobileUniquePairFilterDraft, setMobileUniquePairFilterDraft] = useState('')
   const [mobileUniquePairFilters, setMobileUniquePairFilters] = useState([])
@@ -908,6 +910,38 @@ function App() {
         return pairs.join(', ')
       }),
   )]
+  const selectedGeneratorCombinationRows = visibleManithaNaadiTableRows
+    .filter((row) => !manithaNaadiUniqueDigitSumSelection
+      || String(row[3]) === manithaNaadiUniqueDigitSumSelection)
+    .filter((row) => generatedNumberSet.has(row[2]))
+  const selectedGeneratorUniquePairs = [...new Set(
+    selectedGeneratorCombinationRows.flatMap((row) => row[1].split(',').map((pair) => pair.trim())),
+  )].sort((first, second) => Number(first) - Number(second))
+  const selectedGeneratorCombinationCounts = new Map()
+  const selectedGeneratorPairChecksCounts = new Map()
+  for (const row of selectedGeneratorCombinationRows) {
+    const pairs = row[1].split(',').map((pair) => pair.trim())
+    const combination = [...pairs].sort((first, second) => Number(first) - Number(second)).join('')
+    selectedGeneratorCombinationCounts.set(
+      combination,
+      (selectedGeneratorCombinationCounts.get(combination) ?? 0) + 1,
+    )
+    const pairChecksCombination = pairs.join('')
+    selectedGeneratorPairChecksCounts.set(
+      pairChecksCombination,
+      (selectedGeneratorPairChecksCounts.get(pairChecksCombination) ?? 0) + 1,
+    )
+  }
+  const selectedGeneratorCombinationEntries = [...selectedGeneratorCombinationCounts]
+  const selectedGeneratorPairChecksEntries = [...selectedGeneratorPairChecksCounts]
+  const pagedSelectedGeneratorCombinationEntries = selectedGeneratorCombinationEntries.slice(
+    manithaNaadiUniqueCombinationPage * CAR_REGISTRATION_PAGE_SIZE,
+    (manithaNaadiUniqueCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
+  )
+  const pagedSelectedGeneratorPairChecksEntries = selectedGeneratorPairChecksEntries.slice(
+    manithaNaadiPairChecksCombinationPage * CAR_REGISTRATION_PAGE_SIZE,
+    (manithaNaadiPairChecksCombinationPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
+  )
   
   const pagedUniqueGeneratedCombinations = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
     ? uniqueGeneratedCombinations.slice(
@@ -1321,6 +1355,8 @@ function App() {
                         }
                         setManithaNaadiUniqueDigitSumSelection('')
                         setManithaNaadiUniqueRasiChartFilters([])
+                        setManithaNaadiUniqueCombinationPage(0)
+                        setManithaNaadiPairChecksCombinationPage(0)
                         setManithaNaadiEmailResults(null)
                         const luckyNumbers = manithaNaadiLuckyNumbers[selectedManithaNaadiInitials]
                         const excludedNumbers = new Set(parseEntries(
@@ -1824,20 +1860,107 @@ function App() {
                           </select>
                         </label>
                       )}
-                      <div className="unique-combination-heading">
-                        <span className="results-kicker">
-                          UNIQUE COMBINATIONS · {uniqueGeneratedCombinations.length}
-                        </span>
-                        <CopyTextButton
-                          label="unique combinations"
-                          text={uniqueGeneratedCombinations.join('\n')}
-                        />
-                      </div>
-                      <p>
-                        {pagedUniqueGeneratedCombinations.length > 0
-                          ? pagedUniqueGeneratedCombinations.join('\n')
-                          : 'No combinations to display.'}
-                      </p>
+                      {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-12'].includes(manithaNaadiCombinationResults.generator) ? (
+                        <section className="car-reg-selected-combinations" aria-label="Selected combinations">
+                          <h3>Selected combinations</h3>
+                          <div className="car-reg-combinations-copy-field">
+                            <div className="car-reg-copy-field-heading">
+                              <span>Unique pairs</span>
+                              <CopyListButton
+                                copyKey="manithaNaadiUniquePairs"
+                                label="unique pairs"
+                                status={carRegistrationCopyFeedback.manithaNaadiUniquePairs}
+                                text={selectedGeneratorUniquePairs.join(', ')}
+                                onCopy={copyCarRegistrationList}
+                              />
+                            </div>
+                            <textarea
+                              id="manitha-naadi-unique-pairs-copy"
+                              aria-label="Unique pairs"
+                              rows={4}
+                              readOnly
+                              value={selectedGeneratorUniquePairs.join(', ')}
+                            />
+                          </div>
+                          <div className="car-reg-combinations-copy-field">
+                            <div className="car-reg-copy-field-heading">
+                              <span>Unique pairs Combination ({selectedGeneratorCombinationEntries.length})</span>
+                              <CopyListButton
+                                copyKey="manithaNaadiCombinations"
+                                label="unique pairs combinations"
+                                status={carRegistrationCopyFeedback.manithaNaadiCombinations}
+                                text={selectedGeneratorCombinationEntries
+                                  .map(([combination]) => combination)
+                                  .join('\n')}
+                                onCopy={copyCarRegistrationList}
+                              />
+                            </div>
+                            <textarea
+                              id="manitha-naadi-combinations-list"
+                              aria-label="Unique pairs combinations"
+                              rows={Math.min(12, Math.max(4, pagedSelectedGeneratorCombinationEntries.length))}
+                              readOnly
+                              value={pagedSelectedGeneratorCombinationEntries
+                                .map(([combination]) => combination)
+                                .join('\n')}
+                            />
+                            <ResultPagination
+                              page={manithaNaadiUniqueCombinationPage}
+                              pageSize={CAR_REGISTRATION_PAGE_SIZE}
+                              totalItems={selectedGeneratorCombinationEntries.length}
+                              onPageChange={setManithaNaadiUniqueCombinationPage}
+                              label="Unique pairs combinations"
+                            />
+                          </div>
+                          <div className="car-reg-combinations-copy-field">
+                            <div className="car-reg-copy-field-heading">
+                              <span>Pair checks combination ({selectedGeneratorPairChecksEntries.length})</span>
+                              <CopyListButton
+                                copyKey="manithaNaadiPairChecksCombinations"
+                                label="pair checks combinations"
+                                status={carRegistrationCopyFeedback.manithaNaadiPairChecksCombinations}
+                                text={selectedGeneratorPairChecksEntries
+                                  .map(([combination]) => combination)
+                                  .join('\n')}
+                                onCopy={copyCarRegistrationList}
+                              />
+                            </div>
+                            <textarea
+                              id="manitha-naadi-pair-checks-combinations-list"
+                              aria-label="Pair checks combinations"
+                              rows={Math.min(12, Math.max(4, pagedSelectedGeneratorPairChecksEntries.length))}
+                              readOnly
+                              value={pagedSelectedGeneratorPairChecksEntries
+                                .map(([combination]) => combination)
+                                .join('\n')}
+                            />
+                            <ResultPagination
+                              page={manithaNaadiPairChecksCombinationPage}
+                              pageSize={CAR_REGISTRATION_PAGE_SIZE}
+                              totalItems={selectedGeneratorPairChecksEntries.length}
+                              onPageChange={setManithaNaadiPairChecksCombinationPage}
+                              label="Pair checks combinations"
+                            />
+                          </div>
+                        </section>
+                      ) : (
+                        <>
+                          <div className="unique-combination-heading">
+                            <span className="results-kicker">
+                              UNIQUE COMBINATIONS · {uniqueGeneratedCombinations.length}
+                            </span>
+                            <CopyTextButton
+                              label="unique combinations"
+                              text={uniqueGeneratedCombinations.join('\n')}
+                            />
+                          </div>
+                          <p>
+                            {pagedUniqueGeneratedCombinations.length > 0
+                              ? pagedUniqueGeneratedCombinations.join('\n')
+                              : 'No combinations to display.'}
+                          </p>
+                        </>
+                      )}
                     </div>
                     )}
                   </>
