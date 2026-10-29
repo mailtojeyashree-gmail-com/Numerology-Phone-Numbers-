@@ -341,7 +341,7 @@ export default function Name2NumberPage() {
       return
     }
 
-    const combinationLength = generator === 'GEN-4' ? 2 : generator === 'GEN-6' ? 3 : 4
+    const combinationLength = generator === 'GEN-4' ? 2 : ['GEN-5', 'GEN-6'].includes(generator) ? 3 : 4
     const { combinations, exceededLimit } = findRajanilaiSumCombinations(
       target,
       rajanilaiSet,
@@ -1406,7 +1406,7 @@ export default function Name2NumberPage() {
             />
           </label>
           <div className="name2number-rajanilai-sum-buttons">
-            {['GEN-4', 'GEN-6', 'GEN-8'].map((generator) => (
+            {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8'].map((generator) => (
               <button
                 className={`name2number-button name2number-rajanilai-generator-button${rajanilaiSumResults?.generator === generator ? ' name2number-rajanilai-generator-button-active' : ''}`}
                 key={generator}
