@@ -17,14 +17,28 @@ function parseLuckyPairs(value) {
     .filter((entry) => /^\d{2}$/.test(entry))
 }
 
+const excludedRegistrationLetters = new Set(['I', 'Q'])
+const excludedRegistrationStartingLetters = new Set(['I', 'O', 'Q', 'U', 'Z'])
+
+function getRegistrationLetters() {
+  return [...new Set(carRegNumberChart.flatMap((row) => row.letters).filter(Boolean))]
+    .filter((letter) => !excludedRegistrationLetters.has(letter))
+}
+
+function getRegistrationStartingLetters() {
+  return getRegistrationLetters()
+    .filter((letter) => !excludedRegistrationStartingLetters.has(letter))
+}
+
 export function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumbersByPair) {
   const luckyPairs = parseLuckyPairs(luckyNumbers)
   const allowedValues = new Set(luckyPairs)
   const allowedDigitSums = new Set(luckyPairs.map(Number))
-  const alphabet = [...new Set(carRegNumberChart.flatMap((row) => row.letters).filter(Boolean))]
+  const alphabet = getRegistrationLetters()
+  const startingLetters = getRegistrationStartingLetters()
   const letterDigitValues = new Map(carRegLetterValues)
   const digitValue = (digit) => digit === '0' ? 6 : Number(digit)
-  const possibleCount = luckyPairs.length * alphabet.length ** 4
+  const possibleCount = luckyPairs.length * startingLetters.length * alphabet.length ** 3
   const matchesByBhavam = new Map()
   let combinationsChecked = 0
 
@@ -40,7 +54,7 @@ export function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumb
     for (const pair of luckyPairs) {
       const firstDigitValue = digitValue(pair[0])
       const secondDigitValue = digitValue(pair[1])
-      const firstLetters = alphabet.filter((letter) => allowedValues.has(
+      const firstLetters = startingLetters.filter((letter) => allowedValues.has(
         `${letterDigitValues.get(letter)}${firstDigitValue}`,
       ))
       const secondLetters = alphabet.filter((letter) => allowedValues.has(
@@ -118,17 +132,23 @@ export function generateManithaNaadiFormattedCarRegistrations(luckyNumbers, rasi
   const luckyPairs = parseLuckyPairs(luckyNumbers)
   const allowedValues = new Set(luckyPairs)
   const allowedDigitSums = new Set(luckyPairs.map(Number))
-  const alphabet = [...new Set(carRegNumberChart.flatMap((row) => row.letters).filter(Boolean))]
+  const alphabet = getRegistrationLetters()
+  const startingLetters = new Set(getRegistrationStartingLetters())
   const letterDigitValues = new Map(carRegLetterValues)
   const digitValue = (digit) => digit === '0' ? 6 : Number(digit)
-  const possibleCount = luckyPairs.length * alphabet.length ** 4
+  const possibleCount = luckyPairs.length * startingLetters.size * alphabet.length ** 3
   const letterPairs = []
+  const startingLetterPairs = []
 
   for (const firstLetter of alphabet) {
     for (const secondLetter of alphabet) {
       const pair = `${letterDigitValues.get(firstLetter)}${letterDigitValues.get(secondLetter)}`
-      if (!allowedValues.has(pair)) continue
-      letterPairs.push({ letters: [firstLetter, secondLetter], pair })
+      if (allowedValues.has(pair)) {
+        letterPairs.push({ letters: [firstLetter, secondLetter], pair })
+        if (startingLetters.has(firstLetter)) {
+          startingLetterPairs.push({ letters: [firstLetter, secondLetter], pair })
+        }
+      }
     }
   }
 
@@ -143,7 +163,7 @@ export function generateManithaNaadiFormattedCarRegistrations(luckyNumbers, rasi
     const group = matchesByBhavam.get(bhavamKey) ?? []
     matchesByBhavam.set(bhavamKey, group)
 
-    for (const firstLetterPair of letterPairs) {
+    for (const firstLetterPair of startingLetterPairs) {
       for (const pair of luckyPairs) {
         const firstDigitValue = digitValue(pair[0])
         const secondDigitValue = digitValue(pair[1])
@@ -205,7 +225,7 @@ export function generateManithaNaadiNumericFirstCarRegistrations(luckyNumbers, r
   const luckyPairs = parseLuckyPairs(luckyNumbers)
   const allowedValues = new Set(luckyPairs)
   const allowedDigitSums = new Set(luckyPairs.map(Number))
-  const alphabet = [...new Set(carRegNumberChart.flatMap((row) => row.letters).filter(Boolean))]
+  const alphabet = getRegistrationLetters()
   const letterDigitValues = new Map(carRegLetterValues)
   const digitValue = (digit) => digit === '0' ? 6 : Number(digit)
   const possibleCount = luckyPairs.length ** 2 * alphabet.length ** 2
