@@ -54,7 +54,7 @@ export default function RegNumbersPage(props) {
       .filter((pair) => /^\d{2}$/.test(pair)))
     excludedPairs.forEach((pair) => luckyPairs.delete(pair))
 
-    return phoneNumbers.map((number) => {
+    return phoneNumbers.map((number, sourceIndex) => {
       const calculationDigits = toCalculationDigits
         ? toCalculationDigits(number)
         : number
@@ -69,6 +69,7 @@ export default function RegNumbersPage(props) {
         .split(',').map((bhavam) => bhavam.trim())
       return {
         number,
+        sourceIndex,
         pairs: digitPairs.join(', '),
         pairChecks: digitPairs.map((pair) => ({
           pair,
@@ -648,7 +649,7 @@ export default function RegNumbersPage(props) {
                   {visibleRows.length === 0 ? (
                     <tr><td colSpan={registrationLayout ? 8 : 9}>No {registrationLayout ? 'registrations' : 'numbers'} match the selected filters.</td></tr>
                   ) : pagedRows.map((row) => (
-                    <tr key={row.number}>
+                    <tr key={`${row.number}-${row.sourceIndex}`}>
                       {registrationLayout
                         ? <td><strong>{row.number}</strong></td>
                         : <td>{props.initials}</td>}
