@@ -208,20 +208,37 @@ export default function RegNumbersPage(props) {
     if (props.inputRegistrationNumbers) {
       setPhoneNumbersError('')
       const numberPattern = props.numberPattern ?? /^P88[A-Z]{3}$/
-      const entries = String(props.inputRegistrationNumbersText ?? '')
-        .split(/[\s,]+/)
+      const registrationGroups = String(props.inputRegistrationNumbersText ?? '')
+        .toUpperCase()
+        .split(/[\r\n,]+/)
+        .map((group) => group.trim())
         .filter(Boolean)
-        .map((entry) => entry.toUpperCase())
-      const invalidEntries = entries.filter((entry) => !numberPattern.test(entry))
+      const entries = []
+      const invalidEntries = []
 
-      if (entries.length === 0) {
+      registrationGroups.forEach((group) => {
+        const parts = group.split(/\s+/)
+        for (let index = 0; index < parts.length; index += 1) {
+          const entry = parts[index]
+          if (parts[index + 1] && numberPattern.test(`${entry}${parts[index + 1]}`)) {
+            entries.push(`${entry}${parts[index + 1]}`)
+            index += 1
+          } else if (numberPattern.test(entry)) {
+            entries.push(entry)
+          } else {
+            invalidEntries.push(entry)
+          }
+        }
+      })
+
+      if (registrationGroups.length === 0) {
         setPhoneNumbersError('Paste one or more registrations separated by lines, commas, or spaces.')
         setShowPhoneNumbers(false)
         return
       }
       if (invalidEntries.length > 0) {
         setPhoneNumbersError(
-          `Each registration must match P88 followed by three letters. Invalid entries: ${invalidEntries.slice(0, 10).join(', ')}${invalidEntries.length > 10 ? ', …' : ''}.`,
+          `Each registration must match a recognized UK format (for example D12UFE, AB12CDE, ABC123A, A123ABC, ABC1234, or 1234ABC). Invalid entries: ${invalidEntries.slice(0, 10).join(', ')}${invalidEntries.length > 10 ? ', …' : ''}.`,
         )
         setShowPhoneNumbers(false)
         return
@@ -406,13 +423,13 @@ export default function RegNumbersPage(props) {
         {props.inputRegistrationNumbers ? (
           <div className="vip-number-input">
             <label htmlFor="input-registration-numbers">
-              Paste registrations separated by lines, commas, or spaces (format: P88ABC).
+              Paste UK registrations separated by lines, commas, or spaces (for example D12UFE, AB12 CDE, ABC 123A, A123 ABC, or ABC 1234).
             </label>
             <textarea
               id="input-registration-numbers"
               aria-label="Paste registrations to analyze"
               rows={8}
-              placeholder={'P88DFE\nP88DFN, P88HFM'}
+              placeholder={'D12UFE\nD12UFH, M12UFE'}
               value={props.inputRegistrationNumbersText ?? ''}
               onChange={(event) => {
                 props.onInputRegistrationNumbersTextChange(event.target.value)

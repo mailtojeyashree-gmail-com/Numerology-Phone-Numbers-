@@ -2690,7 +2690,7 @@ function App() {
             inputRegistrationNumbers
             inputRegistrationNumbersText={inputRegistrationNumbersText}
             onInputRegistrationNumbersTextChange={setInputRegistrationNumbersText}
-            numberPattern={/^P88[A-Z]{3}$/}
+            numberPattern={/^(?:[A-Z]{2}\d{2}[A-Z]{3}|[A-Z]\d{1,3}[A-Z]{3}|[A-Z]{3}\d{1,3}[A-Z]|[A-Z]{1,3}\d{1,4}|\d{1,4}[A-Z]{1,3}|\d{2}[A-Z]{2}\d{2}|\d{3}[DX]\d{3})$/}
             toCalculationDigits={toRegNumberCalculationDigits}
             pairStartIndex={0}
             registrationLayout
