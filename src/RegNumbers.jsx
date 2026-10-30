@@ -19,6 +19,7 @@ export default function RegNumbersPage(props) {
   const prefixLength = props.prefixLength ?? 3
   const initials = props.initials
   const luckyNumbers = props.luckyNumbers
+  const excludedNumbers = props.excludedNumbers
   const toCalculationDigits = props.toCalculationDigits
   const pairStartIndex = props.pairStartIndex ?? 3
   const [phoneNumbers, setPhoneNumbers] = useState(null)
@@ -48,6 +49,10 @@ export default function RegNumbersPage(props) {
         .split(/[\s,]+/)
         .filter((pair) => /^\d{2}$/.test(pair)),
     )
+    const excludedPairs = new Set(String(excludedNumbers ?? '')
+      .split(/[\s,]+/)
+      .filter((pair) => /^\d{2}$/.test(pair)))
+    excludedPairs.forEach((pair) => luckyPairs.delete(pair))
 
     return phoneNumbers.map((number) => {
       const calculationDigits = toCalculationDigits
@@ -80,11 +85,14 @@ export default function RegNumbersPage(props) {
         rajanilaiMatch: manithaNaadiRajanilaiNumbers.has(digitSum),
         sumBhavams,
       }
-    })
+    }).filter((row) => (
+      !registrationLayout || !row.digitPairs.some((pair) => excludedPairs.has(pair))
+    ))
   }, [
     phoneNumbers,
     initials,
     luckyNumbers,
+    excludedNumbers,
     toCalculationDigits,
     pairStartIndex,
     registrationLayout,
