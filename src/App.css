@@ -1945,6 +1945,29 @@
   outline: none;
 }
 
+.mobile-prefix-filter {
+  margin-top: 20px;
+}
+
+.mobile-prefix-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mobile-prefix-filter-output-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mobile-prefix-filter-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .vip-phone-numbers-toggle {
   min-height: 38px;
 }

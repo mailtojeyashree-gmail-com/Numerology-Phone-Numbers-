@@ -41,6 +41,9 @@ export default function RegNumbersPage(props) {
   const [isPairCheckFilterOpen, setIsPairCheckFilterOpen] = useState(false)
   const [registrationSortDirection, setRegistrationSortDirection] = useState('asc')
   const [copyFeedback, setCopyFeedback] = useState({})
+  const [prefixFilterInput, setPrefixFilterInput] = useState('')
+  const [prefixFilterOutput, setPrefixFilterOutput] = useState(null)
+  const [prefixFilterSelected, setPrefixFilterSelected] = useState('')
 
   const tableRows = useMemo(() => {
     if (!phoneNumbers) return []
@@ -421,6 +424,20 @@ export default function RegNumbersPage(props) {
     setFilterOpen(false)
   }
 
+  function filterMobileNumbersByPrefix(prefix) {
+    const matches = []
+    const numberPattern = /(?:^|\D)(07[34]\d{8})(?!\d)/g
+
+    prefixFilterInput.split(/\r?\n/).forEach((line) => {
+      for (const match of line.matchAll(numberPattern)) {
+        if (match[1].startsWith(prefix)) matches.push(match[1])
+      }
+    })
+
+    setPrefixFilterSelected(prefix)
+    setPrefixFilterOutput(matches.join('\n'))
+  }
+
   return (
     <section
       className="matching-numbers-page"
@@ -483,6 +500,65 @@ export default function RegNumbersPage(props) {
               ? `Hide ${props.buttonName ?? 'Phone numbers'}`
               : `Show ${props.buttonName ?? 'Phone numbers'}`}
         </button>
+        {props.inputNumbers ? (
+          <div className="vip-number-input mobile-prefix-filter">
+            <label htmlFor="mobile-prefix-filter-input">
+              Paste a list of mobile numbers to filter by prefix.
+            </label>
+            <textarea
+              id="mobile-prefix-filter-input"
+              aria-label="Paste mobile numbers to filter"
+              rows={8}
+              placeholder={'07312345678\n07412345678'}
+              value={prefixFilterInput}
+              onChange={(event) => {
+                setPrefixFilterInput(event.target.value)
+                setPrefixFilterOutput(null)
+                setPrefixFilterSelected('')
+              }}
+            />
+            <div className="mobile-prefix-filter-actions">
+              <button
+                className="combination-generate-button"
+                type="button"
+                disabled={!prefixFilterInput.trim()}
+                onClick={() => filterMobileNumbersByPrefix('073')}
+              >
+                Filter 073
+              </button>
+              <button
+                className="combination-generate-button"
+                type="button"
+                disabled={!prefixFilterInput.trim()}
+                onClick={() => filterMobileNumbersByPrefix('074')}
+              >
+                Filter 074
+              </button>
+            </div>
+            {prefixFilterOutput !== null ? (
+              <>
+                <div className="mobile-prefix-filter-output-heading">
+                  <label htmlFor="mobile-prefix-filter-output">
+                    {prefixFilterOutput
+                      ? `${prefixFilterOutput.split('\n').length} numbers starting with ${prefixFilterSelected}`
+                      : `No numbers starting with ${prefixFilterSelected} found.`}
+                  </label>
+                  <CopyTextButton
+                    label={`${prefixFilterSelected} numbers`}
+                    text={prefixFilterOutput}
+                  />
+                </div>
+                <textarea
+                  id="mobile-prefix-filter-output"
+                  aria-label={`Numbers starting with ${prefixFilterSelected}`}
+                  rows={8}
+                  readOnly
+                  value={prefixFilterOutput}
+                />
+              </>
+            ) : null}
+          </div>
+        ) : null}
         {phoneNumbersError ? <p className="vip-phone-numbers-error" role="alert">{phoneNumbersError}</p> : null}
         {showPhoneNumbers && phoneNumbers ? (
           <section className="vip-phone-numbers-list" aria-label={`Saved ${props.itemName ?? 'phone numbers'}`}>
