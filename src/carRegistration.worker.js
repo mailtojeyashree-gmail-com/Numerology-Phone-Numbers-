@@ -2,6 +2,7 @@ import {
   generateManithaNaadiCarRegistrations,
   generateManithaNaadiFormattedCarRegistrations,
   generateManithaNaadiNumericFirstCarRegistrations,
+  generateManithaNaadiSevenCharacterCarRegistrations,
 } from './carRegistrationGenerator'
 
 let cachedMatches = []
@@ -12,13 +13,25 @@ function getCanonicalPairChecks(checks) {
     .join(',')
 }
 
+function getUkAgeIdentifierOrder(value) {
+  if (!/^(?:0[1-9]|[1-4]\d|5[1-9]|[6-9]\d)$/.test(value)) return null
+  const ageIdentifier = Number(value)
+  const yearWithinCycle = ageIdentifier >= 51 ? ageIdentifier - 50 : ageIdentifier
+  const secondHalfOfYear = ageIdentifier >= 51 ? 1 : 0
+  return yearWithinCycle * 2 + secondHalfOfYear
+}
+
 function filterCarRegistrations({
   excludedStartingLetters,
   excludedAnywhereLetters,
   digitSumFilters,
   luckyPairFilters,
+  calculationDigitFilters,
+  vehicleAgeIdentifier,
+  excludeNewerAgeIdentifiers,
   pairFilters,
   uniquePairFilters,
+  pairCount,
   sortDirection,
   page,
   pageSize,
@@ -27,6 +40,8 @@ function filterCarRegistrations({
   const anywhereLetters = new Set(excludedAnywhereLetters)
   const digitSumsFilters = new Set(digitSumFilters)
   const luckyPairsFilters = new Set(luckyPairFilters)
+  const calculationDigits = new Set(calculationDigitFilters)
+  const calculationDigitValues = [...calculationDigits]
   const checksFilters = new Set(pairFilters)
   const uniqueChecksFilters = new Set(uniquePairFilters)
 
@@ -38,6 +53,15 @@ function filterCarRegistrations({
     const match = cachedMatches[index]
     const registration = match.registration.toUpperCase()
     if (startingLetters.has(registration[0])) continue
+    if (pairCount === 4) {
+      const registrationAgeIdentifier = registration.slice(2, 4)
+      const registrationAgeOrder = getUkAgeIdentifierOrder(registrationAgeIdentifier)
+      if (registrationAgeOrder === null) continue
+      if (excludeNewerAgeIdentifiers) {
+        const vehicleAgeOrder = getUkAgeIdentifierOrder(vehicleAgeIdentifier)
+        if (vehicleAgeOrder === null || registrationAgeOrder > vehicleAgeOrder) continue
+      }
+    }
     let containsExcludedLetter = false
     for (const letter of anywhereLetters) {
       if (registration.includes(letter)) {
@@ -47,8 +71,6 @@ function filterCarRegistrations({
     }
     if (containsExcludedLetter) continue
     matchingIndices.push(index)
-    digitSums.add(match.digitSum)
-    luckyPairs.add(match.pair)
     canonicalChecksByIndex[index] = getCanonicalPairChecks(match.checks)
   }
 
@@ -60,14 +82,32 @@ function filterCarRegistrations({
 
   for (const index of matchingIndices) {
     const match = cachedMatches[index]
-    if (
-      (digitSumsFilters.size > 0 && !digitSumsFilters.has(String(match.digitSum)))
-      || (luckyPairsFilters.size > 0 && !luckyPairsFilters.has(match.pair))
-    ) continue
-
     const canonicalChecks = canonicalChecksByIndex[index]
-    if (checksFilters.size > 0 && !checksFilters.has(canonicalChecks)) continue
-    if (uniqueChecksFilters.size > 0 && !uniqueChecksFilters.has(canonicalChecks)) continue
+    const matchesPairFilters = (
+      (checksFilters.size === 0 || checksFilters.has(canonicalChecks))
+      && (uniqueChecksFilters.size === 0 || uniqueChecksFilters.has(canonicalChecks))
+    )
+    const matchesCalculationDigits = calculationDigits.size === 0
+      || match.checks.some((check) => (
+        calculationDigitValues.some((digit) => check.includes(digit))
+      ))
+    const matchesLuckyPairFilters = luckyPairsFilters.size === 0
+      || luckyPairsFilters.has(match.pair)
+    const matchesDigitSumFilters = digitSumsFilters.size === 0
+      || digitSumsFilters.has(String(match.digitSum))
+
+    if (matchesPairFilters && matchesCalculationDigits && matchesLuckyPairFilters) {
+      digitSums.add(match.digitSum)
+    }
+    if (matchesPairFilters && matchesCalculationDigits && matchesDigitSumFilters) {
+      luckyPairs.add(match.pair)
+    }
+    if (
+      !matchesPairFilters
+      || !matchesCalculationDigits
+      || !matchesLuckyPairFilters
+      || !matchesDigitSumFilters
+    ) continue
 
     visibleIndices.push(index)
     match.checks.forEach((check) => uniquePairs.add(check))
@@ -148,9 +188,11 @@ self.onmessage = (event) => {
     const { luckyNumbers, rasiChartEntries, registrationFormat } = event.data
     const generateRegistrations = registrationFormat === 'AB12CD'
       ? generateManithaNaadiFormattedCarRegistrations
-      : registrationFormat === '1234AB'
-        ? generateManithaNaadiNumericFirstCarRegistrations
-        : generateManithaNaadiCarRegistrations
+      : registrationFormat === 'AA00AAA'
+        ? generateManithaNaadiSevenCharacterCarRegistrations
+        : registrationFormat === '1234AB'
+          ? generateManithaNaadiNumericFirstCarRegistrations
+          : generateManithaNaadiCarRegistrations
     const results = generateRegistrations(
       luckyNumbers,
       new Map(rasiChartEntries),

@@ -128,6 +128,109 @@ export function generateManithaNaadiCarRegistrations(luckyNumbers, rasiChartNumb
   }
 }
 
+export function generateManithaNaadiSevenCharacterCarRegistrations(
+  luckyNumbers,
+  rasiChartNumbersByPair,
+) {
+  const luckyPairs = parseLuckyPairs(luckyNumbers)
+  const allowedValues = new Set(luckyPairs)
+  const allowedDigitSums = new Set(luckyPairs.map(Number))
+  const alphabet = getRegistrationLetters()
+  const letterDigitValues = new Map(carRegLetterValues)
+  const digitValue = (digit) => digit === '0' ? 6 : Number(digit)
+  const letterPairsByFirst = new Map()
+
+  for (const firstLetter of alphabet) {
+    for (const secondLetter of alphabet) {
+      const pair = `${letterDigitValues.get(firstLetter)}${letterDigitValues.get(secondLetter)}`
+      if (!allowedValues.has(pair)) continue
+      const pairs = letterPairsByFirst.get(firstLetter) ?? []
+      pairs.push({ firstLetter, secondLetter, pair })
+      letterPairsByFirst.set(firstLetter, pairs)
+    }
+  }
+
+  const prefixLetterPairs = [...letterPairsByFirst.values()].flat()
+  const matchesByBhavam = new Map()
+  let combinationsChecked = 0
+
+  for (const prefixPair of prefixLetterPairs) {
+    for (const digitPair of luckyPairs) {
+      const firstDigitValue = digitValue(digitPair[0])
+      const secondDigitValue = digitValue(digitPair[1])
+
+      for (const suffixFirstPair of prefixLetterPairs) {
+        const suffixSecondPairs = letterPairsByFirst.get(suffixFirstPair.secondLetter) ?? []
+        for (const suffixSecondPair of suffixSecondPairs) {
+          const checks = [
+            prefixPair.pair,
+            digitPair,
+            suffixFirstPair.pair,
+            suffixSecondPair.pair,
+          ]
+          const digitSumValues = [
+            letterDigitValues.get(prefixPair.firstLetter),
+            letterDigitValues.get(prefixPair.secondLetter),
+            firstDigitValue,
+            secondDigitValue,
+            letterDigitValues.get(suffixFirstPair.firstLetter),
+            letterDigitValues.get(suffixFirstPair.secondLetter),
+            letterDigitValues.get(suffixSecondPair.secondLetter),
+          ]
+          const digitSum = digitSumValues.reduce((sum, value) => sum + value, 0)
+          combinationsChecked += 1
+          if (!allowedDigitSums.has(digitSum)) continue
+
+          const digitBhavam = rasiChartNumbersByPair.get(String(digitSum).padStart(2, '0'))
+          if (!digitBhavam) continue
+
+          const bhavamKey = digitBhavam.join('/')
+          const group = matchesByBhavam.get(bhavamKey) ?? []
+          group.push({
+            pair: digitPair,
+            letters: [
+              prefixPair.firstLetter,
+              prefixPair.secondLetter,
+              suffixFirstPair.firstLetter,
+              suffixFirstPair.secondLetter,
+              suffixSecondPair.secondLetter,
+            ],
+            checks,
+            registration: `${prefixPair.firstLetter}${prefixPair.secondLetter}${digitPair}${suffixFirstPair.firstLetter}${suffixFirstPair.secondLetter}${suffixSecondPair.secondLetter}`,
+            digitSum,
+            digitSumCalculation: `${digitSumValues.join(' + ')} = ${digitSum}`,
+          })
+          matchesByBhavam.set(bhavamKey, group)
+        }
+      }
+    }
+  }
+
+  const bhavamGroups = [...matchesByBhavam.values()]
+  const groupOffsets = bhavamGroups.map(() => 0)
+  const matches = []
+  let remainingMatches = bhavamGroups.reduce((total, group) => total + group.length, 0)
+  let groupIndex = 0
+  while (remainingMatches > 0) {
+    const group = bhavamGroups[groupIndex]
+    const offset = groupOffsets[groupIndex]
+    if (offset < group.length) {
+      matches.push(group[offset])
+      groupOffsets[groupIndex] += 1
+      remainingMatches -= 1
+    }
+    groupIndex = (groupIndex + 1) % bhavamGroups.length
+  }
+
+  return {
+    matches,
+    repeatedMatches: [],
+    nonMatches: [],
+    combinationsChecked,
+    possibleCombinationsWithRepetition: luckyPairs.length * alphabet.length ** 5 * 100,
+  }
+}
+
 export function generateManithaNaadiFormattedCarRegistrations(luckyNumbers, rasiChartNumbersByPair) {
   const luckyPairs = parseLuckyPairs(luckyNumbers)
   const allowedValues = new Set(luckyPairs)

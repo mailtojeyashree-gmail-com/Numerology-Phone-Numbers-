@@ -51,10 +51,13 @@ const parsePairFilterLine = (line, pairCount) => {
 }
 const CAR_REGISTRATION_GENERATORS = new Set([
   'GEN-CAR-REG',
+  'GEN-CAR-REG-7',
   'GEN-AB12CD-REG-FORMAT',
   'GEN-1234AB-REG-FORMAT',
 ])
 const isCarRegistrationGenerator = (generator) => CAR_REGISTRATION_GENERATORS.has(generator)
+const getCarRegistrationPairCount = (generator) => generator === 'GEN-CAR-REG-7' ? 4 : 3
+const isValidUkAgeIdentifier = (value) => /^(?:0[1-9]|[1-4]\d|5[1-9]|[6-9]\d)$/.test(value)
 
 function ResultPagination({ page, pageSize, totalItems, onPageChange, label }) {
   const pageCount = Math.ceil(totalItems / pageSize)
@@ -350,6 +353,10 @@ function App() {
   const [manithaNaadiUniqueDigitSumSelection, setManithaNaadiUniqueDigitSumSelection] = useState('')
   const [carRegistrationDigitSumFilters, setCarRegistrationDigitSumFilters] = useState([])
   const [carRegistrationLuckyPairFilters, setCarRegistrationLuckyPairFilters] = useState([])
+  const [carRegistrationCalculationDigitFilters, setCarRegistrationCalculationDigitFilters] = useState([])
+  const [carRegistrationVehicleAgeIdentifier, setCarRegistrationVehicleAgeIdentifier] = useState('')
+  const [excludeNewerCarRegistrationAgeIdentifiers, setExcludeNewerCarRegistrationAgeIdentifiers] = useState(true)
+  const [carRegistrationAgeError, setCarRegistrationAgeError] = useState('')
   const [carRegistrationPage, setCarRegistrationPage] = useState(0)
   const [carRegistrationSortDirection, setCarRegistrationSortDirection] = useState(null)
   const [carRegistrationCombinationPage, setCarRegistrationCombinationPage] = useState(0)
@@ -465,8 +472,12 @@ function App() {
             excludedAnywhereLetters: excludedCarRegistrationAnywhereLetters,
             digitSumFilters: carRegistrationDigitSumFilters,
             luckyPairFilters: carRegistrationLuckyPairFilters,
+            calculationDigitFilters: carRegistrationCalculationDigitFilters,
+            vehicleAgeIdentifier: carRegistrationVehicleAgeIdentifier,
+            excludeNewerAgeIdentifiers: excludeNewerCarRegistrationAgeIdentifiers,
             pairFilters: carRegistrationPairFilters,
             uniquePairFilters: carRegistrationUniquePairFilters,
+            pairCount: getCarRegistrationPairCount(generatorResults.generator),
             sortDirection: carRegistrationSortDirection,
             page: carRegistrationPage,
             pageSize: CAR_REGISTRATION_PAGE_SIZE,
@@ -487,6 +498,9 @@ function App() {
     excludedCarRegistrationAnywhereLetters,
     carRegistrationDigitSumFilters,
     carRegistrationLuckyPairFilters,
+    carRegistrationCalculationDigitFilters,
+    carRegistrationVehicleAgeIdentifier,
+    excludeNewerCarRegistrationAgeIdentifiers,
     carRegistrationPairFilters,
     carRegistrationUniquePairFilters,
     carRegistrationSortDirection,
@@ -593,7 +607,9 @@ function App() {
         include85,
         registrationFormat: generator === 'GEN-AB12CD-REG-FORMAT'
           ? 'AB12CD'
-          : generator === 'GEN-1234AB-REG-FORMAT' ? '1234AB' : 'A12BCD',
+          : generator === 'GEN-1234AB-REG-FORMAT'
+            ? '1234AB'
+            : generator === 'GEN-CAR-REG-7' ? 'AA00AAA' : 'A12BCD',
       })
     } catch (error) {
       setCarRegistrationGenerationError(
@@ -1043,6 +1059,7 @@ function App() {
   function applyCarRegistrationPairFilter(event, filterType = 'checks') {
     event.preventDefault()
     const isUniquePairFilter = filterType === 'unique'
+    const pairCount = getCarRegistrationPairCount(manithaNaadiCombinationResults?.generator)
     const draft = isUniquePairFilter
       ? carRegistrationUniquePairFilterDraft
       : carRegistrationPairFilterDraft
@@ -1054,7 +1071,7 @@ function App() {
     const invalidLines = []
 
     lines.forEach((line, index) => {
-      const pairs = parsePairFilterLine(line, 3)
+      const pairs = parsePairFilterLine(line, pairCount)
       if (!pairs) {
         invalidLines.push(index + 1)
         return
@@ -1068,7 +1085,7 @@ function App() {
         ? setCarRegistrationUniquePairFilterError
         : setCarRegistrationPairFilterError
       setFilterError(
-        `Enter exactly three two-digit pairs per line, separated by commas or entered together. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
+        `Enter exactly ${getCarRegistrationPairCount(manithaNaadiCombinationResults?.generator)} two-digit pairs per line, separated by commas or entered together. Check line${invalidLines.length === 1 ? '' : 's'} ${invalidLines.join(', ')}.`,
       )
       return
     }
@@ -1229,7 +1246,7 @@ function App() {
             <div className="combination-generate">
               <span className="column-selection-label">GENERATE COMBINATIONS (MOBILE STARTS 074; EVERY PAIR AND THE DIGIT TOTAL MUST MATCH LUCKY NUMBERS)</span>
               <div className="combination-generate-buttons">
-                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-12', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-AB12CD-REG-FORMAT', 'GEN-1234AB-REG-FORMAT', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
+                {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8', 'GEN-12', 'GEN-MOBILE-NUMBERS', 'GEN-CAR-REG', 'GEN-CAR-REG-7', 'GEN-AB12CD-REG-FORMAT', 'GEN-1234AB-REG-FORMAT', 'GEN-PASSWORD', 'GEN-EMAIL', 'GEN-DOG-NAMES'].map((generator) => (
                   generator === 'GEN-8' ? (
                     <ManithaNaadiGen8Generator
                       key={generator}
@@ -1330,6 +1347,8 @@ function App() {
                         ? 'Generate UK mobile numbers from the selected initials lucky pairs; the 2nd and 5th pairs after the leading 0 cannot be 33 or 99'
                         : generator === 'GEN-CAR-REG'
                           ? 'Generate A12BCD car registrations from the selected initials lucky numbers'
+                          : generator === 'GEN-CAR-REG-7'
+                            ? 'Generate AA00AAA UK car registrations. I and Q are excluded everywhere; O, U, and Z are allowed at the start. All four overlapping pair checks and the digit sum must match the selected initials lucky numbers.'
                           : generator === 'GEN-AB12CD-REG-FORMAT'
                             ? 'Generate AB12CD car registrations from the selected initials lucky numbers'
                             : generator === 'GEN-1234AB-REG-FORMAT'
@@ -1338,11 +1357,23 @@ function App() {
                               ? 'Generate three-pair checks'
                               : `Generate sums from ${generator === 'GEN-6' ? 'three' : 'two'} values`}
                       onClick={() => {
+                        if (
+                          generator === 'GEN-CAR-REG-7'
+                          && excludeNewerCarRegistrationAgeIdentifiers
+                          && !isValidUkAgeIdentifier(carRegistrationVehicleAgeIdentifier)
+                        ) {
+                          setCarRegistrationAgeError(
+                            'Enter a valid vehicle age identifier (01–49 or 51–99), or turn off the newer-registration exclusion.',
+                          )
+                          return
+                        }
+                        setCarRegistrationAgeError('')
                         setActiveManithaNaadiGenerator(generator)
                         if (!isCarRegistrationGenerator(generator)) setCarRegistrationGenerationError('')
                         if (isCarRegistrationGenerator(generator)) {
                           setCarRegistrationDigitSumFilters([])
                           setCarRegistrationLuckyPairFilters([])
+                          setCarRegistrationCalculationDigitFilters([])
                           setCarRegistrationPairFilters([])
                           setCarRegistrationUniquePairFilters([])
                           setCarRegistrationPairFilterDraft('')
@@ -1475,6 +1506,48 @@ function App() {
                   )
                 ))}
               </div>
+              <fieldset className="gen7-rule-controls">
+                <legend>GEN-CAR-REG-7 · UK age eligibility</legend>
+                <label className="gen7-age-input">
+                  <span>Vehicle age identifier</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={2}
+                    aria-label="Vehicle age identifier"
+                    aria-describedby="gen7-age-help"
+                    value={carRegistrationVehicleAgeIdentifier}
+                    placeholder="e.g. 73"
+                    onChange={(event) => {
+                      setCarRegistrationVehicleAgeIdentifier(
+                        event.target.value.replace(/\D/g, '').slice(0, 2),
+                      )
+                      setCarRegistrationAgeError('')
+                      setCarRegistrationPage(0)
+                    }}
+                  />
+                </label>
+                <span id="gen7-age-help" className="gen7-age-help">
+                  Valid age identifiers are 01–49 and 51–99.
+                </span>
+                <label className="gen8-exclude-field">
+                  <input
+                    type="checkbox"
+                    checked={excludeNewerCarRegistrationAgeIdentifiers}
+                    onChange={(event) => {
+                      setExcludeNewerCarRegistrationAgeIdentifiers(event.target.checked)
+                      setCarRegistrationAgeError('')
+                      setCarRegistrationPage(0)
+                    }}
+                  />
+                  Exclude registrations newer than this vehicle
+                </label>
+                {carRegistrationAgeError ? (
+                  <span className="car-reg-pair-filter-error" role="alert">
+                    {carRegistrationAgeError}
+                  </span>
+                ) : null}
+              </fieldset>
               {activeManithaNaadiGenerator === 'GEN-EMAIL'
                 && manithaNaadiEmailResults?.initials === selectedManithaNaadiInitials && (
                 <EmailGeneratorResults
@@ -2117,7 +2190,35 @@ function App() {
                                 </button>
                               </div>
                             </th>
-                            <th scope="col">Rajanilai calculation</th>
+                            <th scope="col">
+                              <div className="car-reg-digit-sum-filter" role="group" aria-label="Filter Rajanilai calculations by digits appearing anywhere">
+                                <span>Rajanilai calculation</span>
+                                {manithaNaadiCombinationResults.generator === 'GEN-CAR-REG-7' ? (
+                                  <div className="car-reg-digit-sum-options">
+                                    <span className="car-reg-letter-filter-label">Anywhere</span>
+                                    {'0123456789'.split('').map((digit) => (
+                                      <label key={digit}>
+                                        <input
+                                          type="checkbox"
+                                          checked={carRegistrationCalculationDigitFilters.includes(digit)}
+                                          onChange={(event) => {
+                                            const { checked } = event.target
+                                            deferCarRegistrationFilterUpdate(() => {
+                                              setCarRegistrationCalculationDigitFilters((selected) => (
+                                                checked
+                                                  ? [...selected, digit]
+                                                  : selected.filter((selectedDigit) => selectedDigit !== digit)
+                                              ))
+                                            })
+                                          }}
+                                        />
+                                        {digit}
+                                      </label>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </th>
                             <th scope="col">Rajanilai match</th>
                             <th scope="col">Pair bhavam</th>
                             <th scope="col">
@@ -2280,12 +2381,14 @@ function App() {
                           </div>
                           <form onSubmit={applyCarRegistrationPairFilter}>
                             <label htmlFor="car-reg-pair-filter-input">
-                              Enter three pairs per line, separated by commas or entered together.
+                              Enter {getCarRegistrationPairCount(manithaNaadiCombinationResults.generator)} pairs per line, separated by commas or entered together.
                             </label>
                             <textarea
                               id="car-reg-pair-filter-input"
                               rows={5}
-                              placeholder={'32, 64, 14\n85, 68, 68'}
+                              placeholder={getCarRegistrationPairCount(manithaNaadiCombinationResults.generator) === 4
+                                ? '65, 73, 17, 71'
+                                : '32, 64, 14\n85, 68, 68'}
                               value={carRegistrationPairFilterDraft}
                               onChange={(event) => {
                                 setCarRegistrationPairFilterDraft(event.target.value)
@@ -2342,12 +2445,14 @@ function App() {
                           </div>
                           <form onSubmit={(event) => applyCarRegistrationPairFilter(event, 'unique')}>
                             <label htmlFor="car-reg-unique-pair-filter-input">
-                              Enter three pairs per line, separated by commas or entered together.
+                              Enter {getCarRegistrationPairCount(manithaNaadiCombinationResults.generator)} pairs per line, separated by commas or entered together.
                             </label>
                             <textarea
                               id="car-reg-unique-pair-filter-input"
                               rows={5}
-                              placeholder={'32, 64, 14\n85, 68, 68'}
+                              placeholder={getCarRegistrationPairCount(manithaNaadiCombinationResults.generator) === 4
+                                ? '65, 73, 17, 71'
+                                : '32, 64, 14\n85, 68, 68'}
                               value={carRegistrationUniquePairFilterDraft}
                               onChange={(event) => {
                                 setCarRegistrationUniquePairFilterDraft(event.target.value)
@@ -2508,6 +2613,23 @@ function App() {
                         />
                       </section>
                     )}
+                    {manithaNaadiCombinationResults.generator === 'GEN-CAR-REG-7' ? (
+                      <section className="gen7-rule-summary" aria-label="GEN-CAR-REG-7 rules">
+                        <h3>GEN-CAR-REG-7 rules applied</h3>
+                        <ul>
+                          <li>Uses the seven-character UK format: two letters, a two-digit age identifier, then three letters.</li>
+                          <li>Age identifiers 00 and 50 are excluded because they are not valid UK age identifiers.</li>
+                          <li>
+                            {excludeNewerCarRegistrationAgeIdentifiers
+                              ? `Registrations newer than vehicle age ${carRegistrationVehicleAgeIdentifier || '—'} are excluded.`
+                              : 'The vehicle-age eligibility restriction is off; newer registrations may be shown.'}
+                          </li>
+                          <li>I and Q are excluded everywhere; O, U, and Z are allowed in the starting letters.</li>
+                          <li>All four overlapping pair values and the total numerology digit sum must match the selected lucky numbers.</li>
+                          <li>These are matching candidates, not confirmation of DVLA availability or assignment eligibility. Verify a registration with DVLA before purchase or assignment.</li>
+                        </ul>
+                      </section>
+                    ) : null}
                   </>
                 ) : [
                   { title: 'Matching', combinations: manithaNaadiCombinationResults.matches },

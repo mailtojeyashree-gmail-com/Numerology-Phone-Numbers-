@@ -1112,6 +1112,69 @@
   display: contents;
 }
 
+.gen7-rule-controls {
+  display: grid;
+  gap: 7px;
+  max-width: 430px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+}
+
+.gen7-rule-controls legend {
+  padding: 0 4px;
+  color: var(--soft-ink);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.gen7-age-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gen7-age-input input {
+  width: 76px;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+}
+
+.gen7-age-help {
+  color: var(--soft-ink);
+  font-size: 11px;
+}
+
+.gen7-rule-controls .gen8-exclude-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.gen7-rule-controls .gen8-exclude-field input {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.gen7-rule-controls .car-reg-pair-filter-error {
+  margin: 0;
+}
+
 .gen8-exclude-field {
   display: flex;
   flex-direction: column;
@@ -1624,6 +1687,27 @@
 
 .car-reg-selected-combinations {
   margin-top: 20px;
+}
+
+.gen7-rule-summary {
+  margin-top: 24px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+  color: var(--soft-ink);
+  font-size: 12px;
+}
+
+.gen7-rule-summary h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.gen7-rule-summary ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 18px;
 }
 
 .car-reg-selected-combinations h3 {
