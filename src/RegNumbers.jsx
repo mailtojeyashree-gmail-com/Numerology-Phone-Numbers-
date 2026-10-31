@@ -500,65 +500,6 @@ export default function RegNumbersPage(props) {
               ? `Hide ${props.buttonName ?? 'Phone numbers'}`
               : `Show ${props.buttonName ?? 'Phone numbers'}`}
         </button>
-        {props.inputNumbers ? (
-          <div className="vip-number-input mobile-prefix-filter">
-            <label htmlFor="mobile-prefix-filter-input">
-              Paste a list of mobile numbers to filter by prefix.
-            </label>
-            <textarea
-              id="mobile-prefix-filter-input"
-              aria-label="Paste mobile numbers to filter"
-              rows={8}
-              placeholder={'07312345678\n07412345678'}
-              value={prefixFilterInput}
-              onChange={(event) => {
-                setPrefixFilterInput(event.target.value)
-                setPrefixFilterOutput(null)
-                setPrefixFilterSelected('')
-              }}
-            />
-            <div className="mobile-prefix-filter-actions">
-              <button
-                className="combination-generate-button"
-                type="button"
-                disabled={!prefixFilterInput.trim()}
-                onClick={() => filterMobileNumbersByPrefix('073')}
-              >
-                Filter 073
-              </button>
-              <button
-                className="combination-generate-button"
-                type="button"
-                disabled={!prefixFilterInput.trim()}
-                onClick={() => filterMobileNumbersByPrefix('074')}
-              >
-                Filter 074
-              </button>
-            </div>
-            {prefixFilterOutput !== null ? (
-              <>
-                <div className="mobile-prefix-filter-output-heading">
-                  <label htmlFor="mobile-prefix-filter-output">
-                    {prefixFilterOutput
-                      ? `${prefixFilterOutput.split('\n').length} numbers starting with ${prefixFilterSelected}`
-                      : `No numbers starting with ${prefixFilterSelected} found.`}
-                  </label>
-                  <CopyTextButton
-                    label={`${prefixFilterSelected} numbers`}
-                    text={prefixFilterOutput}
-                  />
-                </div>
-                <textarea
-                  id="mobile-prefix-filter-output"
-                  aria-label={`Numbers starting with ${prefixFilterSelected}`}
-                  rows={8}
-                  readOnly
-                  value={prefixFilterOutput}
-                />
-              </>
-            ) : null}
-          </div>
-        ) : null}
         {phoneNumbersError ? <p className="vip-phone-numbers-error" role="alert">{phoneNumbersError}</p> : null}
         {showPhoneNumbers && phoneNumbers ? (
           <section className="vip-phone-numbers-list" aria-label={`Saved ${props.itemName ?? 'phone numbers'}`}>
@@ -826,8 +767,11 @@ export default function RegNumbersPage(props) {
                 </button>
               </nav>
             ) : null}
-            {registrationLayout && visibleRows.length > 0 ? (
-              <section className="car-reg-selected-combinations" aria-label="Selected registration combinations">
+            {(registrationLayout || props.inputNumbers) && visibleRows.length > 0 ? (
+              <section
+                className="car-reg-selected-combinations"
+                aria-label={`Selected ${props.inputNumbers ? 'mobile number' : 'registration'} combinations`}
+              >
                 <h3>Selected combinations</h3>
                 <div className="car-reg-combinations-copy-field">
                   <div className="car-reg-copy-field-heading">
@@ -889,7 +833,7 @@ export default function RegNumbersPage(props) {
                 </div>
               </section>
             ) : null}
-            {registrationLayout ? (
+            {(registrationLayout || props.inputNumbers) ? (
               <section className="car-reg-selected-combinations" aria-label="Pair checks combination">
                 <div className="car-reg-combinations-copy-field">
                   <div className="car-reg-copy-field-heading">
@@ -1095,6 +1039,65 @@ export default function RegNumbersPage(props) {
               </div>
             ) : null}
           </section>
+        ) : null}
+        {props.inputNumbers ? (
+          <div className="vip-number-input mobile-prefix-filter">
+            <label htmlFor="mobile-prefix-filter-input">
+              Paste a list of mobile numbers to filter by prefix.
+            </label>
+            <textarea
+              id="mobile-prefix-filter-input"
+              aria-label="Paste mobile numbers to filter"
+              rows={8}
+              placeholder={'07312345678\n07412345678'}
+              value={prefixFilterInput}
+              onChange={(event) => {
+                setPrefixFilterInput(event.target.value)
+                setPrefixFilterOutput(null)
+                setPrefixFilterSelected('')
+              }}
+            />
+            <div className="mobile-prefix-filter-actions">
+              <button
+                className="combination-generate-button"
+                type="button"
+                disabled={!prefixFilterInput.trim()}
+                onClick={() => filterMobileNumbersByPrefix('073')}
+              >
+                Filter 073
+              </button>
+              <button
+                className="combination-generate-button"
+                type="button"
+                disabled={!prefixFilterInput.trim()}
+                onClick={() => filterMobileNumbersByPrefix('074')}
+              >
+                Filter 074
+              </button>
+            </div>
+            {prefixFilterOutput !== null ? (
+              <>
+                <div className="mobile-prefix-filter-output-heading">
+                  <label htmlFor="mobile-prefix-filter-output">
+                    {prefixFilterOutput
+                      ? `${prefixFilterOutput.split('\n').length} numbers starting with ${prefixFilterSelected}`
+                      : `No numbers starting with ${prefixFilterSelected} found.`}
+                  </label>
+                  <CopyTextButton
+                    label={`${prefixFilterSelected} numbers`}
+                    text={prefixFilterOutput}
+                  />
+                </div>
+                <textarea
+                  id="mobile-prefix-filter-output"
+                  aria-label={`Numbers starting with ${prefixFilterSelected}`}
+                  rows={8}
+                  readOnly
+                  value={prefixFilterOutput}
+                />
+              </>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </section>
