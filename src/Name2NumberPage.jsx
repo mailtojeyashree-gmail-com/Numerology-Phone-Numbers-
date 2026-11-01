@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import './Name2NumberPage.css'
 import CopyTextButton from './CopyTextButton'
+import TextareaLineCount from './TextareaLineCount'
 import { carRegLetterValues } from './numerologyLetterValues'
 import { defaultRajanilaiNumbers, getNameResult, parseRajanilaiNumbers } from './name2numberLogic'
 import RasiChart from './RasiChart'
@@ -48,6 +49,69 @@ function xmlEscape(value) {
   })[character])
 }
 
+function parseNamesOrNumberPairs(value) {
+  return value
+    .split(/\r?\n/)
+    .flatMap((line) => {
+      const trimmedLine = line.trim()
+      if (!trimmedLine) return []
+      if (/^\d{2}(?:\s*,\s*\d{2})+$/.test(trimmedLine)) {
+        return [trimmedLine.replace(/[,\s]/g, '')]
+      }
+      return trimmedLine.split(',').map((part) => part.trim()).filter(Boolean)
+    })
+}
+
+function generateFinalRegistrations(value) {
+  const lettersByDigit = new Map(
+    Array.from({ length: 8 }, (_, index) => {
+      const digit = String(index + 1)
+      return [
+        digit,
+        carRegLetterValues
+          .filter(([, letterValue]) => String(letterValue) === digit)
+          .map(([letter]) => letter),
+      ]
+    }),
+  )
+  const registrations = []
+  const seen = new Set()
+  const invalidLines = []
+  const unmappableLines = []
+
+  value.split(/\r?\n/).forEach((line, index) => {
+    const trimmedLine = line.trim()
+    if (!trimmedLine) return
+
+    const digits = /^\d{6}$/.test(trimmedLine)
+      ? trimmedLine
+      : /^\d{2}\s*,\s*\d{2}\s*,\s*\d{2}$/.test(trimmedLine)
+        ? trimmedLine.replace(/[,\s]/g, '')
+        : null
+    if (!digits) {
+      invalidLines.push(index + 1)
+      return
+    }
+
+    const lastPairLetters = [...digits.slice(4)].map((digit) => lettersByDigit.get(digit) ?? [])
+    if (lastPairLetters.some((letters) => letters.length === 0)) {
+      unmappableLines.push(index + 1)
+      return
+    }
+
+    for (const firstLetter of lastPairLetters[0]) {
+      for (const secondLetter of lastPairLetters[1]) {
+        const registration = `${digits.slice(0, 4)} ${firstLetter}${secondLetter}`
+        if (seen.has(registration)) continue
+        seen.add(registration)
+        registrations.push(registration)
+      }
+    }
+  })
+
+  return { registrations, invalidLines, unmappableLines }
+}
+
 function findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength) {
   const numbers = [...rajanilaiSet]
     .map(Number)
@@ -86,6 +150,75 @@ function findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength) {
     combinations,
     exceededLimit: visit(0, target),
   }
+}
+
+function findRajanilaiNumberMatches(target, rajanilaiSet, pairCount) {
+  const pairs = [...rajanilaiSet]
+    .map(Number)
+    .filter((number) => Number.isSafeInteger(number) && number > 0)
+    .sort((first, second) => first - second)
+    .map((number) => String(number).padStart(2, '0'))
+  const combinations = []
+  const selectedPairs = []
+
+  function visit(startIndex) {
+    if (selectedPairs.length === pairCount) {
+      const number = `${selectedPairs.slice(0, -1).join('')}${selectedPairs.at(-1)[1]}`
+      const checks = [
+        ...selectedPairs.slice(0, -1),
+        number.slice(-2),
+      ]
+      const digitSum = [...number].reduce((sum, digit) => sum + Number(digit), 0)
+      if (digitSum !== target || !checks.every((check) => rajanilaiSet.has(String(Number(check))))) {
+        return false
+      }
+
+      if (combinations.length === MAX_RAJANILAI_SUM_COMBINATIONS) return true
+      combinations.push({ values: [...selectedPairs], number, checks, digitSum })
+      return false
+    }
+
+    for (let index = startIndex; index < pairs.length; index += 1) {
+      selectedPairs.push(pairs[index])
+      const exceededLimit = visit(index)
+      selectedPairs.pop()
+      if (exceededLimit) return true
+    }
+
+    return false
+  }
+
+  return {
+    combinations,
+    exceededLimit: visit(0),
+  }
+}
+
+function getGen6ExampleOrders(values, rajanilaiSet) {
+  const orders = []
+  const seenOrders = new Set()
+
+  for (let firstIndex = 0; firstIndex < values.length; firstIndex += 1) {
+    for (let secondIndex = 0; secondIndex < values.length; secondIndex += 1) {
+      if (firstIndex === secondIndex) continue
+      const lastIndex = values.findIndex(
+        (_, index) => index !== firstIndex && index !== secondIndex,
+      )
+      const orderedValues = [values[firstIndex], values[secondIndex], values[lastIndex]]
+      if (/[09]/.test(orderedValues[2])) continue
+      const orderKey = orderedValues.join(',')
+      if (seenOrders.has(orderKey)) continue
+
+      const firstTwoPairDigitSum = [...orderedValues[0], ...orderedValues[1]]
+        .reduce((sum, digit) => sum + Number(digit), 0)
+      if (!rajanilaiSet.has(String(firstTwoPairDigitSum))) continue
+
+      seenOrders.add(orderKey)
+      orders.push({ values: orderedValues, firstTwoPairDigitSum })
+    }
+  }
+
+  return orders
 }
 
 function generateNonRajanilaiNumbers(prefix, rajanilaiSet) {
@@ -198,16 +331,17 @@ function parseRegistrationList(text) {
     const trimmedLine = line.trim()
     if (!trimmedLine) return
 
-    const entries = trimmedLine.split(',').map((entry) => entry.replace(/\s/g, '').toUpperCase())
-    if (entries.some((entry) => !/^[A-Z0-9]+$/.test(entry))) {
+    const key = trimmedLine.replace(/[,\s]/g, '').toUpperCase()
+    if (!/^[A-Z0-9]+$/.test(key)) {
       invalidLines.push(index + 1)
       return
     }
 
-    entries.forEach((entry) => {
-      if (seen.has(entry)) return
-      seen.add(entry)
-      registrations.push(entry)
+    if (seen.has(key)) return
+    seen.add(key)
+    registrations.push({
+      key,
+      value: /^\d{6}$/.test(key) ? key.match(/\d{2}/g).join(',') : key,
     })
   })
 
@@ -218,7 +352,7 @@ function compareRegistrationLists(textA, textB) {
   const parsedA = parseRegistrationList(textA)
   const parsedB = parseRegistrationList(textB)
   const isRepresented = (registration, otherRegistrations) => otherRegistrations.some(
-    (other) => registration.startsWith(other) || other.startsWith(registration),
+    (other) => registration.key.startsWith(other.key) || other.key.startsWith(registration.key),
   )
 
   return {
@@ -226,6 +360,46 @@ function compareRegistrationLists(textA, textB) {
       .filter((registration) => !isRepresented(registration, parsedB.registrations)),
     unusedB: parsedB.registrations
       .filter((registration) => !isRepresented(registration, parsedA.registrations)),
+    invalidA: parsedA.invalidLines,
+    invalidB: parsedB.invalidLines,
+  }
+}
+
+function findMatchedRegistrationNumbers(textA, textB) {
+  function parseEntries(text) {
+    const entries = []
+    const invalidLines = []
+    const seen = new Set()
+
+    text.split(/\r?\n/).forEach((line, index) => {
+      const trimmedLine = line.trim()
+      if (!trimmedLine) return
+
+      const digits = trimmedLine.replace(/[,\s]/g, '')
+      if (!/^\d{6}$/.test(digits)) {
+        invalidLines.push(index + 1)
+        return
+      }
+
+      if (seen.has(digits)) return
+      seen.add(digits)
+      entries.push({
+        digits,
+        digitSum: [...digits].reduce((sum, digit) => sum + Number(digit), 0),
+      })
+    })
+
+    return { entries, invalidLines }
+  }
+
+  const parsedA = parseEntries(textA)
+  const parsedB = parseEntries(textB)
+  const digitSumsInA = new Set(parsedA.entries.map(({ digitSum }) => digitSum))
+
+  return {
+    matches: parsedB.entries
+      .filter(({ digitSum }) => digitSumsInA.has(digitSum))
+      .map(({ digits }) => digits.match(/\d{2}/g).join(',')),
     invalidA: parsedA.invalidLines,
     invalidB: parsedB.invalidLines,
   }
@@ -282,8 +456,15 @@ export default function Name2NumberPage() {
   const [rajanilaiNumbers, setRajanilaiNumbers] = useState(defaultRajanilaiNumbers)
   const rajanilaiSet = useMemo(() => parseRajanilaiNumbers(rajanilaiNumbers), [rajanilaiNumbers])
   const [rajanilaiSumInput, setRajanilaiSumInput] = useState('')
+  const [kuberNumberInput, setKuberNumberInput] = useState('')
+  const [excludedRajanilaiPairsInput, setExcludedRajanilaiPairsInput] = useState('')
   const [rajanilaiSumResults, setRajanilaiSumResults] = useState(null)
   const [rajanilaiSumError, setRajanilaiSumError] = useState('')
+  const [matchedNumberInputA, setMatchedNumberInputA] = useState('')
+  const [matchedNumberInputB, setMatchedNumberInputB] = useState('')
+  const [matchedNumbers, setMatchedNumbers] = useState(null)
+  const [finalRegistrationInput, setFinalRegistrationInput] = useState('')
+  const [finalRegistrationResults, setFinalRegistrationResults] = useState(null)
   const [rajanilaiSubtractInput, setRajanilaiSubtractInput] = useState('')
   const [rajanilaiSubtractResults, setRajanilaiSubtractResults] = useState(null)
   const [rajanilaiSubtractError, setRajanilaiSubtractError] = useState('')
@@ -325,6 +506,26 @@ export default function Name2NumberPage() {
     () => (generatedNames ?? []).map((generatedName) => getNameResult(generatedName, rajanilaiSet)),
     [generatedNames, rajanilaiSet],
   )
+  const displayedRajanilaiSumCombinations = useMemo(() => {
+    if (!rajanilaiSumResults) return []
+    const kuberNumber = kuberNumberInput.trim()
+    const excludedPairs = excludedRajanilaiPairsInput
+      .split(',')
+      .map((pair) => pair.trim())
+      .filter(Boolean)
+    if (rajanilaiSumResults.generator !== 'GEN-6-EXAMPLE') {
+      return rajanilaiSumResults.combinations
+    }
+
+    return rajanilaiSumResults.combinations.filter(({ values }) => (
+      (!kuberNumber || values.includes(kuberNumber))
+      && !excludedPairs.some((pair) => values.includes(pair))
+    ))
+  }, [excludedRajanilaiPairsInput, kuberNumberInput, rajanilaiSumResults])
+  const invalidExcludedRajanilaiPairs = excludedRajanilaiPairsInput
+    .split(',')
+    .map((pair) => pair.trim())
+    .filter((pair) => pair && !/^\d{2}$/.test(pair))
 
   function matchRajanilaiSum(event, generator) {
     event.preventDefault()
@@ -341,12 +542,15 @@ export default function Name2NumberPage() {
       return
     }
 
-    const combinationLength = generator === 'GEN-4' ? 2 : ['GEN-5', 'GEN-6'].includes(generator) ? 3 : 4
-    const { combinations, exceededLimit } = findRajanilaiSumCombinations(
-      target,
-      rajanilaiSet,
-      combinationLength,
-    )
+    const usesNumberChecks = ['GEN-5', 'GEN-7'].includes(generator)
+    const combinationLength = generator === 'GEN-4'
+      ? 2
+      : ['GEN-5', 'GEN-6', 'GEN-6-EXAMPLE'].includes(generator)
+        ? 3
+        : 4
+    const { combinations: matchingCombinations, exceededLimit } = usesNumberChecks
+      ? findRajanilaiNumberMatches(target, rajanilaiSet, generator === 'GEN-5' ? 3 : 4)
+      : findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength)
     if (exceededLimit) {
       setRajanilaiSumError(
         `More than ${MAX_RAJANILAI_SUM_COMBINATIONS.toLocaleString()} combinations match. Enter a lower sum to show all results.`,
@@ -355,8 +559,37 @@ export default function Name2NumberPage() {
       return
     }
 
+    let combinations = matchingCombinations
+    if (generator === 'GEN-6-EXAMPLE') {
+      combinations = []
+      for (const combination of matchingCombinations) {
+        for (const exampleOrder of getGen6ExampleOrders(combination.values, rajanilaiSet)) {
+          if (combinations.length === MAX_RAJANILAI_SUM_COMBINATIONS) {
+            setRajanilaiSumError(
+              `More than ${MAX_RAJANILAI_SUM_COMBINATIONS.toLocaleString()} valid pair orders match. Enter a lower sum to show all results.`,
+            )
+            setRajanilaiSumResults(null)
+            return
+          }
+          combinations.push({
+            ...combination,
+            exampleOrder: exampleOrder.values,
+            firstTwoPairDigitSum: exampleOrder.firstTwoPairDigitSum,
+          })
+        }
+      }
+    }
+
     setRajanilaiSumError('')
     setRajanilaiSumResults({ generator, combinations })
+  }
+
+  function findMatchedNumbers() {
+    setMatchedNumbers(findMatchedRegistrationNumbers(matchedNumberInputA, matchedNumberInputB))
+  }
+
+  function findFinalRegistrations() {
+    setFinalRegistrationResults(generateFinalRegistrations(finalRegistrationInput))
   }
 
   function findRajanilaiSubtractions(event) {
@@ -507,7 +740,7 @@ export default function Name2NumberPage() {
   }
 
   async function copyUnusedRegNumbers(listKey) {
-    const text = unusedRegNumbers?.[listKey].join('\n') ?? ''
+    const text = unusedRegNumbers?.[listKey].map(({ value }) => value).join('\n') ?? ''
     if (!text) return
 
     try {
@@ -621,11 +854,12 @@ export default function Name2NumberPage() {
         className="name2number-form"
         onSubmit={(event) => {
           event.preventDefault()
-          setGeneratedNames(name.split(/[,\r\n]+/).map((part) => part.trim()).filter(Boolean))
+          setGeneratedNames(parseNamesOrNumberPairs(name))
         }}
       >
         <label className="name2number-field" htmlFor="name2number-input">
           <span>ENTER A NAME</span>
+          <TextareaLineCount value={name} />
           <textarea
             id="name2number-input"
             autoComplete="off"
@@ -635,12 +869,12 @@ export default function Name2NumberPage() {
               setName(event.target.value)
               setGeneratedNames(null)
             }}
-            placeholder="For example: ANNA or ANNA, MARIA"
+            placeholder="For example: ANNA, MARIA or 32,52,22"
             aria-describedby="name2number-help"
             spellCheck="false"
           />
           <span id="name2number-help" className="name2number-help">
-            Commas or new lines separate names; spaces within a name stay together. Other punctuation is ignored.
+            New lines separate entries. Commas separate names, but two-digit comma-separated pairs stay together as one number.
           </span>
         </label>
         <button className="name2number-button" type="submit" disabled={!name.trim()}>
@@ -1051,6 +1285,7 @@ export default function Name2NumberPage() {
             <div className="name2number-mobile-fields name2number-custom-fields">
               <label className="name2number-unique-field name2number-mobile-field" htmlFor="name2number-custom-a">
                 <span>Input A</span>
+                <TextareaLineCount value={customListA} />
                 <textarea
                   id="name2number-custom-a"
                   aria-label="Custom input A number list"
@@ -1065,6 +1300,7 @@ export default function Name2NumberPage() {
               </label>
               <label className="name2number-unique-field name2number-mobile-field" htmlFor="name2number-custom-b">
                 <span>Input B</span>
+                <TextareaLineCount value={customListB} />
                 <textarea
                   id="name2number-custom-b"
                   aria-label="Custom input B number list"
@@ -1215,6 +1451,7 @@ export default function Name2NumberPage() {
           }}
         >
           <label htmlFor="name2number-digit-sum-input">Numbers</label>
+          <TextareaLineCount value={digitSumInput} />
           <textarea
             id="name2number-digit-sum-input"
             className="name2number-digit-sum-input"
@@ -1277,6 +1514,7 @@ export default function Name2NumberPage() {
         <div className="name2number-regnumber-fields">
           <label className="name2number-regnumber-field" htmlFor="name2number-regnumber-a">
             <span>Input A</span>
+            <TextareaLineCount value={regNumberInputA} />
             <textarea
               id="name2number-regnumber-a"
               value={regNumberInputA}
@@ -1290,6 +1528,7 @@ export default function Name2NumberPage() {
           </label>
           <label className="name2number-regnumber-field" htmlFor="name2number-regnumber-b">
             <span>Input B</span>
+            <TextareaLineCount value={regNumberInputB} />
             <textarea
               id="name2number-regnumber-b"
               value={regNumberInputB}
@@ -1319,10 +1558,10 @@ export default function Name2NumberPage() {
                   ? ` in Input A on lines ${unusedRegNumbers.invalidA.join(', ')}` : ''}
                 {unusedRegNumbers.invalidB.length > 0
                   ? ` in Input B on lines ${unusedRegNumbers.invalidB.join(', ')}` : ''}.
-                Use letters and digits, one registration per line or comma-separated.
+                Use letters and digits, one registration per line. For six-digit numbers, commas between pairs are optional.
               </p>
             ) : null}
-            <div className="name2number-unused-regnumber-results" aria-live="polite">
+            <div className="name2number-unused-regnumber-results name2number-matched-number-results" aria-live="polite">
               <section aria-labelledby="name2number-unused-regnumber-not-in-b-title">
                 <div className="name2number-regnumber-result-heading">
                   <h3 id="name2number-unused-regnumber-not-in-b-title">Unused RegNumber not in B</h3>
@@ -1335,7 +1574,9 @@ export default function Name2NumberPage() {
                     {unusedRegNumberCopyStatus.unusedA?.success ? 'Copied' : 'Copy list'}
                   </button>
                 </div>
-                <pre>{unusedRegNumbers.unusedA.length > 0 ? unusedRegNumbers.unusedA.join('\n') : 'None'}</pre>
+                <pre>{unusedRegNumbers.unusedA.length > 0
+                  ? unusedRegNumbers.unusedA.map(({ value }) => value).join('\n')
+                  : 'None'}</pre>
                 <div className="name2number-regnumber-copy-action">
                   {unusedRegNumberCopyStatus.unusedA ? (
                     <span
@@ -1361,7 +1602,9 @@ export default function Name2NumberPage() {
                     {unusedRegNumberCopyStatus.unusedB?.success ? 'Copied' : 'Copy list'}
                   </button>
                 </div>
-                <pre>{unusedRegNumbers.unusedB.length > 0 ? unusedRegNumbers.unusedB.join('\n') : 'None'}</pre>
+                <pre>{unusedRegNumbers.unusedB.length > 0
+                  ? unusedRegNumbers.unusedB.map(({ value }) => value).join('\n')
+                  : 'None'}</pre>
                 <div className="name2number-regnumber-copy-action">
                   {unusedRegNumberCopyStatus.unusedB ? (
                     <span
@@ -1406,16 +1649,50 @@ export default function Name2NumberPage() {
             />
           </label>
           <div className="name2number-rajanilai-sum-buttons">
-            {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-8'].map((generator) => (
-              <button
-                className={`name2number-button name2number-rajanilai-generator-button${rajanilaiSumResults?.generator === generator ? ' name2number-rajanilai-generator-button-active' : ''}`}
-                key={generator}
-                type="submit"
-                value={generator}
-              >
-                {generator}
-              </button>
-            ))}
+            {['GEN-4', 'GEN-5', 'GEN-6', 'GEN-6-EXAMPLE', 'GEN-7', 'GEN-8'].map((generator) => {
+              const button = (
+                <button
+                  className={`name2number-button name2number-rajanilai-generator-button${rajanilaiSumResults?.generator === generator ? ' name2number-rajanilai-generator-button-active' : ''}`}
+                  key={generator}
+                  type="submit"
+                  value={generator}
+                >
+                  {generator}
+                </button>
+              )
+
+              return generator === 'GEN-6-EXAMPLE' ? (
+                <div className="name2number-kuber-generator" key={generator}>
+                  <label className="name2number-kuber-number-label" htmlFor="name2number-kuber-number-input">
+                    <span>Kuber number</span>
+                    <input
+                      id="name2number-kuber-number-input"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={2}
+                      value={kuberNumberInput}
+                      onChange={(event) => {
+                        if (/^\d{0,2}$/.test(event.target.value)) {
+                          setKuberNumberInput(event.target.value)
+                        }
+                      }}
+                    />
+                  </label>
+                  <label className="name2number-kuber-number-label" htmlFor="name2number-excluded-rajanilai-pairs">
+                    <span>Exclude numbers</span>
+                    <input
+                      id="name2number-excluded-rajanilai-pairs"
+                      type="text"
+                      inputMode="numeric"
+                      value={excludedRajanilaiPairsInput}
+                      placeholder="14, 33"
+                      onChange={(event) => setExcludedRajanilaiPairsInput(event.target.value)}
+                    />
+                  </label>
+                  {button}
+                </div>
+              ) : button
+            })}
           </div>
         </form>
         {rajanilaiSumError ? (
@@ -1423,24 +1700,222 @@ export default function Name2NumberPage() {
         ) : null}
         {rajanilaiSumResults ? (
           <div className="name2number-rajanilai-sum-results" aria-live="polite">
-            <h3>{rajanilaiSumResults.generator} combinations · {rajanilaiSumResults.combinations.length}</h3>
-            {rajanilaiSumResults.combinations.length > 0
+            <h3>{rajanilaiSumResults.generator} combinations · {displayedRajanilaiSumCombinations.length}</h3>
+            {rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' ? (
+              <p>Only orders with a mappable final pair (no 0 or 9) and a first-two-pair digit sum in the Rajanilai list are shown.</p>
+            ) : null}
+            {['GEN-5', 'GEN-7'].includes(rajanilaiSumResults.generator) ? (
+              <p>
+                Pair sequences form a {rajanilaiSumResults.generator === 'GEN-5' ? 'five' : 'seven'}-digit number.
+                Every pair check must be in the Rajanilai list, and the number&apos;s digit sum must equal the entered sum.
+              </p>
+            ) : null}
+            {rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' && invalidExcludedRajanilaiPairs.length > 0 ? (
+              <p className="name2number-message" role="alert">
+                Excluded entries must be two-digit pairs: {invalidExcludedRajanilaiPairs.join(', ')}.
+              </p>
+            ) : null}
+            {displayedRajanilaiSumCombinations.length > 0
               ? (
                 <div className="name2number-rajanilai-combination-results">
-                  <div className="name2number-rajanilai-combination-row name2number-rajanilai-combination-heading">
-                    <span>Combination</span>
+                  <div className={`name2number-rajanilai-combination-row name2number-rajanilai-combination-heading${rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' ? ' name2number-rajanilai-example-row' : ''}${['GEN-5', 'GEN-7'].includes(rajanilaiSumResults.generator) ? ' name2number-rajanilai-number-row' : ''}`}>
+                    {rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' ? (
+                      <>
+                        <div className="name2number-rajanilai-example-first-column">
+                          <CopyTextButton
+                            label="valid pair orders"
+                            text={displayedRajanilaiSumCombinations.map(
+                              ({ exampleOrder }) => exampleOrder.join(', '),
+                            ).join('\n')}
+                          />
+                          <span>Valid pair order</span>
+                        </div>
+                        <span>Combination</span>
+                        <span>First two-pair digit sum</span>
+                      </>
+                    ) : ['GEN-5', 'GEN-7'].includes(rajanilaiSumResults.generator) ? (
+                      <>
+                        <span>Combination</span>
+                        <span>Number</span>
+                        <span>Pair checks</span>
+                      </>
+                    ) : <span>Combination</span>}
                     <span>Digit sum</span>
                   </div>
-                  {rajanilaiSumResults.combinations.map(({ values, digitSum }) => (
-                    <div className="name2number-rajanilai-combination-row" key={values.join(',')}>
-                      <span>{values.join(', ')}</span>
-                      <span>{digitSum}</span>
-                    </div>
-                  ))}
+                  {displayedRajanilaiSumCombinations.map(({
+                    values,
+                    number,
+                    checks,
+                    digitSum,
+                    exampleOrder,
+                    firstTwoPairDigitSum,
+                  }) => {
+                    const isExample = rajanilaiSumResults.generator === 'GEN-6-EXAMPLE'
+                    const hasNumberChecks = ['GEN-5', 'GEN-7'].includes(rajanilaiSumResults.generator)
+                    return (
+                      <div
+                        className={`name2number-rajanilai-combination-row${isExample ? ' name2number-rajanilai-example-row' : ''}${hasNumberChecks ? ' name2number-rajanilai-number-row' : ''}`}
+                        key={`${values.join(',')}-${exampleOrder?.join(',') ?? ''}`}
+                      >
+                        {isExample ? (
+                          <>
+                            <span>{exampleOrder.join(', ')}</span>
+                            <span>{values.join(', ')}</span>
+                            <span>{firstTwoPairDigitSum}</span>
+                          </>
+                        ) : hasNumberChecks ? (
+                          <>
+                            <span>{values.join(', ')}</span>
+                            <span>{number}</span>
+                            <span>{checks.join(', ')}</span>
+                          </>
+                        ) : <span>{values.join(', ')}</span>}
+                        <span>{digitSum}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               )
-              : <p>No {rajanilaiSumResults.generator} combinations match this sum.</p>}
+              : <p>
+                {rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' && kuberNumberInput.trim()
+                  ? `No combinations containing Kuber number ${kuberNumberInput.trim()} match this sum.`
+                  : `No ${rajanilaiSumResults.generator} combinations match this sum.`}
+              </p>}
           </div>
+        ) : null}
+      </section>
+      <section className="name2number-unused-regnumbers" aria-labelledby="name2number-final-registration-title">
+        <h2 id="name2number-final-registration-title">Generate Final Registration</h2>
+        <p className="name2number-non-rajanilai-help">
+          Enter three pairs per line, with or without commas. The first two pairs become four digits;
+          the last pair maps to two letters using the number-to-letter chart.
+        </p>
+        <label className="name2number-final-registration-field" htmlFor="name2number-final-registration-input">
+          <span>Pair combinations</span>
+          <TextareaLineCount value={finalRegistrationInput} />
+          <textarea
+            id="name2number-final-registration-input"
+            value={finalRegistrationInput}
+            onChange={(event) => {
+              setFinalRegistrationInput(event.target.value)
+              setFinalRegistrationResults(null)
+            }}
+            placeholder={'10, 32, 64\n32, 10, 64\n103264'}
+            rows={8}
+            spellCheck="false"
+          />
+        </label>
+        <button
+          className="name2number-button name2number-unused-regnumber-button"
+          type="button"
+          onClick={findFinalRegistrations}
+          disabled={!finalRegistrationInput.trim()}
+        >
+          Generate Final Registration
+        </button>
+        {finalRegistrationResults ? (
+          <>
+            {finalRegistrationResults.invalidLines.length > 0
+              || finalRegistrationResults.unmappableLines.length > 0 ? (
+                <p className="name2number-message" role="alert">
+                  {finalRegistrationResults.invalidLines.length > 0
+                    ? `Invalid entries on lines ${finalRegistrationResults.invalidLines.join(', ')}. Enter exactly three two-digit pairs. `
+                    : ''}
+                  {finalRegistrationResults.unmappableLines.length > 0
+                    ? `No registration generated for lines ${finalRegistrationResults.unmappableLines.join(', ')} because the final pair contains a digit without a letter mapping.`
+                    : ''}
+                </p>
+              ) : null}
+            <div className="name2number-unused-regnumber-results name2number-matched-number-results" aria-live="polite">
+              <section aria-labelledby="name2number-final-registration-results-title">
+                <div className="name2number-regnumber-result-heading">
+                  <h3 id="name2number-final-registration-results-title">
+                    Final registrations · {finalRegistrationResults.registrations.length}
+                  </h3>
+                  <CopyTextButton
+                    label="final registrations"
+                    text={finalRegistrationResults.registrations.join('\n')}
+                  />
+                </div>
+                <pre>
+                  {finalRegistrationResults.registrations.length > 0
+                    ? finalRegistrationResults.registrations.join('\n')
+                    : 'None'}
+                </pre>
+              </section>
+            </div>
+          </>
+        ) : null}
+      </section>
+      <section className="name2number-unused-regnumbers" aria-labelledby="name2number-matched-numbers-title">
+        <h2 id="name2number-matched-numbers-title">Matched numbers</h2>
+        <p className="name2number-non-rajanilai-help">
+          Enter one six-digit number per line as three pairs (for example, 10,32,44 or 103244).
+          Input B numbers are shown when their digit sum matches an Input A number.
+        </p>
+        <div className="name2number-regnumber-fields">
+          <label className="name2number-regnumber-field" htmlFor="name2number-matched-input-a">
+            <span>Input A</span>
+            <TextareaLineCount value={matchedNumberInputA} />
+            <textarea
+              id="name2number-matched-input-a"
+              value={matchedNumberInputA}
+              onChange={(event) => {
+                setMatchedNumberInputA(event.target.value)
+                setMatchedNumbers(null)
+              }}
+              placeholder={'10,32,44\n103244'}
+              rows={8}
+              spellCheck="false"
+            />
+          </label>
+          <label className="name2number-regnumber-field" htmlFor="name2number-matched-input-b">
+            <span>Input B</span>
+            <TextareaLineCount value={matchedNumberInputB} />
+            <textarea
+              id="name2number-matched-input-b"
+              value={matchedNumberInputB}
+              onChange={(event) => {
+                setMatchedNumberInputB(event.target.value)
+                setMatchedNumbers(null)
+              }}
+              placeholder={'10,33,43\n103343'}
+              rows={8}
+              spellCheck="false"
+            />
+          </label>
+        </div>
+        <button
+          className="name2number-button name2number-unused-regnumber-button"
+          type="button"
+          onClick={findMatchedNumbers}
+          disabled={!matchedNumberInputA.trim() && !matchedNumberInputB.trim()}
+        >
+          Find matched numbers
+        </button>
+        {matchedNumbers ? (
+          <>
+            {matchedNumbers.invalidA.length > 0 || matchedNumbers.invalidB.length > 0 ? (
+              <p className="name2number-message" role="alert">
+                Invalid entries were skipped
+                {matchedNumbers.invalidA.length > 0
+                  ? ` in Input A on lines ${matchedNumbers.invalidA.join(', ')}` : ''}
+                {matchedNumbers.invalidB.length > 0
+                  ? ` in Input B on lines ${matchedNumbers.invalidB.join(', ')}` : ''}.
+                Enter exactly six digits, with or without commas.
+              </p>
+            ) : null}
+            <div className="name2number-unused-regnumber-results" aria-live="polite">
+              <section aria-labelledby="name2number-matched-results-title">
+                <div className="name2number-regnumber-result-heading">
+                  <h3 id="name2number-matched-results-title">
+                    Matched numbers · {matchedNumbers.matches.length}
+                  </h3>
+                </div>
+                <pre>{matchedNumbers.matches.length > 0 ? matchedNumbers.matches.join('\n') : 'None'}</pre>
+              </section>
+            </div>
+          </>
         ) : null}
       </section>
       <section

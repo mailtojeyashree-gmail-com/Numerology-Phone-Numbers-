@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { carRegLetterValueMap } from './numerologyLetterValues'
 import CopyTextButton from './CopyTextButton'
+import TextareaLineCount from './TextareaLineCount'
 
 const defaultRajanilaiNumbers = `2
 4
@@ -149,6 +150,7 @@ export default function ManithaNaadiDogNameGenerator({
         <section className="combination-results dog-name-generator-results" aria-live="polite" aria-label="Female dog name results">
           <label className="dog-name-rajanilai-field">
             <span>Rajanilai numbers</span>
+            <TextareaLineCount value={rajanilaiNumbers} />
             <textarea
               value={rajanilaiNumbers}
               onChange={(event) => setRajanilaiNumbers(event.target.value)}

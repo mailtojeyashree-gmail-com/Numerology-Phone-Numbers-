@@ -1,3 +1,11 @@
+.textarea-line-count {
+  display: block;
+  margin-top: 4px;
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .app-shell {
   width: min(1280px, 100% - 96px);
   min-height: 100svh;
@@ -2407,4 +2415,11 @@
     flex-wrap: wrap;
   }
 
+}
+.textarea-line-count {
+  display: block;
+  margin-top: 4px;
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 600;
 }

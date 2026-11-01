@@ -199,10 +199,25 @@
   box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
 }
 
+.name2number-kuber-number-label input {
+  width: 96px;
+  min-height: 40px;
+}
+
+.name2number-kuber-number-label[for="name2number-excluded-rajanilai-pairs"] input {
+  width: 150px;
+}
+
 .name2number-rajanilai-sum-buttons {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: 8px;
+}
+
+.name2number-kuber-generator {
+  display: grid;
+  gap: 6px;
 }
 
 .name2number-rajanilai-generator-button {
@@ -246,6 +261,26 @@
   border-bottom: 1px solid var(--line);
   color: var(--ink);
   font: 700 15px/1.6 'SFMono-Regular', Consolas, monospace;
+}
+
+.name2number-rajanilai-example-row {
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(190px, 1fr) minmax(100px, 0.6fr);
+  min-width: 660px;
+}
+
+.name2number-rajanilai-number-row {
+  grid-template-columns: minmax(150px, 1fr) minmax(100px, 0.7fr) minmax(150px, 1fr) minmax(90px, 0.5fr);
+  min-width: 620px;
+}
+
+.name2number-rajanilai-example-first-column {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+
+.name2number-rajanilai-example-first-column .car-reg-copy-action {
+  align-items: flex-start;
 }
 
 .name2number-rajanilai-combination-heading {
@@ -344,6 +379,33 @@
   resize: vertical;
 }
 
+.name2number-final-registration-field {
+  display: grid;
+  max-width: 720px;
+  gap: 8px;
+  color: var(--forest);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.name2number-final-registration-field textarea {
+  width: 100%;
+  min-height: 220px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 700 16px/1.6 'SFMono-Regular', Consolas, monospace;
+  resize: vertical;
+}
+
+.name2number-final-registration-field textarea:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
+}
+
 .name2number-regnumber-field textarea:focus {
   border-color: var(--moss);
   box-shadow: 0 0 0 3px rgb(88 108 77 / 14%);
@@ -361,6 +423,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-top: 22px;
+}
+
+.name2number-matched-number-results {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .name2number-unused-regnumber-results section {

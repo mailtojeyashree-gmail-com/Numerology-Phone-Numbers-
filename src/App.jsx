@@ -12,6 +12,7 @@ import PasswordPage from './PasswordPage'
 import LuckyNumbersOverview from './LuckyNumbersOverview'
 import RegNumbersPage from './RegNumbers'
 import CopyTextButton from './CopyTextButton'
+import TextareaLineCount from './TextareaLineCount'
 import { manithaNaadiRajanilaiNumbers } from './manithaNaadiRajanilai'
 import { carRegLetterValueMap } from './numerologyLetterValues'
 import {
@@ -1789,6 +1790,7 @@ function App() {
                             <label htmlFor="mobile-unique-pair-filter-input">
                               Enter four pairs per line, separated by commas or entered together.
                             </label>
+                            <TextareaLineCount value={mobileUniquePairFilterDraft} />
                             <textarea
                               id="mobile-unique-pair-filter-input"
                               rows={5}
@@ -2383,6 +2385,7 @@ function App() {
                             <label htmlFor="car-reg-pair-filter-input">
                               Enter {getCarRegistrationPairCount(manithaNaadiCombinationResults.generator)} pairs per line, separated by commas or entered together.
                             </label>
+                            <TextareaLineCount value={carRegistrationPairFilterDraft} />
                             <textarea
                               id="car-reg-pair-filter-input"
                               rows={5}
@@ -2447,6 +2450,7 @@ function App() {
                             <label htmlFor="car-reg-unique-pair-filter-input">
                               Enter {getCarRegistrationPairCount(manithaNaadiCombinationResults.generator)} pairs per line, separated by commas or entered together.
                             </label>
+                            <TextareaLineCount value={carRegistrationUniquePairFilterDraft} />
                             <textarea
                               id="car-reg-unique-pair-filter-input"
                               rows={5}

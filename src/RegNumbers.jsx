@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import LuckyNumbersOverview from './LuckyNumbersOverview'
 import CopyTextButton from './CopyTextButton'
+import TextareaLineCount from './TextareaLineCount'
 import { getRasiBhavam } from './rasiChartData'
 import { manithaNaadiRajanilaiNumbers } from './manithaNaadiRajanilai'
 
@@ -451,6 +452,7 @@ export default function RegNumbersPage(props) {
             <label htmlFor="input-registration-numbers">
               Paste UK registrations separated by lines, commas, or spaces (for example D12UFE, AB12 CDE, ABC 123A, A123 ABC, or ABC 1234).
             </label>
+            <TextareaLineCount value={props.inputRegistrationNumbersText ?? ''} />
             <textarea
               id="input-registration-numbers"
               aria-label="Paste registrations to analyze"
@@ -470,6 +472,7 @@ export default function RegNumbersPage(props) {
             <label htmlFor="input-mobile-numbers">
               Paste UK mobile numbers, one number per line (11 digits, starting with 07).
             </label>
+            <TextareaLineCount value={props.inputNumbersText ?? ''} />
             <textarea
               id="input-mobile-numbers"
               aria-label="Paste mobile numbers"
@@ -949,6 +952,7 @@ export default function RegNumbersPage(props) {
                         ? 'Enter exactly three pairs per line, separated by commas or entered together.'
                         : 'Enter one to four pairs per line, separated by commas or entered together.'}
                     </label>
+                    <TextareaLineCount value={uniquePairFilterDraft} />
                     <textarea
                       id="vip-unique-pair-filter-input"
                       rows={5}
@@ -1005,6 +1009,7 @@ export default function RegNumbersPage(props) {
                     <label htmlFor="regnumber-pair-filter-input">
                       Enter exactly three pairs per line, separated by commas or entered together.
                     </label>
+                    <TextareaLineCount value={pairCheckFilterDraft} />
                     <textarea
                       id="regnumber-pair-filter-input"
                       rows={5}
@@ -1045,6 +1050,7 @@ export default function RegNumbersPage(props) {
             <label htmlFor="mobile-prefix-filter-input">
               Paste a list of mobile numbers to filter by prefix.
             </label>
+            <TextareaLineCount value={prefixFilterInput} />
             <textarea
               id="mobile-prefix-filter-input"
               aria-label="Paste mobile numbers to filter"

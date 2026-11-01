@@ -1,5 +1,6 @@
 import { carRegNumberChart } from './carRegistrationGenerator'
 import RasiChart from './RasiChart'
+import TextareaLineCount from './TextareaLineCount'
 
 export default function LuckyNumbersOverview({
   heading,
@@ -30,6 +31,7 @@ export default function LuckyNumbersOverview({
       </label>
       <div className="column-field matching-phone-field">
         <span className="column-title">LUCKY NUMBERS · {initials}</span>
+        <TextareaLineCount value={luckyNumbers} />
         <textarea
           id="manitha-naadi-lucky-numbers"
           aria-label={`Lucky numbers · ${initials}`}
