@@ -556,11 +556,26 @@ export default function Name2NumberPage() {
     () => (generatedNames ?? []).map((generatedName) => getNameResult(generatedName, rajanilaiSet)),
     [generatedNames, rajanilaiSet],
   )
-  const gen7SecondPairOptions = useMemo(() => {
+  const gen7FilteredCombinations = useMemo(() => {
     if (rajanilaiSumResults?.generator !== 'GEN-7') return []
-    return [...new Set(rajanilaiSumResults.combinations.map(({ number }) => number.slice(2, 4)))]
-      .sort((first, second) => Number(first) - Number(second))
-  }, [rajanilaiSumResults])
+    const kuberNumber = kuberNumberInput.trim()
+    const kuberPair = /^\d{2}$/.test(kuberNumber) ? kuberNumber : ''
+    const excludedPairs = gen7ExcludedPairsInput
+      .split(/[,\s]+/)
+      .map((pair) => pair.trim())
+      .filter((pair) => /^\d{2}$/.test(pair))
+
+    return rajanilaiSumResults.combinations.filter(({ number, values }) => (
+      (!kuberPair || values.includes(kuberPair))
+      && ![number.slice(0, 2), number.slice(2, 4), number.slice(4, 6)]
+        .some((pair) => excludedPairs.includes(pair))
+    ))
+  }, [gen7ExcludedPairsInput, kuberNumberInput, rajanilaiSumResults])
+  const gen7SecondPairOptions = useMemo(
+    () => [...new Set(gen7FilteredCombinations.map(({ number }) => number.slice(2, 4)))]
+      .sort((first, second) => Number(first) - Number(second)),
+    [gen7FilteredCombinations],
+  )
   const displayedRajanilaiSumCombinations = useMemo(() => {
     if (!rajanilaiSumResults) return []
     const kuberNumber = kuberNumberInput.trim()
@@ -569,17 +584,12 @@ export default function Name2NumberPage() {
       .map((pair) => pair.trim())
       .filter(Boolean)
     if (rajanilaiSumResults.generator !== 'GEN-6-EXAMPLE') {
-      const gen7ExcludedPairs = gen7ExcludedPairsInput
-        .split(/[,\s]+/)
-        .map((pair) => pair.trim())
-        .filter((pair) => /^\d{2}$/.test(pair))
       if (rajanilaiSumResults.generator === 'GEN-7') {
-        const kuberPair = /^\d{2}$/.test(kuberNumber) ? kuberNumber : ''
-        return rajanilaiSumResults.combinations.filter(({ number, values }) => (
-          (!kuberPair || values.includes(kuberPair))
-          && ![number.slice(0, 2), number.slice(2, 4), number.slice(4, 6)]
-            .some((pair) => gen7ExcludedPairs.includes(pair))
-          && (gen7SecondPairFilter === 'all' || number.slice(2, 4) === gen7SecondPairFilter)
+        const selectedSecondPair = gen7SecondPairOptions.includes(gen7SecondPairFilter)
+          ? gen7SecondPairFilter
+          : 'all'
+        return gen7FilteredCombinations.filter(({ number }) => (
+          selectedSecondPair === 'all' || number.slice(2, 4) === selectedSecondPair
         ))
       }
       return rajanilaiSumResults.combinations
@@ -589,7 +599,7 @@ export default function Name2NumberPage() {
       (!kuberNumber || values.includes(kuberNumber))
       && !excludedPairs.some((pair) => values.includes(pair))
     ))
-  }, [excludedRajanilaiPairsInput, gen7ExcludedPairsInput, gen7SecondPairFilter, kuberNumberInput, rajanilaiSumResults])
+  }, [excludedRajanilaiPairsInput, gen7FilteredCombinations, gen7SecondPairFilter, gen7SecondPairOptions, kuberNumberInput, rajanilaiSumResults])
   const invalidExcludedRajanilaiPairs = excludedRajanilaiPairsInput
     .split(',')
     .map((pair) => pair.trim())
@@ -1837,16 +1847,24 @@ export default function Name2NumberPage() {
                         <span className="name2number-rajanilai-number-heading">
                           Number
                           {rajanilaiSumResults.generator === 'GEN-7' ? (
-                            <select
-                              aria-label="Filter by second pair"
-                              value={gen7SecondPairFilter}
-                              onChange={(event) => setGen7SecondPairFilter(event.target.value)}
-                            >
-                              <option value="all">All</option>
-                              {gen7SecondPairOptions.map((pair) => (
-                                <option key={pair} value={pair}>{pair}</option>
-                              ))}
-                            </select>
+                            <>
+                              <CopyTextButton
+                                label="GEN-7 number list"
+                                text={displayedRajanilaiSumCombinations.map(({ number }) => number).join('\n')}
+                              />
+                              <select
+                                aria-label="Filter by second pair"
+                                value={gen7SecondPairOptions.includes(gen7SecondPairFilter)
+                                  ? gen7SecondPairFilter
+                                  : 'all'}
+                                onChange={(event) => setGen7SecondPairFilter(event.target.value)}
+                              >
+                                <option value="all">All</option>
+                                {gen7SecondPairOptions.map((pair) => (
+                                  <option key={pair} value={pair}>{pair}</option>
+                                ))}
+                              </select>
+                            </>
                           ) : null}
                         </span>
                         <span>Pair checks</span>
