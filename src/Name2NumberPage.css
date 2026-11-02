@@ -363,10 +363,271 @@
   font-weight: 600;
 }
 
+.name2number-gen7-number-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.name2number-gen7-plates-button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fffdf8;
+  color: var(--forest);
+  cursor: pointer;
+}
+
+.name2number-gen7-plates-button:hover {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: #fffdf8;
+}
+
+.name2number-gen7-plates-button:focus-visible,
+.name2number-gen7-plates-close:focus-visible {
+  outline: 2px solid var(--moss);
+  outline-offset: 2px;
+}
+
+.name2number-gen7-plates-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.name2number-gen7-plates-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(16 28 26 / 68%);
+}
+
+.name2number-gen7-plates-dialog {
+  display: grid;
+  width: min(760px, 100%);
+  max-height: min(82vh, 820px);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-light, #fffdf6);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 28%);
+}
+
+.name2number-gen7-plates-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.name2number-gen7-plates-heading p {
+  margin: 0 0 4px;
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.name2number-gen7-plates-heading h3 {
+  margin: 0;
+  color: var(--forest);
+  font-size: 22px;
+}
+
+.name2number-gen7-plates-close {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fffdf8;
+  color: var(--ink);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.name2number-gen7-plates-note,
+.name2number-gen7-plates-empty {
+  margin: 0;
+  color: var(--soft-ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.name2number-gen7-plates-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  align-content: start;
+  gap: 10px;
+  margin: 0;
+  padding: 4px 8px 4px 4px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.name2number-gen7-alphabet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.name2number-gen7-alphabet-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.name2number-gen7-alphabet-pages button,
+.name2number-gen7-subalphabet-pages button {
+  min-width: 40px;
+  min-height: 36px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fffdf8;
+  color: var(--forest);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.name2number-gen7-alphabet-pages button span,
+.name2number-gen7-subalphabet-pages button span {
+  margin-left: 2px;
+  color: var(--soft-ink);
+  font-size: 10px;
+}
+
+.name2number-gen7-alphabet-pages button:hover,
+.name2number-gen7-alphabet-pages button.is-active,
+.name2number-gen7-subalphabet-pages button:hover,
+.name2number-gen7-subalphabet-pages button.is-active {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: #fffdf8;
+}
+
+.name2number-gen7-alphabet-pages button:hover span,
+.name2number-gen7-alphabet-pages button.is-active span,
+.name2number-gen7-subalphabet-pages button:hover span,
+.name2number-gen7-subalphabet-pages button.is-active span {
+  color: #fffdf8;
+}
+
+.name2number-gen7-alphabet-pages button:focus-visible,
+.name2number-gen7-subalphabet-pages button:focus-visible {
+  outline: 2px solid var(--moss);
+  outline-offset: 2px;
+}
+
+.name2number-gen7-subalphabet-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.name2number-gen7-subalphabet-pages button {
+  min-width: 52px;
+  text-transform: uppercase;
+}
+
+.name2number-gen7-alphabet-count {
+  color: var(--forest);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.name2number-gen7-plates-list > li {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 5px;
+}
+
+.name2number-gen7-plate {
+  position: relative;
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 8px 8px 34px;
+  border: 1px solid #b89a00;
+  border-radius: 7px;
+  background: linear-gradient(145deg, #fff36b, #f3cf00);
+  box-shadow: 0 3px 7px rgb(31 35 33 / 17%), inset 0 1px 0 rgb(255 255 255 / 80%);
+  color: #111;
+  font: 800 20px/1 'Arial Narrow', Arial, sans-serif;
+  letter-spacing: 0.03em;
+}
+
+.name2number-gen7-carreg-link {
+  color: var(--forest);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.name2number-gen7-carreg-link:hover {
+  color: var(--moss);
+}
+
+.name2number-gen7-carreg-link:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--moss);
+  outline-offset: 3px;
+}
+
+.name2number-gen7-plate-country {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: grid;
+  width: 25px;
+  place-items: center;
+  border-radius: 6px 0 0 6px;
+  background: #16417d;
+  color: #fff;
+  font: 700 8px/1 Arial, sans-serif;
+  letter-spacing: 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
 .name2number-rajanilai-sum-results p {
   margin: 0;
   color: var(--soft-ink);
   font-size: 13px;
+}
+
+.name2number-rajanilai-sum-results .name2number-gen7-age-note {
+  margin-top: 5px;
+  font-size: 12px;
 }
 
 .name2number-rajanilai-match-results {
@@ -526,6 +787,20 @@
 
 .name2number-regnumber-result-heading h3 {
   margin: 0;
+}
+
+.name2number-gen7-final-registration-results {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 28%);
+}
+
+.name2number-gen7-final-registration-results .name2number-gen7-plates-list {
+  max-height: 520px;
 }
 
 .name2number-unused-regnumber-results pre {

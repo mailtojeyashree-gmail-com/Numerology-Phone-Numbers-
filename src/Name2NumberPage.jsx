@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './Name2NumberPage.css'
 import CopyTextButton from './CopyTextButton'
 import TextareaLineCount from './TextareaLineCount'
@@ -13,6 +13,200 @@ const letterRows = Array.from({ length: 8 }, (_, index) => ({
     .filter(([, value]) => value === index + 1)
     .map(([letter]) => letter),
 }))
+
+const excludedUkRegistrationLetters = new Set(['I', 'Q', 'Z'])
+const excludedUkRegistrationStartingLetters = new Set(['I', 'O', 'Q', 'U', 'Z'])
+
+function getPossibleUkRegistrationPlates(number) {
+  if (!/^\d{7}$/.test(number) || number.slice(2, 4) === '00') return []
+
+  const lettersByDigit = new Map()
+  for (const [letter, value] of carRegLetterValues) {
+    if (excludedUkRegistrationLetters.has(letter)) continue
+    const digit = String(value)
+    const letters = lettersByDigit.get(digit) ?? []
+    letters.push(letter)
+    lettersByDigit.set(digit, letters)
+  }
+
+  const firstLetters = (lettersByDigit.get(number[0]) ?? [])
+    .filter((letter) => !excludedUkRegistrationStartingLetters.has(letter))
+  const secondLetters = lettersByDigit.get(number[1]) ?? []
+  const suffixLetters = [...number.slice(4)].map((digit) => lettersByDigit.get(digit) ?? [])
+  if (firstLetters.length === 0 || secondLetters.length === 0 || suffixLetters.some((letters) => letters.length === 0)) {
+    return []
+  }
+
+  const plates = []
+  for (const first of firstLetters) {
+    for (const second of secondLetters) {
+      for (const third of suffixLetters[0]) {
+        for (const fourth of suffixLetters[1]) {
+          for (const fifth of suffixLetters[2]) {
+            plates.push(`${first}${second} ${number.slice(2, 4)} ${third}${fourth}${fifth}`)
+          }
+        }
+      }
+    }
+  }
+
+  return plates
+}
+
+function getCarRegSearchUrl(plate) {
+  return `https://www.carreg.co.uk/reg-search/${plate.replaceAll(' ', '+')}`
+}
+
+function Gen7PlateResults({ plates, label }) {
+  const alphabetCounts = new Map()
+  plates.forEach((plate) => {
+    const firstLetter = plate[0]
+    alphabetCounts.set(firstLetter, (alphabetCounts.get(firstLetter) ?? 0) + 1)
+  })
+  const availableLetters = [...alphabetCounts.keys()].sort()
+  const [selectedLetter, setSelectedLetter] = useState(() => availableLetters[0] ?? 'all')
+  const [selectedPrefix, setSelectedPrefix] = useState('all')
+  const activeLetter = selectedLetter !== 'all' && !alphabetCounts.has(selectedLetter)
+    ? availableLetters[0] ?? 'all'
+    : selectedLetter
+  const prefixCounts = new Map()
+  if (activeLetter !== 'all') {
+    plates
+      .filter((plate) => plate.startsWith(activeLetter))
+      .forEach((plate) => {
+        const prefix = plate.slice(0, 2)
+        prefixCounts.set(prefix, (prefixCounts.get(prefix) ?? 0) + 1)
+      })
+  }
+  const availablePrefixes = [...prefixCounts.keys()].sort()
+  const activePrefix = selectedPrefix !== 'all' && !prefixCounts.has(selectedPrefix)
+    ? 'all'
+    : selectedPrefix
+  const visiblePlates = activeLetter === 'all'
+    ? plates
+    : plates.filter((plate) => (
+      activePrefix === 'all'
+        ? plate.startsWith(activeLetter)
+        : plate.startsWith(activePrefix)
+    ))
+  const selectedCount = activePrefix !== 'all'
+    ? prefixCounts.get(activePrefix) ?? 0
+    : activeLetter === 'all'
+    ? plates.length
+    : alphabetCounts.get(activeLetter) ?? 0
+
+  return (
+    <>
+      <div className="name2number-gen7-alphabet-toolbar">
+        <div
+          className="name2number-gen7-alphabet-pages"
+          role="group"
+          aria-label="Filter plates by first letter"
+        >
+          <button
+            type="button"
+            className={activeLetter === 'all' && activePrefix === 'all' ? 'is-active' : ''}
+            aria-pressed={activeLetter === 'all' && activePrefix === 'all'}
+            onClick={() => {
+              setSelectedLetter('all')
+              setSelectedPrefix('all')
+            }}
+          >
+            All <span>{plates.length}</span>
+          </button>
+          {availableLetters.map((letter) => (
+            <button
+              key={letter}
+              type="button"
+              className={activeLetter === letter && activePrefix === 'all' ? 'is-active' : ''}
+              aria-pressed={activeLetter === letter && activePrefix === 'all'}
+              onClick={() => {
+                setSelectedLetter(letter)
+                setSelectedPrefix('all')
+              }}
+            >
+              {letter} <span>{alphabetCounts.get(letter)}</span>
+            </button>
+          ))}
+        </div>
+        <span className="name2number-gen7-alphabet-count">
+          {activePrefix !== 'all'
+            ? `Plates starting with ${activePrefix}`
+            : activeLetter === 'all' ? 'All plates' : `Plates starting with ${activeLetter}`} · {selectedCount}
+        </span>
+        <CopyTextButton
+          label={label}
+          text={visiblePlates.join('\n')}
+        />
+      </div>
+      {activeLetter !== 'all' ? (
+        <div
+          className="name2number-gen7-subalphabet-pages"
+          role="group"
+          aria-label={`Filter plates starting with ${activeLetter} by second letter`}
+        >
+          <button
+            type="button"
+            className={activePrefix === 'all' ? 'is-active' : ''}
+            aria-pressed={activePrefix === 'all'}
+            onClick={() => setSelectedPrefix('all')}
+          >
+            All {activeLetter} <span>{alphabetCounts.get(activeLetter)}</span>
+          </button>
+          {availablePrefixes.map((prefix) => (
+            <button
+              key={prefix}
+              type="button"
+              className={activePrefix === prefix ? 'is-active' : ''}
+              aria-pressed={activePrefix === prefix}
+              onClick={() => setSelectedPrefix(prefix)}
+            >
+              {prefix.toLowerCase()} <span>{prefixCounts.get(prefix)}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {visiblePlates.length > 0 ? (
+        <ul className="name2number-gen7-plates-list">
+          {visiblePlates.map((plate) => {
+            const [area, age, suffix] = plate.split(' ')
+
+            return (
+              <li key={plate}>
+                <span className="name2number-gen7-plate">
+                  <span className="name2number-gen7-plate-country">GB</span>
+                  <span>{area}</span>
+                  <span>{age}</span>
+                  <span>{suffix}</span>
+                </span>
+                <a
+                  className="name2number-gen7-carreg-link"
+                  href={getCarRegSearchUrl(plate)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Check availability on CarReg
+                </a>
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <p className="name2number-gen7-plates-empty">
+          No format-valid plate combinations were generated.
+        </p>
+      )}
+    </>
+  )
+}
+
+function getUkAgeIdentifierOrder(value) {
+  if (!/^(?:0[1-9]|[1-4]\d|5[1-9]|[6-9]\d)$/.test(value)) return null
+  const ageIdentifier = Number(value)
+  const yearWithinCycle = ageIdentifier >= 51 ? ageIdentifier - 50 : ageIdentifier
+  const secondHalfOfYear = ageIdentifier >= 51 ? 1 : 0
+  return yearWithinCycle * 2 + secondHalfOfYear
+}
 
 const defaultMobileListA = `04, 39, 68, 88
 06, 41, 72, 89
@@ -213,16 +407,27 @@ function findRajanilaiNumberMatches(target, rajanilaiSet, pairCount, uniqueNumbe
       const registration = uniqueNumbers
         ? getGen7RegistrationNumber(number, checks, rajanilaiSet)
         : { number, checks }
-      if (!registration || (uniqueNumbers && seenNumbers.has(registration.number))) return false
+      if (!registration) return false
 
-      if (combinations.length === MAX_RAJANILAI_SUM_COMBINATIONS) return true
-      combinations.push({
-        values: uniqueNumbers ? registration.checks : [...selectedPairs],
-        number: registration.number,
-        checks: registration.checks,
-        digitSum,
-      })
-      if (uniqueNumbers) seenNumbers.add(registration.number)
+      const registrations = [registration]
+      if (uniqueNumbers && registration.number.startsWith('14')) {
+        registrations.push({
+          number: `41${registration.number.slice(2)}`,
+          checks: ['41', ...registration.checks.slice(1)],
+        })
+      }
+
+      for (const candidate of registrations) {
+        if (uniqueNumbers && seenNumbers.has(candidate.number)) continue
+        if (combinations.length === MAX_RAJANILAI_SUM_COMBINATIONS) return true
+        combinations.push({
+          values: uniqueNumbers ? candidate.checks : [...selectedPairs],
+          number: candidate.number,
+          checks: candidate.checks,
+          digitSum,
+        })
+        if (uniqueNumbers) seenNumbers.add(candidate.number)
+      }
       return false
     }
 
@@ -510,11 +715,15 @@ export default function Name2NumberPage() {
   const [excludedRajanilaiPairsInput, setExcludedRajanilaiPairsInput] = useState('')
   const [rajanilaiSumResults, setRajanilaiSumResults] = useState(null)
   const [rajanilaiSumError, setRajanilaiSumError] = useState('')
+  const [selectedGen7PlateNumber, setSelectedGen7PlateNumber] = useState('')
   const [matchedNumberInputA, setMatchedNumberInputA] = useState('')
   const [matchedNumberInputB, setMatchedNumberInputB] = useState('')
   const [matchedNumbers, setMatchedNumbers] = useState(null)
   const [finalRegistrationInput, setFinalRegistrationInput] = useState('')
   const [finalRegistrationResults, setFinalRegistrationResults] = useState(null)
+  const [gen7FinalRegistrationInput, setGen7FinalRegistrationInput] = useState('')
+  const [gen7FinalRegistrationResults, setGen7FinalRegistrationResults] = useState(null)
+  const [isGeneratingGen7FinalRegistrations, setIsGeneratingGen7FinalRegistrations] = useState(false)
   const [rajanilaiSubtractInput, setRajanilaiSubtractInput] = useState('')
   const [rajanilaiSubtractResults, setRajanilaiSubtractResults] = useState(null)
   const [rajanilaiSubtractError, setRajanilaiSubtractError] = useState('')
@@ -560,16 +769,22 @@ export default function Name2NumberPage() {
     if (rajanilaiSumResults?.generator !== 'GEN-7') return []
     const kuberNumber = kuberNumberInput.trim()
     const kuberPair = /^\d{2}$/.test(kuberNumber) ? kuberNumber : ''
+    const vehicleAgeOrder = getUkAgeIdentifierOrder('73')
     const excludedPairs = gen7ExcludedPairsInput
       .split(/[,\s]+/)
       .map((pair) => pair.trim())
       .filter((pair) => /^\d{2}$/.test(pair))
 
-    return rajanilaiSumResults.combinations.filter(({ number, values }) => (
-      (!kuberPair || values.includes(kuberPair))
-      && ![number.slice(0, 2), number.slice(2, 4), number.slice(4, 6)]
-        .some((pair) => excludedPairs.includes(pair))
-    ))
+    return rajanilaiSumResults.combinations.filter(({ number, values }) => {
+      const ageIdentifierOrder = getUkAgeIdentifierOrder(number.slice(2, 4))
+      return (
+        ageIdentifierOrder !== null
+        && ageIdentifierOrder <= vehicleAgeOrder
+        && (!kuberPair || values.includes(kuberPair))
+        && ![number.slice(0, 2), number.slice(2, 4), number.slice(4, 6)]
+          .some((pair) => excludedPairs.includes(pair))
+      )
+    })
   }, [gen7ExcludedPairsInput, kuberNumberInput, rajanilaiSumResults])
   const gen7SecondPairOptions = useMemo(
     () => [...new Set(gen7FilteredCombinations.map(({ number }) => number.slice(2, 4)))]
@@ -604,6 +819,27 @@ export default function Name2NumberPage() {
     .split(',')
     .map((pair) => pair.trim())
     .filter((pair) => pair && !/^\d{2}$/.test(pair))
+  const possibleUkRegistrationPlates = useMemo(
+    () => getPossibleUkRegistrationPlates(selectedGen7PlateNumber),
+    [selectedGen7PlateNumber],
+  )
+
+  useEffect(() => {
+    if (!selectedGen7PlateNumber) return undefined
+
+    const previousBodyOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') setSelectedGen7PlateNumber('')
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [selectedGen7PlateNumber])
 
   function matchRajanilaiSum(event, generator) {
     event.preventDefault()
@@ -668,6 +904,47 @@ export default function Name2NumberPage() {
 
   function findFinalRegistrations() {
     setFinalRegistrationResults(generateFinalRegistrations(finalRegistrationInput))
+  }
+
+  async function findGen7FinalRegistrations() {
+    const lines = gen7FinalRegistrationInput.split(/\r?\n/)
+    const registrations = new Set()
+    const invalidLines = []
+    const unmappableLines = []
+
+    setIsGeneratingGen7FinalRegistrations(true)
+    setGen7FinalRegistrationResults(null)
+    await new Promise((resolve) => window.setTimeout(resolve, 0))
+
+    try {
+      for (const [index, line] of lines.entries()) {
+        if (index > 0 && index % 5 === 0) {
+          await new Promise((resolve) => window.setTimeout(resolve, 0))
+        }
+
+        const digits = line.trim().replace(/[\s,]/g, '')
+        if (!digits) continue
+        if (!/^\d{7}$/.test(digits)) {
+          invalidLines.push(index + 1)
+          continue
+        }
+
+        const plates = getPossibleUkRegistrationPlates(digits)
+        if (plates.length === 0) {
+          unmappableLines.push(index + 1)
+        } else {
+          plates.forEach((plate) => registrations.add(plate))
+        }
+      }
+
+      setGen7FinalRegistrationResults({
+        registrations: [...registrations],
+        invalidLines,
+        unmappableLines,
+      })
+    } finally {
+      setIsGeneratingGen7FinalRegistrations(false)
+    }
   }
 
   function findRajanilaiSubtractions(event) {
@@ -1818,6 +2095,11 @@ export default function Name2NumberPage() {
                 Every pair check must be in the Rajanilai list, and the number&apos;s digit sum must equal the entered sum.
               </p>
             ) : null}
+            {rajanilaiSumResults.generator === 'GEN-7' ? (
+              <p className="name2number-gen7-age-note">
+                For vehicle WN73JZJ (73 plate), newer age identifiers (24, 74, 25, 75, continuing through 49, 99) and invalid 00/50 are excluded.
+              </p>
+            ) : null}
             {rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' && invalidExcludedRajanilaiPairs.length > 0 ? (
               <p className="name2number-message" role="alert">
                 Excluded entries must be two-digit pairs: {invalidExcludedRajanilaiPairs.join(', ')}.
@@ -1898,7 +2180,24 @@ export default function Name2NumberPage() {
                         ) : hasNumberChecks ? (
                           <>
                             <span>{values.join(', ')}</span>
-                            <span>{number}</span>
+                            <span className="name2number-gen7-number-cell">
+                              <span>{number}</span>
+                              {hasGen7Checks ? (
+                                <button
+                                  className="name2number-gen7-plates-button"
+                                  type="button"
+                                  aria-label={`Show possible UK registration plates for ${number}`}
+                                  title="Show possible UK registration plates"
+                                  onClick={() => setSelectedGen7PlateNumber(number)}
+                                >
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9" />
+                                    <circle cx="12" cy="12" r="2.3" />
+                                    <path d="M12 3v6.7M4.2 7.5l5.8 3.3m9.8-3.3L14 10.8M5.2 17l5.1-3m8.5 3-5.1-3" />
+                                  </svg>
+                                </button>
+                              ) : null}
+                            </span>
                             <span>{checks.join(', ')}</span>
                             {hasGen7Checks ? (
                               <span className="name2number-rajanilai-gen7-checks">
@@ -1940,6 +2239,52 @@ export default function Name2NumberPage() {
                   ? `No combinations containing Kuber number ${kuberNumberInput.trim()} match this sum.`
                   : `No ${rajanilaiSumResults.generator} combinations match this sum.`}
               </p>}
+          </div>
+        ) : null}
+        {selectedGen7PlateNumber ? (
+          <div
+            className="name2number-gen7-plates-backdrop"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setSelectedGen7PlateNumber('')
+            }}
+          >
+            <section
+              className="name2number-gen7-plates-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="name2number-gen7-plates-title"
+            >
+              <div className="name2number-gen7-plates-heading">
+                <div>
+                  <p>GEN-7 number · {selectedGen7PlateNumber}</p>
+                  <h3 id="name2number-gen7-plates-title">Possible UK registration plates</h3>
+                </div>
+                <button
+                  className="name2number-gen7-plates-close"
+                  type="button"
+                  aria-label="Close registration plates"
+                  autoFocus
+                  onClick={() => setSelectedGen7PlateNumber('')}
+                >
+                  ×
+                </button>
+              </div>
+              <p className="name2number-gen7-plates-note">
+                Combinations use the number-to-letter chart and the standard UK two-letter, two-digit, three-letter format.
+                Use the alphabet buttons to browse plates by their first letter. CarReg opens separately to show current listings and prices.
+              </p>
+              {possibleUkRegistrationPlates.length > 0 ? (
+                <Gen7PlateResults
+                  plates={possibleUkRegistrationPlates}
+                  label="visible possible UK registration plates"
+                />
+              ) : (
+                <p className="name2number-gen7-plates-empty">
+                  No format-valid plate combinations can be made from this number using the chart.
+                </p>
+              )}
+            </section>
           </div>
         ) : null}
       </section>
@@ -2002,6 +2347,88 @@ export default function Name2NumberPage() {
                     : 'None'}
                 </pre>
               </section>
+            </div>
+          </>
+        ) : null}
+      </section>
+      <section
+        className="name2number-unused-regnumbers"
+        aria-labelledby="name2number-gen7-final-registration-title"
+        aria-busy={isGeneratingGen7FinalRegistrations}
+      >
+        <h2 id="name2number-gen7-final-registration-title">Generate Final Registration - GEN-7</h2>
+        <p className="name2number-non-rajanilai-help">
+          Enter one seven-digit GEN-7 number per line, such as 1202164. Spaces or commas between its digits are ignored.
+          Possible plates are generated in the AA 00 AAA format.
+        </p>
+        <label
+          className="name2number-final-registration-field"
+          htmlFor="name2number-gen7-final-registration-input"
+        >
+          <span>GEN-7 numbers</span>
+          <TextareaLineCount value={gen7FinalRegistrationInput} />
+          <textarea
+            id="name2number-gen7-final-registration-input"
+            value={gen7FinalRegistrationInput}
+            disabled={isGeneratingGen7FinalRegistrations}
+            onChange={(event) => {
+              setGen7FinalRegistrationInput(event.target.value)
+              setGen7FinalRegistrationResults(null)
+            }}
+            placeholder={'1202164\n1202326'}
+            rows={8}
+            spellCheck="false"
+          />
+        </label>
+        <button
+          className="name2number-button name2number-unused-regnumber-button"
+          type="button"
+          onClick={findGen7FinalRegistrations}
+          disabled={!gen7FinalRegistrationInput.trim() || isGeneratingGen7FinalRegistrations}
+        >
+          {isGeneratingGen7FinalRegistrations ? (
+            <span className="car-reg-filter-loading" role="status">
+              <span className="car-reg-filter-spinner" aria-hidden="true" />
+              Generating registrations…
+            </span>
+          ) : 'Generate Final Registration - GEN-7'}
+        </button>
+        {gen7FinalRegistrationResults ? (
+          <>
+            {gen7FinalRegistrationResults.invalidLines.length > 0
+              || gen7FinalRegistrationResults.unmappableLines.length > 0 ? (
+                <p className="name2number-message" role="alert">
+                  {gen7FinalRegistrationResults.invalidLines.length > 0
+                    ? `Invalid entries on lines ${gen7FinalRegistrationResults.invalidLines.join(', ')}. Enter one seven-digit number per line. `
+                    : ''}
+                  {gen7FinalRegistrationResults.unmappableLines.length > 0
+                    ? `No format-valid plates could be generated from lines ${gen7FinalRegistrationResults.unmappableLines.join(', ')}.`
+                    : ''}
+                </p>
+              ) : null}
+            <div
+              className="name2number-gen7-final-registration-results"
+              aria-live="polite"
+              aria-busy={isGeneratingGen7FinalRegistrations}
+            >
+              <div className="name2number-regnumber-result-heading">
+                <h3>
+                  Possible UK registration plates · {gen7FinalRegistrationResults.registrations.length}
+                </h3>
+              </div>
+              {gen7FinalRegistrationResults.registrations.length > 0 ? (
+                <Gen7PlateResults
+                  plates={gen7FinalRegistrationResults.registrations}
+                  label="visible GEN-7 possible UK registration plates"
+                />
+              ) : (
+                <p className="name2number-gen7-plates-empty">
+                  No format-valid plate combinations were generated.
+                </p>
+              )}
+              <p className="name2number-gen7-plates-note">
+                These match the number-to-letter chart and AA 00 AAA format. Use the alphabet buttons to browse plates by their first letter. CarReg opens separately to show current listings and prices.
+              </p>
             </div>
           </>
         ) : null}
