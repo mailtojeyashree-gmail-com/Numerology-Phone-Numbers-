@@ -347,9 +347,6 @@ function findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength) {
 }
 
 function getGen7RegistrationNumber(number, checks, rajanilaiSet) {
-  const isMappable = (candidate) => (
-    [...candidate.slice(0, 2), ...candidate.slice(4)].every((digit) => digit >= '1' && digit <= '8')
-  )
   const candidates = [number]
   const middlePair = number.slice(2, 4)
   const firstPair = number.slice(0, 2)
@@ -369,7 +366,7 @@ function getGen7RegistrationNumber(number, checks, rajanilaiSet) {
   }
 
   for (const candidate of candidates) {
-    if (!isMappable(candidate)) continue
+    if (!isGen7NumberMappable(candidate)) continue
     const candidateChecks = [
       candidate.slice(0, 2),
       candidate.slice(2, 4),
@@ -381,6 +378,11 @@ function getGen7RegistrationNumber(number, checks, rajanilaiSet) {
   }
 
   return null
+}
+
+function isGen7NumberMappable(number) {
+  return [...number.slice(0, 2), ...number.slice(4)]
+    .every((digit) => digit >= '1' && digit <= '8')
 }
 
 function findRajanilaiNumberMatches(target, rajanilaiSet, pairCount, uniqueNumbers = false) {
@@ -396,25 +398,38 @@ function findRajanilaiNumberMatches(target, rajanilaiSet, pairCount, uniqueNumbe
   function visit(startIndex) {
     if (selectedPairs.length === pairCount) {
       const number = `${selectedPairs.slice(0, -1).join('')}${selectedPairs.at(-1)[1]}`
-      const checks = [
-        ...selectedPairs.slice(0, -1),
-        number.slice(-2),
-      ]
+      const checks = [...selectedPairs.slice(0, -1), number.slice(-2)]
       const digitSum = [...number].reduce((sum, digit) => sum + Number(digit), 0)
       if (digitSum !== target || !checks.every((check) => rajanilaiSet.has(String(Number(check))))) {
         return false
       }
+
       const registration = uniqueNumbers
         ? getGen7RegistrationNumber(number, checks, rajanilaiSet)
         : { number, checks }
       if (!registration) return false
-
       const registrations = [registration]
-      if (uniqueNumbers && registration.number.startsWith('14')) {
-        registrations.push({
-          number: `41${registration.number.slice(2)}`,
-          checks: ['41', ...registration.checks.slice(1)],
-        })
+
+      if (uniqueNumbers) {
+        const displayedFirstPairDigitSum = [...registration.checks[0]]
+          .reduce((sum, digit) => sum + Number(digit), 0)
+        const equivalentFirstPairs = pairs.filter((pair) => (
+          [...pair].reduce((sum, digit) => sum + Number(digit), 0) === displayedFirstPairDigitSum
+        ))
+
+        for (const firstPair of equivalentFirstPairs) {
+          if (firstPair === registration.checks[0]) continue
+          const candidateChecks = [firstPair, ...registration.checks.slice(1)]
+          const candidateNumber = `${candidateChecks.slice(0, -1).join('')}${candidateChecks.at(-1)[1]}`
+          if (
+            [...candidateNumber].reduce((sum, digit) => sum + Number(digit), 0) !== target
+            || !isGen7NumberMappable(candidateNumber)
+            || !candidateChecks.every((check) => rajanilaiSet.has(String(Number(check))))
+          ) {
+            continue
+          }
+          registrations.push({ number: candidateNumber, checks: candidateChecks })
+        }
       }
 
       for (const candidate of registrations) {
@@ -710,6 +725,7 @@ export default function Name2NumberPage() {
   const rajanilaiSet = useMemo(() => parseRajanilaiNumbers(rajanilaiNumbers), [rajanilaiNumbers])
   const [rajanilaiSumInput, setRajanilaiSumInput] = useState('')
   const [gen7ExcludedPairsInput, setGen7ExcludedPairsInput] = useState('')
+  const [gen7KaranaNathanInput, setGen7KaranaNathanInput] = useState('')
   const [gen7SecondPairFilter, setGen7SecondPairFilter] = useState('all')
   const [kuberNumberInput, setKuberNumberInput] = useState('')
   const [excludedRajanilaiPairsInput, setExcludedRajanilaiPairsInput] = useState('')
@@ -774,6 +790,11 @@ export default function Name2NumberPage() {
       .split(/[,\s]+/)
       .map((pair) => pair.trim())
       .filter((pair) => /^\d{2}$/.test(pair))
+    const karanaNathanPairs = gen7KaranaNathanInput
+      .split(/[,\s]+/)
+      .map((pair) => pair.trim())
+      .filter((pair) => /^\d{1,2}$/.test(pair))
+      .map((pair) => pair.padStart(2, '0'))
 
     return rajanilaiSumResults.combinations.filter(({ number, values }) => {
       const ageIdentifierOrder = getUkAgeIdentifierOrder(number.slice(2, 4))
@@ -781,11 +802,15 @@ export default function Name2NumberPage() {
         ageIdentifierOrder !== null
         && ageIdentifierOrder <= vehicleAgeOrder
         && (!kuberPair || values.includes(kuberPair))
+        && (
+          karanaNathanPairs.length === 0
+          || values.some((pair) => karanaNathanPairs.includes(String(Number(pair)).padStart(2, '0')))
+        )
         && ![number.slice(0, 2), number.slice(2, 4), number.slice(4, 6)]
           .some((pair) => excludedPairs.includes(pair))
       )
     })
-  }, [gen7ExcludedPairsInput, kuberNumberInput, rajanilaiSumResults])
+  }, [gen7ExcludedPairsInput, gen7KaranaNathanInput, kuberNumberInput, rajanilaiSumResults])
   const gen7SecondPairOptions = useMemo(
     () => [...new Set(gen7FilteredCombinations.map(({ number }) => number.slice(2, 4)))]
       .sort((first, second) => Number(first) - Number(second)),
@@ -2074,6 +2099,17 @@ export default function Name2NumberPage() {
                       onChange={(event) => setGen7ExcludedPairsInput(event.target.value)}
                     />
                   </label>
+                  <label htmlFor="name2number-gen7-karana-nathan">
+                    <span>Karana Nathan</span>
+                    <input
+                      id="name2number-gen7-karana-nathan"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="7, 14"
+                      value={gen7KaranaNathanInput}
+                      onChange={(event) => setGen7KaranaNathanInput(event.target.value)}
+                    />
+                  </label>
                   {button}
                 </div>
               ) : button
@@ -2233,6 +2269,9 @@ export default function Name2NumberPage() {
               )
               : <p>
                 {rajanilaiSumResults.generator === 'GEN-7'
+                  && gen7KaranaNathanInput.split(/[,\s]+/).some((pair) => /^\d{1,2}$/.test(pair.trim()))
+                  ? `No GEN-7 combinations contain any Karana Nathan number from ${gen7KaranaNathanInput.trim()}.`
+                  : rajanilaiSumResults.generator === 'GEN-7'
                   && gen7ExcludedPairsInput.split(/[,\s]+/).some((pair) => /^\d{2}$/.test(pair.trim()))
                   ? `No GEN-7 combinations remain after excluding ${gen7ExcludedPairsInput.trim()}.`
                   : rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' && kuberNumberInput.trim()
