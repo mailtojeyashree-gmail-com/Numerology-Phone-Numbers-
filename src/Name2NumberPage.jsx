@@ -152,7 +152,44 @@ function findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength) {
   }
 }
 
-function findRajanilaiNumberMatches(target, rajanilaiSet, pairCount) {
+function getGen7RegistrationNumber(number, checks, rajanilaiSet) {
+  const isMappable = (candidate) => (
+    [...candidate.slice(0, 2), ...candidate.slice(4)].every((digit) => digit >= '1' && digit <= '8')
+  )
+  const candidates = [number]
+  const middlePair = number.slice(2, 4)
+  const firstPair = number.slice(0, 2)
+
+  if (checks.includes(firstPair) && rajanilaiSet.has(String(Number(firstPair)))) {
+    candidates.push(`${middlePair}${firstPair}${number.slice(4)}`)
+  }
+
+  const leadingTailPair = number.slice(4, 6)
+  if (checks.includes(leadingTailPair) && rajanilaiSet.has(String(Number(leadingTailPair)))) {
+    candidates.push(`${number.slice(0, 2)}${leadingTailPair}${middlePair}${number.slice(6)}`)
+  }
+
+  const endingPair = number.slice(5, 7)
+  if (checks.includes(endingPair) && rajanilaiSet.has(String(Number(endingPair)))) {
+    candidates.push(`${number.slice(0, 2)}${endingPair}${middlePair}${number.slice(4, 5)}`)
+  }
+
+  for (const candidate of candidates) {
+    if (!isMappable(candidate)) continue
+    const candidateChecks = [
+      candidate.slice(0, 2),
+      candidate.slice(2, 4),
+      candidate.slice(4, 6),
+      candidate.slice(-2),
+    ]
+    if (!candidateChecks.every((check) => rajanilaiSet.has(String(Number(check))))) continue
+    return { number: candidate, checks: candidateChecks }
+  }
+
+  return null
+}
+
+function findRajanilaiNumberMatches(target, rajanilaiSet, pairCount, uniqueNumbers = false) {
   const pairs = [...rajanilaiSet]
     .map(Number)
     .filter((number) => Number.isSafeInteger(number) && number > 0)
@@ -160,6 +197,7 @@ function findRajanilaiNumberMatches(target, rajanilaiSet, pairCount) {
     .map((number) => String(number).padStart(2, '0'))
   const combinations = []
   const selectedPairs = []
+  const seenNumbers = new Set()
 
   function visit(startIndex) {
     if (selectedPairs.length === pairCount) {
@@ -172,9 +210,19 @@ function findRajanilaiNumberMatches(target, rajanilaiSet, pairCount) {
       if (digitSum !== target || !checks.every((check) => rajanilaiSet.has(String(Number(check))))) {
         return false
       }
+      const registration = uniqueNumbers
+        ? getGen7RegistrationNumber(number, checks, rajanilaiSet)
+        : { number, checks }
+      if (!registration || (uniqueNumbers && seenNumbers.has(registration.number))) return false
 
       if (combinations.length === MAX_RAJANILAI_SUM_COMBINATIONS) return true
-      combinations.push({ values: [...selectedPairs], number, checks, digitSum })
+      combinations.push({
+        values: uniqueNumbers ? registration.checks : [...selectedPairs],
+        number: registration.number,
+        checks: registration.checks,
+        digitSum,
+      })
+      if (uniqueNumbers) seenNumbers.add(registration.number)
       return false
     }
 
@@ -456,6 +504,8 @@ export default function Name2NumberPage() {
   const [rajanilaiNumbers, setRajanilaiNumbers] = useState(defaultRajanilaiNumbers)
   const rajanilaiSet = useMemo(() => parseRajanilaiNumbers(rajanilaiNumbers), [rajanilaiNumbers])
   const [rajanilaiSumInput, setRajanilaiSumInput] = useState('')
+  const [gen7ExcludedPairsInput, setGen7ExcludedPairsInput] = useState('')
+  const [gen7SecondPairFilter, setGen7SecondPairFilter] = useState('all')
   const [kuberNumberInput, setKuberNumberInput] = useState('')
   const [excludedRajanilaiPairsInput, setExcludedRajanilaiPairsInput] = useState('')
   const [rajanilaiSumResults, setRajanilaiSumResults] = useState(null)
@@ -506,6 +556,11 @@ export default function Name2NumberPage() {
     () => (generatedNames ?? []).map((generatedName) => getNameResult(generatedName, rajanilaiSet)),
     [generatedNames, rajanilaiSet],
   )
+  const gen7SecondPairOptions = useMemo(() => {
+    if (rajanilaiSumResults?.generator !== 'GEN-7') return []
+    return [...new Set(rajanilaiSumResults.combinations.map(({ number }) => number.slice(2, 4)))]
+      .sort((first, second) => Number(first) - Number(second))
+  }, [rajanilaiSumResults])
   const displayedRajanilaiSumCombinations = useMemo(() => {
     if (!rajanilaiSumResults) return []
     const kuberNumber = kuberNumberInput.trim()
@@ -514,6 +569,19 @@ export default function Name2NumberPage() {
       .map((pair) => pair.trim())
       .filter(Boolean)
     if (rajanilaiSumResults.generator !== 'GEN-6-EXAMPLE') {
+      const gen7ExcludedPairs = gen7ExcludedPairsInput
+        .split(/[,\s]+/)
+        .map((pair) => pair.trim())
+        .filter((pair) => /^\d{2}$/.test(pair))
+      if (rajanilaiSumResults.generator === 'GEN-7') {
+        const kuberPair = /^\d{2}$/.test(kuberNumber) ? kuberNumber : ''
+        return rajanilaiSumResults.combinations.filter(({ number, values }) => (
+          (!kuberPair || values.includes(kuberPair))
+          && ![number.slice(0, 2), number.slice(2, 4), number.slice(4, 6)]
+            .some((pair) => gen7ExcludedPairs.includes(pair))
+          && (gen7SecondPairFilter === 'all' || number.slice(2, 4) === gen7SecondPairFilter)
+        ))
+      }
       return rajanilaiSumResults.combinations
     }
 
@@ -521,7 +589,7 @@ export default function Name2NumberPage() {
       (!kuberNumber || values.includes(kuberNumber))
       && !excludedPairs.some((pair) => values.includes(pair))
     ))
-  }, [excludedRajanilaiPairsInput, kuberNumberInput, rajanilaiSumResults])
+  }, [excludedRajanilaiPairsInput, gen7ExcludedPairsInput, gen7SecondPairFilter, kuberNumberInput, rajanilaiSumResults])
   const invalidExcludedRajanilaiPairs = excludedRajanilaiPairsInput
     .split(',')
     .map((pair) => pair.trim())
@@ -549,7 +617,7 @@ export default function Name2NumberPage() {
         ? 3
         : 4
     const { combinations: matchingCombinations, exceededLimit } = usesNumberChecks
-      ? findRajanilaiNumberMatches(target, rajanilaiSet, generator === 'GEN-5' ? 3 : 4)
+      ? findRajanilaiNumberMatches(target, rajanilaiSet, generator === 'GEN-5' ? 3 : 4, generator === 'GEN-7')
       : findRajanilaiSumCombinations(target, rajanilaiSet, combinationLength)
     if (exceededLimit) {
       setRajanilaiSumError(
@@ -1691,6 +1759,36 @@ export default function Name2NumberPage() {
                   </label>
                   {button}
                 </div>
+              ) : generator === 'GEN-7' ? (
+                <div className="name2number-gen7-filter" key={generator}>
+                  <label className="name2number-kuber-number-label" htmlFor="name2number-gen7-kuber-number-input">
+                    <span>Kuber number</span>
+                    <input
+                      id="name2number-gen7-kuber-number-input"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={2}
+                      value={kuberNumberInput}
+                      onChange={(event) => {
+                        if (/^\d{0,2}$/.test(event.target.value)) {
+                          setKuberNumberInput(event.target.value)
+                        }
+                      }}
+                    />
+                  </label>
+                  <label htmlFor="name2number-gen7-excluded-pairs">
+                    <span>Exclude numbers</span>
+                    <input
+                      id="name2number-gen7-excluded-pairs"
+                      type="text"
+                      inputMode="text"
+                      placeholder="12, 34"
+                      value={gen7ExcludedPairsInput}
+                      onChange={(event) => setGen7ExcludedPairsInput(event.target.value)}
+                    />
+                  </label>
+                  {button}
+                </div>
               ) : button
             })}
           </div>
@@ -1718,7 +1816,7 @@ export default function Name2NumberPage() {
             {displayedRajanilaiSumCombinations.length > 0
               ? (
                 <div className="name2number-rajanilai-combination-results">
-                  <div className={`name2number-rajanilai-combination-row name2number-rajanilai-combination-heading${rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' ? ' name2number-rajanilai-example-row' : ''}${['GEN-5', 'GEN-7'].includes(rajanilaiSumResults.generator) ? ' name2number-rajanilai-number-row' : ''}`}>
+                  <div className={`name2number-rajanilai-combination-row name2number-rajanilai-combination-heading${rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' ? ' name2number-rajanilai-example-row' : ''}${['GEN-5', 'GEN-7'].includes(rajanilaiSumResults.generator) ? ' name2number-rajanilai-number-row' : ''}${rajanilaiSumResults.generator === 'GEN-7' ? ' name2number-rajanilai-gen7-row' : ''}`}>
                     {rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' ? (
                       <>
                         <div className="name2number-rajanilai-example-first-column">
@@ -1736,8 +1834,23 @@ export default function Name2NumberPage() {
                     ) : ['GEN-5', 'GEN-7'].includes(rajanilaiSumResults.generator) ? (
                       <>
                         <span>Combination</span>
-                        <span>Number</span>
+                        <span className="name2number-rajanilai-number-heading">
+                          Number
+                          {rajanilaiSumResults.generator === 'GEN-7' ? (
+                            <select
+                              aria-label="Filter by second pair"
+                              value={gen7SecondPairFilter}
+                              onChange={(event) => setGen7SecondPairFilter(event.target.value)}
+                            >
+                              <option value="all">All</option>
+                              {gen7SecondPairOptions.map((pair) => (
+                                <option key={pair} value={pair}>{pair}</option>
+                              ))}
+                            </select>
+                          ) : null}
+                        </span>
                         <span>Pair checks</span>
+                        {rajanilaiSumResults.generator === 'GEN-7' ? <span>Rajanilai check</span> : null}
                       </>
                     ) : <span>Combination</span>}
                     <span>Digit sum</span>
@@ -1752,9 +1865,10 @@ export default function Name2NumberPage() {
                   }) => {
                     const isExample = rajanilaiSumResults.generator === 'GEN-6-EXAMPLE'
                     const hasNumberChecks = ['GEN-5', 'GEN-7'].includes(rajanilaiSumResults.generator)
+                    const hasGen7Checks = rajanilaiSumResults.generator === 'GEN-7'
                     return (
                       <div
-                        className={`name2number-rajanilai-combination-row${isExample ? ' name2number-rajanilai-example-row' : ''}${hasNumberChecks ? ' name2number-rajanilai-number-row' : ''}`}
+                        className={`name2number-rajanilai-combination-row${isExample ? ' name2number-rajanilai-example-row' : ''}${hasNumberChecks ? ' name2number-rajanilai-number-row' : ''}${hasGen7Checks ? ' name2number-rajanilai-gen7-row' : ''}`}
                         key={`${values.join(',')}-${exampleOrder?.join(',') ?? ''}`}
                       >
                         {isExample ? (
@@ -1768,6 +1882,30 @@ export default function Name2NumberPage() {
                             <span>{values.join(', ')}</span>
                             <span>{number}</span>
                             <span>{checks.join(', ')}</span>
+                            {hasGen7Checks ? (
+                              <span className="name2number-rajanilai-gen7-checks">
+                                {values.slice(0, -1).map((pair, index) => (
+                                  <span className="name2number-rajanilai-gen7-check" key={`${pair}-${index}`}>
+                                    <span className="name2number-rajanilai-gen7-tick">✓✓</span>
+                                    <span className="name2number-rajanilai-gen7-badge">{pair}</span>
+                                  </span>
+                                ))}
+                                <span className="name2number-rajanilai-gen7-final-check">
+                                  <span className="name2number-rajanilai-gen7-check">
+                                    <span className="name2number-rajanilai-gen7-tick">✓✓</span>
+                                    <span className="name2number-rajanilai-gen7-badge">{number.slice(-1)}</span>
+                                  </span>
+                                  <span className="name2number-rajanilai-gen7-ending-check">
+                                    <span>(</span>
+                                    <span className="name2number-rajanilai-gen7-check">
+                                      <span className="name2number-rajanilai-gen7-tick">✓✓</span>
+                                      <span className="name2number-rajanilai-gen7-badge">{number.slice(-2)}</span>
+                                    </span>
+                                    <span>)</span>
+                                  </span>
+                                </span>
+                              </span>
+                            ) : null}
                           </>
                         ) : <span>{values.join(', ')}</span>}
                         <span>{digitSum}</span>
@@ -1777,7 +1915,10 @@ export default function Name2NumberPage() {
                 </div>
               )
               : <p>
-                {rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' && kuberNumberInput.trim()
+                {rajanilaiSumResults.generator === 'GEN-7'
+                  && gen7ExcludedPairsInput.split(/[,\s]+/).some((pair) => /^\d{2}$/.test(pair.trim()))
+                  ? `No GEN-7 combinations remain after excluding ${gen7ExcludedPairsInput.trim()}.`
+                  : rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' && kuberNumberInput.trim()
                   ? `No combinations containing Kuber number ${kuberNumberInput.trim()} match this sum.`
                   : `No ${rajanilaiSumResults.generator} combinations match this sum.`}
               </p>}
