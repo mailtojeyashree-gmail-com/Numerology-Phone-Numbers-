@@ -135,11 +135,10 @@ export default function RegNumbersPage(props) {
         const order = first.number.localeCompare(second.number)
         return registrationSortDirection === 'asc' ? order : -order
       }
-      const firstPassesAllChecks = first.rajanilaiMatch
-        && first.pairChecks.every(({ matches }) => matches)
-      const secondPassesAllChecks = second.rajanilaiMatch
-        && second.pairChecks.every(({ matches }) => matches)
-      return Number(secondPassesAllChecks) - Number(firstPassesAllChecks)
+      const firstMatchesAllCalculations = first.rajanilaiCalculation.every(({ matches }) => matches)
+      const secondMatchesAllCalculations = second.rajanilaiCalculation.every(({ matches }) => matches)
+      return Number(secondMatchesAllCalculations) - Number(firstMatchesAllCalculations)
+        || Number(second.rajanilaiMatch) - Number(first.rajanilaiMatch)
     })
 
   const pagedRows = visibleRows.slice(
@@ -161,6 +160,12 @@ export default function RegNumbersPage(props) {
   const combinationText = [...selectedCombinations.keys()].join('\n')
   const pairChecksCombinationText = [...pairChecksCombinations.keys()].join('\n')
   const filteredRegistrations = [...new Set(visibleRows.map((row) => row.number))]
+  const twoGreenTickNumbers = tableRows
+    .filter((row) => (
+      row.rajanilaiCalculation.every(({ matches }) => matches)
+      && row.rajanilaiMatch
+    ))
+    .map((row) => row.number)
   const hasRegistrationFilters = registrationLayout && (
     digitSumFilters.length > 0
     || numberPrefixFilters.length > 0
@@ -512,6 +517,13 @@ export default function RegNumbersPage(props) {
                 <h2>{registrationLayout ? 'Generated registrations' : `Saved ${props.headingItemName ?? 'phone numbers'}`}</h2>
               </div>
               <div className="workspace-results-actions">
+                {props.pageId === 'inputmobilenumbers' ? (
+                  <CopyTextButton
+                    label="2 green ticks numbers"
+                    buttonText="Copy 2 green ticks nos"
+                    text={twoGreenTickNumbers.join('\n')}
+                  />
+                ) : null}
                 <CopyTextButton
                   label={registrationLayout ? 'registrations' : 'phone numbers'}
                   text={filteredRegistrations.join('\n')}

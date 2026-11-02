@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function CopyTextButton({ text, label = 'results' }) {
+export default function CopyTextButton({ text, label = 'results', buttonText = 'Copy list' }) {
   const [status, setStatus] = useState('')
   const hasText = Boolean(text?.trim())
 
@@ -25,7 +25,7 @@ export default function CopyTextButton({ text, label = 'results' }) {
         disabled={!hasText}
         onClick={copyText}
       >
-        {status === 'Copied to clipboard.' ? 'Copied' : status ? 'Copy failed' : 'Copy list'}
+        {status === 'Copied to clipboard.' ? 'Copied' : status ? 'Copy failed' : buttonText}
       </button>
       {status ? (
         <span
