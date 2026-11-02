@@ -794,7 +794,6 @@ export default function Name2NumberPage() {
       .split(/[,\s]+/)
       .map((pair) => pair.trim())
       .filter((pair) => /^\d{1,2}$/.test(pair))
-      .map((pair) => pair.padStart(2, '0'))
 
     return rajanilaiSumResults.combinations.filter(({ number, values }) => {
       const ageIdentifierOrder = getUkAgeIdentifierOrder(number.slice(2, 4))
@@ -804,7 +803,7 @@ export default function Name2NumberPage() {
         && (!kuberPair || values.includes(kuberPair))
         && (
           karanaNathanPairs.length === 0
-          || values.some((pair) => karanaNathanPairs.includes(String(Number(pair)).padStart(2, '0')))
+          || values.some((pair) => karanaNathanPairs.some((value) => pair.includes(value)))
         )
         && ![number.slice(0, 2), number.slice(2, 4), number.slice(4, 6)]
           .some((pair) => excludedPairs.includes(pair))
@@ -2109,6 +2108,9 @@ export default function Name2NumberPage() {
                       value={gen7KaranaNathanInput}
                       onChange={(event) => setGen7KaranaNathanInput(event.target.value)}
                     />
+                    <span className="name2number-gen7-karana-help">
+                      Matches pairs containing any entered value; 7 matches 07, 17, and 71.
+                    </span>
                   </label>
                   {button}
                 </div>
@@ -2270,7 +2272,7 @@ export default function Name2NumberPage() {
               : <p>
                 {rajanilaiSumResults.generator === 'GEN-7'
                   && gen7KaranaNathanInput.split(/[,\s]+/).some((pair) => /^\d{1,2}$/.test(pair.trim()))
-                  ? `No GEN-7 combinations contain any Karana Nathan number from ${gen7KaranaNathanInput.trim()}.`
+                  ? `No GEN-7 combinations match the Karana Nathan filter (${gen7KaranaNathanInput.trim()}).`
                   : rajanilaiSumResults.generator === 'GEN-7'
                   && gen7ExcludedPairsInput.split(/[,\s]+/).some((pair) => /^\d{2}$/.test(pair.trim()))
                   ? `No GEN-7 combinations remain after excluding ${gen7ExcludedPairsInput.trim()}.`
