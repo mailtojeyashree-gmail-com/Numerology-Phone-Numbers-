@@ -420,7 +420,7 @@
   display: grid;
   width: min(760px, 100%);
   max-height: min(82vh, 820px);
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 14px;
   padding: 22px;
   overflow: hidden;
@@ -471,6 +471,13 @@
   color: var(--soft-ink);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.name2number-gen7-plates-content {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
 }
 
 .name2number-gen7-plates-list {

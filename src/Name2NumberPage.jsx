@@ -96,7 +96,7 @@ function Gen7PlateResults({ plates, label }) {
     : alphabetCounts.get(activeLetter) ?? 0
 
   return (
-    <>
+    <div className="name2number-gen7-plates-content">
       <div className="name2number-gen7-alphabet-toolbar">
         <div
           className="name2number-gen7-alphabet-pages"
@@ -196,7 +196,7 @@ function Gen7PlateResults({ plates, label }) {
           No format-valid plate combinations were generated.
         </p>
       )}
-    </>
+    </div>
   )
 }
 
