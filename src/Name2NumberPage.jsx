@@ -57,7 +57,48 @@ function getCarRegSearchUrl(plate) {
   return `https://www.carreg.co.uk/reg-search/${plate.replaceAll(' ', '+')}`
 }
 
-function Gen7PlateResults({ plates, label }) {
+function Gen7PlateCopyButton({ plate, number }) {
+  const [copyStatus, setCopyStatus] = useState('')
+
+  async function copyPlateAndNumber() {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard access is unavailable in this browser.')
+      }
+      await navigator.clipboard.writeText(`${plate} - ${number}`)
+      setCopyStatus('Copied')
+    } catch (error) {
+      setCopyStatus(error instanceof Error ? error.message : 'Unable to copy to clipboard.')
+    }
+  }
+
+  return (
+    <span className="name2number-gen7-plate-copy-wrap">
+      <button
+        className="name2number-gen7-plate-copy"
+        type="button"
+        aria-label={`Copy ${plate} - ${number}`}
+        title={`Copy ${plate} - ${number}`}
+        onClick={copyPlateAndNumber}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 3h12l4 4v14H3V3h2Z" />
+          <path d="M7 3v6h10V3M7 21v-7h10v7M15 5v2" />
+        </svg>
+      </button>
+      {copyStatus ? (
+        <span
+          className={`name2number-gen7-plate-copy-status${copyStatus === 'Copied' ? ' is-success' : ' is-error'}`}
+          role="status"
+        >
+          {copyStatus}
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
+function Gen7PlateResults({ plates, label, sourceNumber }) {
   const alphabetCounts = new Map()
   plates.forEach((plate) => {
     const firstLetter = plate[0]
@@ -173,11 +214,14 @@ function Gen7PlateResults({ plates, label }) {
 
             return (
               <li key={plate}>
-                <span className="name2number-gen7-plate">
-                  <span className="name2number-gen7-plate-country">GB</span>
-                  <span>{area}</span>
-                  <span>{age}</span>
-                  <span>{suffix}</span>
+                <span className="name2number-gen7-plate-display">
+                  <span className="name2number-gen7-plate">
+                    <span className="name2number-gen7-plate-country">GB</span>
+                    <span>{area}</span>
+                    <span>{age}</span>
+                    <span>{suffix}</span>
+                  </span>
+                  {sourceNumber ? <Gen7PlateCopyButton plate={plate} number={sourceNumber} /> : null}
                 </span>
                 <a
                   className="name2number-gen7-carreg-link"
@@ -2319,6 +2363,7 @@ export default function Name2NumberPage() {
                 <Gen7PlateResults
                   plates={possibleUkRegistrationPlates}
                   label="visible possible UK registration plates"
+                  sourceNumber={selectedGen7PlateNumber}
                 />
               ) : (
                 <p className="name2number-gen7-plates-empty">

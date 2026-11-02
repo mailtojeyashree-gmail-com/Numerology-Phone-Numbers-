@@ -582,6 +582,13 @@
   gap: 5px;
 }
 
+.name2number-gen7-plate-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 .name2number-gen7-plate {
   position: relative;
   display: flex;
@@ -597,6 +604,58 @@
   color: #111;
   font: 800 20px/1 'Arial Narrow', Arial, sans-serif;
   letter-spacing: 0.03em;
+}
+
+.name2number-gen7-plate-copy-wrap {
+  display: inline-grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.name2number-gen7-plate-copy {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 5px;
+  border: 1px solid #bd3535;
+  border-radius: 6px;
+  background: #fffdf8;
+  color: #c62828;
+  cursor: pointer;
+}
+
+.name2number-gen7-plate-copy:hover {
+  background: #c62828;
+  color: #fff;
+}
+
+.name2number-gen7-plate-copy:focus-visible {
+  outline: 2px solid var(--moss);
+  outline-offset: 2px;
+}
+
+.name2number-gen7-plate-copy svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.name2number-gen7-plate-copy-status {
+  max-width: 100px;
+  color: #a32020;
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.name2number-gen7-plate-copy-status.is-success {
+  color: var(--moss);
 }
 
 .name2number-gen7-carreg-link {
