@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import LuckyNumbersOverview from './LuckyNumbersOverview'
 import CopyTextButton from './CopyTextButton'
 import TextareaLineCount from './TextareaLineCount'
@@ -24,6 +24,12 @@ export default function RegNumbersPage(props) {
   const toCalculationDigits = props.toCalculationDigits
   const pairStartIndex = props.pairStartIndex ?? 3
   const [phoneNumbers, setPhoneNumbers] = useState(null)
+  const [mobileCalculationResult, setMobileCalculationResult] = useState(null)
+  const [mobileCalculationFailure, setMobileCalculationFailure] = useState(null)
+  const mobileCalculationWorkerRef = useRef(null)
+  const mobileCalculationRequestRef = useRef(0)
+  const mobileCalculationContextRef = useRef(null)
+  const mobileWorkerStartupErrorRef = useRef('')
   const [isLoadingPhoneNumbers, setIsLoadingPhoneNumbers] = useState(false)
   const [phoneNumbersError, setPhoneNumbersError] = useState('')
   const [showPhoneNumbers, setShowPhoneNumbers] = useState(false)
@@ -46,7 +52,123 @@ export default function RegNumbersPage(props) {
   const [prefixFilterOutput, setPrefixFilterOutput] = useState(null)
   const [prefixFilterSelected, setPrefixFilterSelected] = useState('')
 
+  useEffect(() => {
+    if (!props.inputNumbers) return undefined
+
+    let worker
+    try {
+      worker = new Worker(new URL('./regNumbers.worker.js', import.meta.url), { type: 'module' })
+    } catch (error) {
+      mobileWorkerStartupErrorRef.current = (
+        `Could not start mobile-number calculations: ${error instanceof Error ? error.message : 'Worker initialization failed.'}`
+      )
+      return undefined
+    }
+    mobileWorkerStartupErrorRef.current = ''
+    mobileCalculationWorkerRef.current = worker
+    worker.onmessage = (event) => {
+      if (event.data.requestId !== mobileCalculationRequestRef.current) return
+      const calculationContext = mobileCalculationContextRef.current
+      if (!calculationContext) return
+      if (event.data.error) {
+        setMobileCalculationFailure({ ...calculationContext, error: event.data.error })
+      } else {
+        setMobileCalculationResult({ ...calculationContext, rows: event.data.rows })
+        setMobileCalculationFailure(null)
+        setPage(0)
+      }
+    }
+    worker.onerror = (event) => {
+      const calculationContext = mobileCalculationContextRef.current
+      if (calculationContext) {
+        setMobileCalculationFailure({
+          ...calculationContext,
+          error: `Could not calculate mobile numbers: ${event.message}`,
+        })
+      }
+    }
+    worker.onmessageerror = () => {
+      const calculationContext = mobileCalculationContextRef.current
+      if (calculationContext) {
+        setMobileCalculationFailure({
+          ...calculationContext,
+          error: 'Could not read the mobile-number calculation results.',
+        })
+      }
+    }
+
+    return () => {
+      worker.terminate()
+      mobileCalculationWorkerRef.current = null
+    }
+  }, [props.inputNumbers])
+
+  useEffect(() => {
+    if (!props.inputNumbers) return
+    if (!phoneNumbers) return
+    const requestId = mobileCalculationRequestRef.current + 1
+    mobileCalculationRequestRef.current = requestId
+    const calculationContext = {
+      phoneNumbers,
+      initials,
+      luckyNumbers,
+      excludedNumbers,
+    }
+    mobileCalculationContextRef.current = calculationContext
+    const timeoutId = setTimeout(() => {
+      const worker = mobileCalculationWorkerRef.current
+      if (!worker) {
+        setMobileCalculationFailure({
+          ...calculationContext,
+          error: mobileWorkerStartupErrorRef.current
+            || 'Mobile-number calculations are unavailable because the worker did not start.',
+        })
+        return
+      }
+      worker.postMessage({
+        requestId,
+        phoneNumbers,
+        initials,
+        luckyNumbers,
+        excludedNumbers,
+      })
+    }, 150)
+
+    return () => clearTimeout(timeoutId)
+  }, [props.inputNumbers, phoneNumbers, initials, luckyNumbers, excludedNumbers])
+
+  const mobileCalculationRows = useMemo(
+    () => mobileCalculationResult?.rows ?? [],
+    [mobileCalculationResult],
+  )
+  const matchesCurrentMobileCalculation = (calculation) => (
+    calculation
+    && calculation.phoneNumbers === phoneNumbers
+    && calculation.initials === initials
+    && calculation.luckyNumbers === luckyNumbers
+    && calculation.excludedNumbers === excludedNumbers
+  )
+  const mobileCalculationError = matchesCurrentMobileCalculation(mobileCalculationFailure)
+    ? mobileCalculationFailure.error
+    : ''
+  const isCalculatingMobileNumbers = Boolean(
+    props.inputNumbers
+    && phoneNumbers
+    && !matchesCurrentMobileCalculation(mobileCalculationResult)
+    && !mobileCalculationError,
+  )
+  const canShowPhoneNumbers = showPhoneNumbers
+    && phoneNumbers
+    && (
+      !props.inputNumbers
+      || (
+        matchesCurrentMobileCalculation(mobileCalculationResult)
+        && !mobileCalculationError
+      )
+    )
+
   const tableRows = useMemo(() => {
+    if (props.inputNumbers) return mobileCalculationRows
     if (!phoneNumbers) return []
     const luckyPairs = new Set(
       String(luckyNumbers ?? '')
@@ -95,6 +217,8 @@ export default function RegNumbersPage(props) {
     ))
   }, [
     phoneNumbers,
+    mobileCalculationRows,
+    props.inputNumbers,
     initials,
     luckyNumbers,
     excludedNumbers,
@@ -117,7 +241,7 @@ export default function RegNumbersPage(props) {
     [tableRows, prefixLength],
   )
 
-  const visibleRows = tableRows
+  const visibleRows = useMemo(() => tableRows
     .filter((row) => (
       (digitSumFilters.length === 0 || digitSumFilters.includes(String(row.digitSum)))
       && (numberPrefixFilters.length === 0
@@ -139,33 +263,58 @@ export default function RegNumbersPage(props) {
       const secondMatchesAllCalculations = second.rajanilaiCalculation.every(({ matches }) => matches)
       return Number(secondMatchesAllCalculations) - Number(firstMatchesAllCalculations)
         || Number(second.rajanilaiMatch) - Number(first.rajanilaiMatch)
-    })
-
+    }), [
+    tableRows,
+    digitSumFilters,
+    numberPrefixFilters,
+    uniquePairFilters,
+    pairCheckFilters,
+    allPairChecksFilter,
+    allRajanilaiCalculationsFilter,
+    prefixLength,
+    registrationLayout,
+    registrationSortDirection,
+  ])
   const pagedRows = visibleRows.slice(
     page * VIP_NUMBER_PAGE_SIZE,
     (page + 1) * VIP_NUMBER_PAGE_SIZE,
   )
-  const selectedUniquePairs = [...new Set(visibleRows.flatMap((row) => row.digitPairs))]
-  const selectedCombinations = new Map()
-  const pairChecksCombinations = new Map()
-  visibleRows.forEach((row) => {
-    const combination = getCanonicalPairs(row.digitPairs).replaceAll(',', '')
-    selectedCombinations.set(combination, (selectedCombinations.get(combination) ?? 0) + 1)
-    const pairChecksCombination = row.digitPairs.join('')
-    pairChecksCombinations.set(
-      pairChecksCombination,
-      (pairChecksCombinations.get(pairChecksCombination) ?? 0) + 1,
-    )
-  })
+  const selectedUniquePairs = useMemo(
+    () => [...new Set(visibleRows.flatMap((row) => row.digitPairs))],
+    [visibleRows],
+  )
+  const { selectedCombinations, pairChecksCombinations } = useMemo(() => {
+    const combinations = new Map()
+    const pairCheckCombinations = new Map()
+    visibleRows.forEach((row) => {
+      const combination = getCanonicalPairs(row.digitPairs).replaceAll(',', '')
+      combinations.set(combination, (combinations.get(combination) ?? 0) + 1)
+      const pairChecksCombination = row.digitPairs.join('')
+      pairCheckCombinations.set(
+        pairChecksCombination,
+        (pairCheckCombinations.get(pairChecksCombination) ?? 0) + 1,
+      )
+    })
+    return {
+      selectedCombinations: combinations,
+      pairChecksCombinations: pairCheckCombinations,
+    }
+  }, [visibleRows])
   const combinationText = [...selectedCombinations.keys()].join('\n')
   const pairChecksCombinationText = [...pairChecksCombinations.keys()].join('\n')
-  const filteredRegistrations = [...new Set(visibleRows.map((row) => row.number))]
-  const twoGreenTickNumbers = tableRows
-    .filter((row) => (
-      row.rajanilaiCalculation.every(({ matches }) => matches)
-      && row.rajanilaiMatch
-    ))
-    .map((row) => row.number)
+  const filteredRegistrations = useMemo(
+    () => [...new Set(visibleRows.map((row) => row.number))],
+    [visibleRows],
+  )
+  const twoGreenTickNumbers = useMemo(
+    () => tableRows
+      .filter((row) => (
+        row.rajanilaiCalculation.every(({ matches }) => matches)
+        && row.rajanilaiMatch
+      ))
+      .map((row) => row.number),
+    [tableRows],
+  )
   const hasRegistrationFilters = registrationLayout && (
     digitSumFilters.length > 0
     || numberPrefixFilters.length > 0
@@ -432,7 +581,7 @@ export default function RegNumbersPage(props) {
 
   function filterMobileNumbersByPrefix(prefix) {
     const matches = []
-    const numberPattern = /(?:^|\D)(07[34]\d{8})(?!\d)/g
+    const numberPattern = /(?:^|\D)(07[349]\d{8})(?!\d)/g
 
     prefixFilterInput.split(/\r?\n/).forEach((line) => {
       for (const match of line.matchAll(numberPattern)) {
@@ -450,7 +599,11 @@ export default function RegNumbersPage(props) {
       id={props.pageId ?? 'vipnumbers'}
       aria-labelledby={props.titleId ?? 'vipnumbers-title'}
     >
-      <LuckyNumbersOverview {...props} />
+      <LuckyNumbersOverview
+        {...props}
+        mobileCalculationPending={props.inputNumbers && isCalculatingMobileNumbers}
+        mobileCalculationError={props.inputNumbers ? mobileCalculationError : ''}
+      />
       <div className="vip-phone-numbers">
         {props.inputRegistrationNumbers ? (
           <div className="vip-number-input">
@@ -509,7 +662,7 @@ export default function RegNumbersPage(props) {
               : `Show ${props.buttonName ?? 'Phone numbers'}`}
         </button>
         {phoneNumbersError ? <p className="vip-phone-numbers-error" role="alert">{phoneNumbersError}</p> : null}
-        {showPhoneNumbers && phoneNumbers ? (
+        {canShowPhoneNumbers ? (
           <section className="vip-phone-numbers-list" aria-label={`Saved ${props.itemName ?? 'phone numbers'}`}>
             <div className="workspace-results-heading">
               <div>
@@ -1091,6 +1244,14 @@ export default function RegNumbersPage(props) {
                 onClick={() => filterMobileNumbersByPrefix('074')}
               >
                 Filter 074
+              </button>
+              <button
+                className="combination-generate-button"
+                type="button"
+                disabled={!prefixFilterInput.trim()}
+                onClick={() => filterMobileNumbersByPrefix('079')}
+              >
+                Filter 079
               </button>
             </div>
             {prefixFilterOutput !== null ? (

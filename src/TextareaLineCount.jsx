@@ -1,4 +1,6 @@
-export default function TextareaLineCount({ value }) {
+import { memo } from 'react'
+
+function TextareaLineCount({ value }) {
   const lineCount = value.split(/\r?\n/).filter((line) => line.trim()).length
 
   return (
@@ -7,3 +9,5 @@ export default function TextareaLineCount({ value }) {
     </span>
   )
 }
+
+export default memo(TextareaLineCount)

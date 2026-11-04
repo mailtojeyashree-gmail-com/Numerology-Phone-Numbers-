@@ -11,6 +11,8 @@ export default function LuckyNumbersOverview({
   onLuckyNumbersChange,
   excludedNumbers,
   onExcludedNumbersChange,
+  mobileCalculationPending = false,
+  mobileCalculationError = '',
 }) {
   return (
     <>
@@ -52,6 +54,15 @@ export default function LuckyNumbersOverview({
           />
         </label>
       </div>
+      {mobileCalculationPending ? (
+        <p className="mobile-calculation-status" role="status" aria-live="polite">
+          <span className="mobile-calculation-spinner" aria-hidden="true" />
+          Updating mobile-number calculations…
+        </p>
+      ) : null}
+      {mobileCalculationError ? (
+        <p className="vip-phone-numbers-error" role="alert">{mobileCalculationError}</p>
+      ) : null}
       <div className="rasi-chart-layout">
         <RasiChart initials={initials} />
         <div className="car-reg-chart-wrap">

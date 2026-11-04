@@ -2041,6 +2041,31 @@
   margin-top: 20px;
 }
 
+.mobile-calculation-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 16px;
+  color: var(--moss);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.mobile-calculation-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(71, 111, 90, 0.22);
+  border-top-color: var(--moss);
+  border-radius: 50%;
+  animation: mobile-calculation-spin 0.75s linear infinite;
+}
+
+@keyframes mobile-calculation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .mobile-prefix-filter-actions {
   display: flex;
   flex-wrap: wrap;
