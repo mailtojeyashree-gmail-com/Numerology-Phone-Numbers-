@@ -1363,6 +1363,7 @@ export default function RegNumbersPage(props) {
             <label htmlFor="mobile-prefix-filter-input">
               Paste a list of mobile numbers to filter by prefix.
             </label>
+            <CopyTextButton label="mobile numbers" text={prefixFilterInput} />
             <TextareaLineCount value={prefixFilterInput} />
             <textarea
               id="mobile-prefix-filter-input"
