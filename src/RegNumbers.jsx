@@ -43,6 +43,8 @@ export default function RegNumbersPage(props) {
   const [page, setPage] = useState(0)
   const [digitSumFilters, setDigitSumFilters] = useState([])
   const [excludedRajanilaiMatchInput, setExcludedRajanilaiMatchInput] = useState('')
+  const [excludedRepeatedNumbers, setExcludedRepeatedNumbers] = useState('')
+  const [excludedLastPair, setExcludedLastPair] = useState('')
   const [numberPrefixFilters, setNumberPrefixFilters] = useState([])
   const [allPairChecksFilter, setAllPairChecksFilter] = useState(false)
   const [allRajanilaiCalculationsFilter, setAllRajanilaiCalculationsFilter] = useState(false)
@@ -178,6 +180,12 @@ export default function RegNumbersPage(props) {
     .split(/[,\s]+/)
     .filter((value) => /^\d{1,2}$/.test(value))
     .map(Number)
+  const excludedRepeatedNumberValues = excludedRepeatedNumbers
+    .split(/[,\s]+/)
+    .filter((value) => /^\d{2}$/.test(value))
+  const excludedLastPairValues = excludedLastPair
+    .split(/[,\s]+/)
+    .filter((value) => /^\d{2}$/.test(value))
 
   const tableRows = useMemo(() => {
     if (props.inputNumbers) return mobileCalculationRows
@@ -262,6 +270,10 @@ export default function RegNumbersPage(props) {
         || uniquePairFilters.includes(row.uniquePairs.join(',')))
       && (pairCheckFilters.length === 0
         || pairCheckFilters.includes(getCanonicalPairs(row.digitPairs)))
+      && !excludedRepeatedNumberValues.some((pair) => (
+        row.digitPairs.filter((rowPair) => rowPair === pair).length > 1
+      ))
+      && !row.rajanilaiCalculation.some(({ pair }) => excludedLastPairValues.includes(pair))
       && (!allPairChecksFilter || row.pairChecks.every(({ matches }) => matches))
       && (!allRajanilaiCalculationsFilter
         || row.rajanilaiCalculation.every(({ matches }) => matches))
@@ -286,6 +298,8 @@ export default function RegNumbersPage(props) {
     numberPrefixFilters,
     uniquePairFilters,
     pairCheckFilters,
+    excludedRepeatedNumberValues,
+    excludedLastPairValues,
     allPairChecksFilter,
     allRajanilaiCalculationsFilter,
     excludedRajanilaiMatchValues,
@@ -632,6 +646,18 @@ export default function RegNumbersPage(props) {
       <LuckyNumbersOverview
         {...props}
         showRajanilaiMatchExclusion={isInputMobileNumbersPage}
+        showRepeatedNumbersExclusion
+        showLastPairExclusion
+        excludedRepeatedNumbers={excludedRepeatedNumbers}
+        onExcludedRepeatedNumbersChange={(value) => {
+          setExcludedRepeatedNumbers(value)
+          setPage(0)
+        }}
+        excludedLastPair={excludedLastPair}
+        onExcludedLastPairChange={(value) => {
+          setExcludedLastPair(value)
+          setPage(0)
+        }}
         excludedRajanilaiMatchInput={excludedRajanilaiMatchInput}
         onExcludedRajanilaiMatchInputChange={(value) => {
           setExcludedRajanilaiMatchInput(value)

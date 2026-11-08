@@ -11,6 +11,12 @@ export default function LuckyNumbersOverview({
   onLuckyNumbersChange,
   excludedNumbers,
   onExcludedNumbersChange,
+  showRepeatedNumbersExclusion = false,
+  excludedRepeatedNumbers = '',
+  onExcludedRepeatedNumbersChange,
+  showLastPairExclusion = false,
+  excludedLastPair = '',
+  onExcludedLastPairChange,
   showRajanilaiMatchExclusion = false,
   excludedRajanilaiMatchInput = '',
   onExcludedRajanilaiMatchInputChange,
@@ -56,6 +62,34 @@ export default function LuckyNumbersOverview({
             spellCheck="false"
           />
         </label>
+        {showRepeatedNumbersExclusion ? (
+          <label className="gen8-exclude-field" htmlFor="exclude-repeated-numbers">
+            <span>Exclude repeated numbers</span>
+            <input
+              id="exclude-repeated-numbers"
+              type="text"
+              value={excludedRepeatedNumbers}
+              onChange={(event) => onExcludedRepeatedNumbersChange(event.target.value)}
+              placeholder="99, 98"
+              autoComplete="off"
+              spellCheck="false"
+            />
+          </label>
+        ) : null}
+        {showLastPairExclusion ? (
+          <label className="gen8-exclude-field" htmlFor="exclude-last-pair">
+            <span>Exclude last pair</span>
+            <input
+              id="exclude-last-pair"
+              type="text"
+              value={excludedLastPair}
+              onChange={(event) => onExcludedLastPairChange(event.target.value)}
+              placeholder="99"
+              autoComplete="off"
+              spellCheck="false"
+            />
+          </label>
+        ) : null}
         {showRajanilaiMatchExclusion ? (
           <label className="gen8-exclude-field" htmlFor="exclude-rajanilai-match">
             <span>Exclude Rajanilai match</span>
