@@ -15,6 +15,12 @@ function getCanonicalPairs(values) {
   return [...values].sort((first, second) => Number(first) - Number(second)).join(',')
 }
 
+function hasTwoGreenTicks(row) {
+  return row.rajanilaiCalculation.length > 0
+    && row.rajanilaiCalculation.every(({ matches }) => matches)
+    && row.rajanilaiMatch
+}
+
 export default function RegNumbersPage(props) {
   const registrationLayout = props.registrationLayout ?? false
   const prefixLength = props.prefixLength ?? 3
@@ -302,16 +308,28 @@ export default function RegNumbersPage(props) {
   }, [visibleRows])
   const combinationText = [...selectedCombinations.keys()].join('\n')
   const pairChecksCombinationText = [...pairChecksCombinations.keys()].join('\n')
+  const { twoGreenTickRows, twoGreenTickUniquePairs, twoGreenTickCombinations } = useMemo(() => {
+    const qualifyingRows = visibleRows.filter(hasTwoGreenTicks)
+    const uniquePairs = [...new Set(qualifyingRows.flatMap((row) => row.digitPairs))]
+    const combinations = new Map()
+    qualifyingRows.forEach((row) => {
+      const combination = getCanonicalPairs(row.digitPairs).replaceAll(',', '')
+      combinations.set(combination, (combinations.get(combination) ?? 0) + 1)
+    })
+    return {
+      twoGreenTickRows: qualifyingRows,
+      twoGreenTickUniquePairs: uniquePairs,
+      twoGreenTickCombinations: combinations,
+    }
+  }, [visibleRows])
+  const twoGreenTickCombinationText = [...twoGreenTickCombinations.keys()].join('\n')
   const filteredRegistrations = useMemo(
     () => [...new Set(visibleRows.map((row) => row.number))],
     [visibleRows],
   )
   const twoGreenTickNumbers = useMemo(
     () => tableRows
-      .filter((row) => (
-        row.rajanilaiCalculation.every(({ matches }) => matches)
-        && row.rajanilaiMatch
-      ))
+      .filter(hasTwoGreenTicks)
       .map((row) => row.number),
     [tableRows],
   )
@@ -935,6 +953,92 @@ export default function RegNumbersPage(props) {
                 </button>
               </nav>
             ) : null}
+            {(registrationLayout || props.inputNumbers)
+              && visibleRows.length > 0
+              && twoGreenTickRows.length > 0 ? (
+              <section
+                className="car-reg-selected-combinations"
+                aria-label="Selected combinations - 2 green ticks"
+              >
+                <h3>Selected combinations - 2 green ticks</h3>
+                <div className="car-reg-combinations-copy-field">
+                  <div className="car-reg-copy-field-heading">
+                    <span>Unique pairs</span>
+                    <div className="car-reg-copy-action">
+                      <button
+                        className="combination-generate-button car-reg-copy-button"
+                        type="button"
+                        disabled={twoGreenTickUniquePairs.length === 0}
+                        onClick={() => copyList(
+                          'twoGreenTickUniquePairs',
+                          twoGreenTickUniquePairs.join(', '),
+                        )}
+                      >
+                        {copyFeedback.twoGreenTickUniquePairs?.success
+                          ? 'Copied'
+                          : copyFeedback.twoGreenTickUniquePairs
+                            ? 'Copy failed'
+                            : 'Copy list'}
+                      </button>
+                      {copyFeedback.twoGreenTickUniquePairs ? (
+                        <span
+                          className={copyFeedback.twoGreenTickUniquePairs.success
+                            ? 'car-reg-copy-success'
+                            : 'car-reg-copy-error'}
+                          role="status"
+                        >
+                          {copyFeedback.twoGreenTickUniquePairs.message}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <textarea
+                    aria-label="Unique pairs from combinations with 2 green ticks"
+                    rows={4}
+                    readOnly
+                    value={twoGreenTickUniquePairs.join(', ')}
+                  />
+                </div>
+                <div className="car-reg-combinations-copy-field">
+                  <div className="car-reg-copy-field-heading">
+                    <span>Unique pairs Combination ({twoGreenTickCombinations.size})</span>
+                    <div className="car-reg-copy-action">
+                      <button
+                        className="combination-generate-button car-reg-copy-button"
+                        type="button"
+                        disabled={!twoGreenTickCombinationText}
+                        onClick={() => copyList(
+                          'twoGreenTickCombinations',
+                          twoGreenTickCombinationText,
+                        )}
+                      >
+                        {copyFeedback.twoGreenTickCombinations?.success
+                          ? 'Copied'
+                          : copyFeedback.twoGreenTickCombinations
+                            ? 'Copy failed'
+                            : 'Copy list'}
+                      </button>
+                      {copyFeedback.twoGreenTickCombinations ? (
+                        <span
+                          className={copyFeedback.twoGreenTickCombinations.success
+                            ? 'car-reg-copy-success'
+                            : 'car-reg-copy-error'}
+                          role="status"
+                        >
+                          {copyFeedback.twoGreenTickCombinations.message}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <textarea
+                    aria-label="Combination list with 2 green ticks"
+                    rows={Math.min(12, Math.max(4, twoGreenTickCombinations.size))}
+                    readOnly
+                    value={twoGreenTickCombinationText}
+                  />
+                </div>
+              </section>
+              ) : null}
             {(registrationLayout || props.inputNumbers) && visibleRows.length > 0 ? (
               <section
                 className="car-reg-selected-combinations"
