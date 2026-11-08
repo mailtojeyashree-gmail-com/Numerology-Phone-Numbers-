@@ -23,6 +23,7 @@ function hasTwoGreenTicks(row) {
 
 export default function RegNumbersPage(props) {
   const registrationLayout = props.registrationLayout ?? false
+  const isInputMobileNumbersPage = props.pageId === 'inputmobilenumbers'
   const prefixLength = props.prefixLength ?? 3
   const initials = props.initials
   const luckyNumbers = props.luckyNumbers
@@ -41,6 +42,7 @@ export default function RegNumbersPage(props) {
   const [showPhoneNumbers, setShowPhoneNumbers] = useState(false)
   const [page, setPage] = useState(0)
   const [digitSumFilters, setDigitSumFilters] = useState([])
+  const [excludedRajanilaiMatchInput, setExcludedRajanilaiMatchInput] = useState('')
   const [numberPrefixFilters, setNumberPrefixFilters] = useState([])
   const [allPairChecksFilter, setAllPairChecksFilter] = useState(false)
   const [allRajanilaiCalculationsFilter, setAllRajanilaiCalculationsFilter] = useState(false)
@@ -172,6 +174,10 @@ export default function RegNumbersPage(props) {
         && !mobileCalculationError
       )
     )
+  const excludedRajanilaiMatchValues = excludedRajanilaiMatchInput
+    .split(/[,\s]+/)
+    .filter((value) => /^\d{1,2}$/.test(value))
+    .map(Number)
 
   const tableRows = useMemo(() => {
     if (props.inputNumbers) return mobileCalculationRows
@@ -259,6 +265,10 @@ export default function RegNumbersPage(props) {
       && (!allPairChecksFilter || row.pairChecks.every(({ matches }) => matches))
       && (!allRajanilaiCalculationsFilter
         || row.rajanilaiCalculation.every(({ matches }) => matches))
+      && (
+        !isInputMobileNumbersPage
+        || !excludedRajanilaiMatchValues.includes(row.digitSum)
+      )
     ))
     .sort((first, second) => {
       if (registrationLayout) {
@@ -271,12 +281,14 @@ export default function RegNumbersPage(props) {
         || Number(second.rajanilaiMatch) - Number(first.rajanilaiMatch)
     }), [
     tableRows,
+    isInputMobileNumbersPage,
     digitSumFilters,
     numberPrefixFilters,
     uniquePairFilters,
     pairCheckFilters,
     allPairChecksFilter,
     allRajanilaiCalculationsFilter,
+    excludedRajanilaiMatchValues,
     prefixLength,
     registrationLayout,
     registrationSortDirection,
@@ -619,6 +631,12 @@ export default function RegNumbersPage(props) {
     >
       <LuckyNumbersOverview
         {...props}
+        showRajanilaiMatchExclusion={isInputMobileNumbersPage}
+        excludedRajanilaiMatchInput={excludedRajanilaiMatchInput}
+        onExcludedRajanilaiMatchInputChange={(value) => {
+          setExcludedRajanilaiMatchInput(value)
+          setPage(0)
+        }}
         mobileCalculationPending={props.inputNumbers && isCalculatingMobileNumbers}
         mobileCalculationError={props.inputNumbers ? mobileCalculationError : ''}
       />

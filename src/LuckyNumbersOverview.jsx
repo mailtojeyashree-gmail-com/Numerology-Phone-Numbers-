@@ -11,6 +11,9 @@ export default function LuckyNumbersOverview({
   onLuckyNumbersChange,
   excludedNumbers,
   onExcludedNumbersChange,
+  showRajanilaiMatchExclusion = false,
+  excludedRajanilaiMatchInput = '',
+  onExcludedRajanilaiMatchInputChange,
   mobileCalculationPending = false,
   mobileCalculationError = '',
 }) {
@@ -53,6 +56,20 @@ export default function LuckyNumbersOverview({
             spellCheck="false"
           />
         </label>
+        {showRajanilaiMatchExclusion ? (
+          <label className="gen8-exclude-field" htmlFor="exclude-rajanilai-match">
+            <span>Exclude Rajanilai match</span>
+            <input
+              id="exclude-rajanilai-match"
+              type="text"
+              value={excludedRajanilaiMatchInput}
+              onChange={(event) => onExcludedRajanilaiMatchInputChange(event.target.value)}
+              placeholder="39, 42"
+              autoComplete="off"
+              spellCheck="false"
+            />
+          </label>
+        ) : null}
       </div>
       {mobileCalculationPending ? (
         <p className="mobile-calculation-status" role="status" aria-live="polite">
