@@ -282,8 +282,8 @@
 }
 
 .name2number-rajanilai-example-row {
-  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(190px, 1fr) minmax(100px, 0.6fr);
-  min-width: 660px;
+  grid-template-columns: minmax(160px, 1fr) minmax(130px, 0.8fr) minmax(140px, 0.9fr) minmax(230px, 1.3fr) minmax(150px, 0.8fr) minmax(90px, 0.5fr);
+  min-width: 1100px;
 }
 
 .name2number-rajanilai-number-row {
@@ -712,6 +712,25 @@
   margin: 0;
   color: var(--soft-ink);
   font-size: 13px;
+}
+
+.name2number-generator-note {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgb(255 253 248 / 55%);
+}
+
+.name2number-generator-note > strong {
+  color: var(--forest);
+  font-size: 14px;
+}
+
+.name2number-generator-note p strong {
+  color: var(--ink);
 }
 
 .name2number-rajanilai-sum-results .name2number-gen7-age-note {

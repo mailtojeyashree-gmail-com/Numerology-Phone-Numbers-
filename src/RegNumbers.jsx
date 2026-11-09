@@ -39,6 +39,7 @@ export default function RegNumbersPage(props) {
   const mobileWorkerStartupErrorRef = useRef('')
   const [isLoadingPhoneNumbers, setIsLoadingPhoneNumbers] = useState(false)
   const [phoneNumbersError, setPhoneNumbersError] = useState('')
+  const [uniqueNumbersText, setUniqueNumbersText] = useState(null)
   const [showPhoneNumbers, setShowPhoneNumbers] = useState(false)
   const [page, setPage] = useState(0)
   const [digitSumFilters, setDigitSumFilters] = useState([])
@@ -61,6 +62,9 @@ export default function RegNumbersPage(props) {
   const [prefixFilterInput, setPrefixFilterInput] = useState('')
   const [prefixFilterOutput, setPrefixFilterOutput] = useState(null)
   const [prefixFilterSelected, setPrefixFilterSelected] = useState('')
+  const uniqueNumberCount = uniqueNumbersText === null
+    ? 0
+    : uniqueNumbersText.split(/\r?\n/).filter((number) => number.trim()).length
 
   useEffect(() => {
     if (!props.inputNumbers) return undefined
@@ -470,7 +474,8 @@ export default function RegNumbersPage(props) {
 
     if (props.inputNumbers) {
       setPhoneNumbersError('')
-      const inputLines = String(props.inputNumbersText ?? '').split(/\r?\n/)
+      const sourceText = uniqueNumbersText ?? String(props.inputNumbersText ?? '')
+      const inputLines = sourceText.split(/\r?\n/)
       const entries = inputLines
         .map((line) => line.trim())
         .filter(Boolean)
@@ -492,7 +497,17 @@ export default function RegNumbersPage(props) {
         return
       }
 
-      setPhoneNumbers(entries)
+      const seenNumbers = new Set()
+      const uniqueEntries = entries.filter((entry) => {
+        if (seenNumbers.has(entry)) {
+          return false
+        }
+        seenNumbers.add(entry)
+        return true
+      })
+
+      setUniqueNumbersText(uniqueEntries.join('\n'))
+      setPhoneNumbers(uniqueEntries)
       setShowPhoneNumbers(true)
       setPage(0)
       setDigitSumFilters([])
@@ -623,17 +638,20 @@ export default function RegNumbersPage(props) {
     setFilterOpen(false)
   }
 
-  function filterMobileNumbersByPrefix(prefix) {
+  function filterMobileNumbersByPrefix(prefixes) {
     const matches = []
     const numberPattern = /(?:^|\D)(07[349]\d{8})(?!\d)/g
 
     prefixFilterInput.split(/\r?\n/).forEach((line) => {
       for (const match of line.matchAll(numberPattern)) {
-        if (match[1].startsWith(prefix)) matches.push(match[1])
+        if (prefixes.some((prefix) => match[1].startsWith(prefix))) matches.push(match[1])
       }
     })
 
-    setPrefixFilterSelected(prefix)
+    const selectedPrefixes = prefixes.length > 1
+      ? `${prefixes.slice(0, -1).join(', ')} & ${prefixes.at(-1)}`
+      : prefixes[0]
+    setPrefixFilterSelected(selectedPrefixes)
     setPrefixFilterOutput(matches.join('\n'))
   }
 
@@ -688,41 +706,69 @@ export default function RegNumbersPage(props) {
           </div>
         ) : null}
         {props.inputNumbers ? (
-          <div className="vip-number-input">
-            <label htmlFor="input-mobile-numbers">
-              Paste UK mobile numbers, one number per line (11 digits, starting with 07).
-            </label>
-            <TextareaLineCount value={props.inputNumbersText ?? ''} />
-            <textarea
-              id="input-mobile-numbers"
-              aria-label="Paste mobile numbers"
-              rows={8}
-              placeholder={'07123456789\n07987654321'}
-              value={props.inputNumbersText ?? ''}
-              onChange={(event) => {
-                props.onInputNumbersTextChange(event.target.value)
-                setPhoneNumbersError('')
-                setShowPhoneNumbers(false)
-              }}
-            />
+          <div className="mobile-number-analysis-layout">
+            <div className="vip-number-input mobile-number-input">
+              <label htmlFor="input-mobile-numbers">
+                Paste UK mobile numbers, one number per line (11 digits, starting with 07).
+              </label>
+              <TextareaLineCount value={props.inputNumbersText ?? ''} />
+              <textarea
+                id="input-mobile-numbers"
+                aria-label="Paste mobile numbers"
+                rows={8}
+                placeholder={'07123456789\n07987654321'}
+                value={props.inputNumbersText ?? ''}
+                onChange={(event) => {
+                  props.onInputNumbersTextChange(event.target.value)
+                  setPhoneNumbersError('')
+                  setUniqueNumbersText(null)
+                  setShowPhoneNumbers(false)
+                }}
+              />
+            </div>
+            <button
+              className="combination-generate-button vip-phone-numbers-toggle"
+              type="button"
+              onClick={togglePhoneNumbers}
+              disabled={isLoadingPhoneNumbers}
+            >
+              Remove duplicates and analyze
+            </button>
+            {uniqueNumbersText !== null ? (
+              <label className="mobile-unique-numbers">
+                <span>Unique numbers ({uniqueNumberCount})</span>
+                <textarea
+                  aria-label="Unique numbers"
+                  rows={8}
+                  value={uniqueNumbersText}
+                  onChange={(event) => {
+                    setUniqueNumbersText(event.target.value)
+                    setPhoneNumbersError('')
+                    setShowPhoneNumbers(false)
+                  }}
+                />
+              </label>
+            ) : null}
           </div>
         ) : null}
-        <button
-          className="combination-generate-button vip-phone-numbers-toggle"
-          type="button"
-          onClick={togglePhoneNumbers}
-          disabled={isLoadingPhoneNumbers}
-        >
-          {props.inputRegistrationNumbers
-            ? 'Analyze registrations'
-            : props.inputNumbers
-            ? 'Analyze numbers'
-            : isLoadingPhoneNumbers
-            ? `Loading ${props.itemName ?? 'phone numbers'}...`
-            : showPhoneNumbers
-              ? `Hide ${props.buttonName ?? 'Phone numbers'}`
-              : `Show ${props.buttonName ?? 'Phone numbers'}`}
-        </button>
+        {!props.inputNumbers ? (
+          <div className="vip-phone-numbers-actions">
+            <button
+              className="combination-generate-button vip-phone-numbers-toggle"
+              type="button"
+              onClick={togglePhoneNumbers}
+              disabled={isLoadingPhoneNumbers}
+            >
+              {props.inputRegistrationNumbers
+                ? 'Analyze registrations'
+                : isLoadingPhoneNumbers
+                ? `Loading ${props.itemName ?? 'phone numbers'}...`
+                : showPhoneNumbers
+                  ? `Hide ${props.buttonName ?? 'Phone numbers'}`
+                  : `Show ${props.buttonName ?? 'Phone numbers'}`}
+            </button>
+          </div>
+        ) : null}
         {phoneNumbersError ? <p className="vip-phone-numbers-error" role="alert">{phoneNumbersError}</p> : null}
         {canShowPhoneNumbers ? (
           <section className="vip-phone-numbers-list" aria-label={`Saved ${props.itemName ?? 'phone numbers'}`}>
@@ -1381,7 +1427,7 @@ export default function RegNumbersPage(props) {
                 className="combination-generate-button"
                 type="button"
                 disabled={!prefixFilterInput.trim()}
-                onClick={() => filterMobileNumbersByPrefix('073')}
+                onClick={() => filterMobileNumbersByPrefix(['073'])}
               >
                 Filter 073
               </button>
@@ -1389,7 +1435,7 @@ export default function RegNumbersPage(props) {
                 className="combination-generate-button"
                 type="button"
                 disabled={!prefixFilterInput.trim()}
-                onClick={() => filterMobileNumbersByPrefix('074')}
+                onClick={() => filterMobileNumbersByPrefix(['074'])}
               >
                 Filter 074
               </button>
@@ -1397,9 +1443,25 @@ export default function RegNumbersPage(props) {
                 className="combination-generate-button"
                 type="button"
                 disabled={!prefixFilterInput.trim()}
-                onClick={() => filterMobileNumbersByPrefix('079')}
+                onClick={() => filterMobileNumbersByPrefix(['079'])}
               >
                 Filter 079
+              </button>
+              <button
+                className="combination-generate-button"
+                type="button"
+                disabled={!prefixFilterInput.trim()}
+                onClick={() => filterMobileNumbersByPrefix(['074', '079'])}
+              >
+                Filter 074 &amp; 079
+              </button>
+              <button
+                className="combination-generate-button"
+                type="button"
+                disabled={!prefixFilterInput.trim()}
+                onClick={() => filterMobileNumbersByPrefix(['073', '074', '079'])}
+              >
+                Filter 073, 074 &amp; 079
               </button>
             </div>
             {prefixFilterOutput !== null ? (

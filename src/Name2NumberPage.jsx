@@ -21,7 +21,11 @@ const isGen7Generator = (generator) => ['GEN-7', GEN_7_43_MATCH].includes(genera
 const sumDigits = (value) => [...value].reduce((sum, digit) => sum + Number(digit), 0)
 
 function getPossibleUkRegistrationPlates(number) {
-  if (!/^\d{7}$/.test(number) || number.slice(2, 4) === '00') return []
+  const isGen6ExampleNumber = /^\d{6}$/.test(number)
+  if ((!isGen6ExampleNumber && !/^\d{7}$/.test(number))
+    || (isGen6ExampleNumber ? number.slice(1, 3) : number.slice(2, 4)) === '00') {
+    return []
+  }
 
   const lettersByDigit = new Map()
   for (const [letter, value] of carRegLetterValues) {
@@ -34,19 +38,28 @@ function getPossibleUkRegistrationPlates(number) {
 
   const firstLetters = (lettersByDigit.get(number[0]) ?? [])
     .filter((letter) => !excludedUkRegistrationStartingLetters.has(letter))
-  const secondLetters = lettersByDigit.get(number[1]) ?? []
-  const suffixLetters = [...number.slice(4)].map((digit) => lettersByDigit.get(digit) ?? [])
-  if (firstLetters.length === 0 || secondLetters.length === 0 || suffixLetters.some((letters) => letters.length === 0)) {
+  const secondLetters = isGen6ExampleNumber ? [] : lettersByDigit.get(number[1]) ?? []
+  const suffixLetters = [...number.slice(isGen6ExampleNumber ? 3 : 4)]
+    .map((digit) => lettersByDigit.get(digit) ?? [])
+  if (
+    firstLetters.length === 0
+    || (!isGen6ExampleNumber && secondLetters.length === 0)
+    || suffixLetters.some((letters) => letters.length === 0)
+  ) {
     return []
   }
 
   const plates = []
   for (const first of firstLetters) {
-    for (const second of secondLetters) {
+    for (const second of isGen6ExampleNumber ? [''] : secondLetters) {
       for (const third of suffixLetters[0]) {
         for (const fourth of suffixLetters[1]) {
           for (const fifth of suffixLetters[2]) {
-            plates.push(`${first}${second} ${number.slice(2, 4)} ${third}${fourth}${fifth}`)
+            const numberPart = isGen6ExampleNumber ? number.slice(1, 3) : number.slice(2, 4)
+            const letters = `${third}${fourth}${fifth}`
+            plates.push(isGen6ExampleNumber
+              ? `${first} ${numberPart} ${letters}`
+              : `${first}${second} ${numberPart} ${letters}`)
           }
         }
       }
@@ -101,7 +114,7 @@ function Gen7PlateCopyButton({ plate, number }) {
   )
 }
 
-function Gen7PlateResults({ plates, label, sourceNumber }) {
+function Gen7PlateResults({ plates, label, sourceNumber, showPrefixFilter = true }) {
   const alphabetCounts = new Map()
   plates.forEach((plate) => {
     const firstLetter = plate[0]
@@ -183,7 +196,7 @@ function Gen7PlateResults({ plates, label, sourceNumber }) {
           text={visiblePlates.join('\n')}
         />
       </div>
-      {activeLetter !== 'all' ? (
+      {showPrefixFilter && activeLetter !== 'all' ? (
         <div
           className="name2number-gen7-subalphabet-pages"
           role="group"
@@ -539,19 +552,54 @@ function getGen6ExampleOrders(values, rajanilaiSet) {
       )
       const orderedValues = [values[firstIndex], values[secondIndex], values[lastIndex]]
       if (/[09]/.test(orderedValues[2])) continue
-      const orderKey = orderedValues.join(',')
-      if (seenOrders.has(orderKey)) continue
+      if (/[09]/.test(orderedValues[0][0])) {
+        const firstPair = orderedValues[0]
+        orderedValues[0] = orderedValues[1]
+        orderedValues[1] = firstPair
+      }
+      if (/[09]/.test(orderedValues[0][0])) continue
+
+      const registrationNumber = orderedValues.join('').slice(1, 3)
+      if (registrationNumber === '00' || !rajanilaiSet.has(String(Number(registrationNumber)))) continue
 
       const firstTwoPairDigitSum = [...orderedValues[0], ...orderedValues[1]]
         .reduce((sum, digit) => sum + Number(digit), 0)
       if (!rajanilaiSet.has(String(firstTwoPairDigitSum))) continue
 
+      const orderKey = orderedValues.join(',')
+      if (seenOrders.has(orderKey)) continue
       seenOrders.add(orderKey)
       orders.push({ values: orderedValues, firstTwoPairDigitSum })
     }
   }
 
   return orders
+}
+
+function getRajanilaiGeneratorNote(generator) {
+  const examples = {
+    'GEN-4': 'Example: 12 + 34 has a combined digit sum of 10.',
+    'GEN-5': 'Example: 12, 34, 56 forms 12346 (digit sum 16); checks are 12, 34, and 46.',
+    'GEN-6': 'Example: 12, 34, 56 has a combined digit sum of 21.',
+    'GEN-6-EXAMPLE': 'Example: 22, 02, 26 makes number 220226: the first digit maps to the first letter, 20 is the two-digit plate number, and the final three digits map to the suffix letters. The Number column’s wheel opens matching AxxAAA plates, and Rajanilai check shows the three checked pairs plus the checked first-two-pair sum. The two-digit plate number must also be in the Rajanilai list; for example, a sequence with plate number 23 is removed if 23 is not in the list. A sequence with plate number 00 is also removed.',
+    'GEN-7': 'Example: 12, 34, 56, 78 forms 1234568 (digit sum 29); checks are 12, 34, 56, and 68.',
+    [GEN_7_43_MATCH]: 'Example: for 1234568, the first-four-digit sum is 10 and the last-three-digit sum is 19.',
+    'GEN-8': 'Example: 12, 34, 56, 78 has a combined digit sum of 36.',
+  }
+  const rules = {
+    'GEN-4': 'Finds two Rajanilai pairs whose digit sums add to the entered sum. Pairs may repeat.',
+    'GEN-5': 'Builds a five-digit number from three Rajanilai pairs. All three pair checks must be in the Rajanilai list, and the number digit sum must equal the entered sum.',
+    'GEN-6': 'Finds three Rajanilai pairs whose digit sums add to the entered sum. Pairs may repeat.',
+    'GEN-6-EXAMPLE': 'Finds three Rajanilai pairs whose digit sums add to the entered sum. The final pair cannot contain 0 or 9; the first two pairs must have a combined digit sum in the Rajanilai list. If the first pair starts with 0 or 9, it is swapped with the middle pair; the row is removed if the new first pair still starts with 0 or 9. The six-digit sequence maps to AxxAAA: its first digit maps to the first letter, its second and third digits are the plate number, and its last three digits map to suffix letters. The plate number must be in the Rajanilai list and cannot be 00. The Number column shows the sequence and opens matching plates; Rajanilai check shows the checked pairs and first-two-pair sum.',
+    'GEN-7': 'Builds a seven-digit number from four Rajanilai pairs. All pair checks must be in the Rajanilai list, the number digit sum must equal the entered sum, and mapped digits must be 1–8.',
+    [GEN_7_43_MATCH]: 'Uses GEN-7 pair and mapping checks, and also requires the digit sums of the first four and last three digits to be in the Rajanilai list.',
+    'GEN-8': 'Finds four Rajanilai pairs whose digit sums add to the entered sum. Pairs may repeat.',
+  }
+
+  return {
+    rule: rules[generator],
+    example: examples[generator],
+  }
 }
 
 function generateNonRajanilaiNumbers(prefix, rajanilaiSet) {
@@ -904,6 +952,9 @@ export default function Name2NumberPage() {
       && !excludedPairs.some((pair) => values.includes(pair))
     ))
   }, [excludedRajanilaiPairsInput, gen7FilteredCombinations, gen7SecondPairFilter, gen7SecondPairOptions, kuberNumberInput, rajanilaiSumResults])
+  const rajanilaiGeneratorNote = rajanilaiSumResults
+    ? getRajanilaiGeneratorNote(rajanilaiSumResults.generator)
+    : null
   const invalidExcludedRajanilaiPairs = excludedRajanilaiPairsInput
     .split(',')
     .map((pair) => pair.trim())
@@ -2206,8 +2257,16 @@ export default function Name2NumberPage() {
         {rajanilaiSumResults ? (
           <div className="name2number-rajanilai-sum-results" aria-live="polite">
             <h3>{rajanilaiSumResults.generator} combinations · {displayedRajanilaiSumCombinations.length}</h3>
+            <section className="name2number-generator-note" aria-label="Generator rules">
+              <strong>Note</strong>
+              <p>{rajanilaiGeneratorNote.rule}</p>
+              <p>
+                <strong>Example:</strong> {rajanilaiGeneratorNote.example}
+                {' '}Illustrative only; any pair checks and intermediate sums must still satisfy the Rajanilai-list rules.
+              </p>
+            </section>
             {rajanilaiSumResults.generator === 'GEN-6-EXAMPLE' ? (
-              <p>Only orders with a mappable final pair (no 0 or 9) and a first-two-pair digit sum in the Rajanilai list are shown.</p>
+              <p>Only pair orders that pass the note rules above are shown.</p>
             ) : null}
             {['GEN-5', 'GEN-7', GEN_7_43_MATCH].includes(rajanilaiSumResults.generator) ? (
               <p>
@@ -2245,7 +2304,9 @@ export default function Name2NumberPage() {
                           />
                           <span>Valid pair order</span>
                         </div>
+                        <span>Number</span>
                         <span>Combination</span>
+                        <span>Rajanilai check</span>
                         <span>First two-pair digit sum</span>
                       </>
                     ) : ['GEN-5', 'GEN-7', GEN_7_43_MATCH].includes(rajanilaiSumResults.generator) ? (
@@ -2292,6 +2353,7 @@ export default function Name2NumberPage() {
                     const hasNumberChecks = ['GEN-5', 'GEN-7', GEN_7_43_MATCH].includes(rajanilaiSumResults.generator)
                     const hasGen7Checks = isGen7Generator(rajanilaiSumResults.generator)
                     const hasFourThreeChecks = rajanilaiSumResults.generator === GEN_7_43_MATCH
+                    const displayedNumber = isExample ? exampleOrder.join('') : number
                     const fourDigitSum = hasFourThreeChecks ? sumDigits(number.slice(0, 4)) : null
                     const threeDigitSum = hasFourThreeChecks ? sumDigits(number.slice(4)) : null
                     return (
@@ -2302,7 +2364,34 @@ export default function Name2NumberPage() {
                         {isExample ? (
                           <>
                             <span>{exampleOrder.join(', ')}</span>
+                            <span className="name2number-gen7-number-cell">
+                              <span>{displayedNumber}</span>
+                              <button
+                                className="name2number-gen7-plates-button"
+                                type="button"
+                                aria-label={`Show possible UK registration plates for ${displayedNumber}`}
+                                title="Show possible UK registration plates"
+                                onClick={() => setSelectedGen7PlateNumber(displayedNumber)}
+                              >
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9" />
+                                  <circle cx="12" cy="12" r="2.3" />
+                                  <path d="M12 3v6.7M4.2 7.5l5.8 3.3m9.8-3.3L14 10.8M5.2 17l5.1-3m8.5 3-5.1-3" />
+                                </svg>
+                              </button>
+                            </span>
                             <span>{values.join(', ')}</span>
+                            <span className="name2number-rajanilai-gen7-checks">
+                              {exampleOrder.map((pair, index) => (
+                                <span className="name2number-rajanilai-gen7-check" key={`${pair}-${index}`}>
+                                  <span className="name2number-rajanilai-gen7-tick">✓✓</span>
+                                  <span className="name2number-rajanilai-gen7-badge">{pair}</span>
+                                </span>
+                              ))}
+                              <span className="name2number-rajanilai-gen7-split-checks">
+                                <span>First two-pair sum {firstTwoPairDigitSum} ✓✓</span>
+                              </span>
+                            </span>
                             <span>{firstTwoPairDigitSum}</span>
                           </>
                         ) : hasNumberChecks ? (
@@ -2394,7 +2483,7 @@ export default function Name2NumberPage() {
             >
               <div className="name2number-gen7-plates-heading">
                 <div>
-                  <p>GEN-7 number · {selectedGen7PlateNumber}</p>
+                  <p>{selectedGen7PlateNumber.length === 6 ? 'GEN-6-EXAMPLE' : 'GEN-7'} number · {selectedGen7PlateNumber}</p>
                   <h3 id="name2number-gen7-plates-title">Possible UK registration plates</h3>
                 </div>
                 <button
@@ -2408,7 +2497,9 @@ export default function Name2NumberPage() {
                 </button>
               </div>
               <p className="name2number-gen7-plates-note">
-                Combinations use the number-to-letter chart and the standard UK two-letter, two-digit, three-letter format.
+                Combinations use the number-to-letter chart and the {selectedGen7PlateNumber.length === 6
+                  ? 'one-letter, two-digit, three-letter AxxAAA format'
+                  : 'standard UK two-letter, two-digit, three-letter format'}.
                 Use the alphabet buttons to browse plates by their first letter. CarReg opens separately to show current listings and prices.
               </p>
               {possibleUkRegistrationPlates.length > 0 ? (
@@ -2416,6 +2507,7 @@ export default function Name2NumberPage() {
                   plates={possibleUkRegistrationPlates}
                   label="visible possible UK registration plates"
                   sourceNumber={selectedGen7PlateNumber}
+                  showPrefixFilter={selectedGen7PlateNumber.length !== 6}
                 />
               ) : (
                 <p className="name2number-gen7-plates-empty">
