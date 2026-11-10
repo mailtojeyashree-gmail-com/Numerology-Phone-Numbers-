@@ -901,12 +901,27 @@ function App() {
         row[7].split(',').map((pair) => pair.trim()),
       )))
   ))
+  const orderedVisibleManithaNaadiTableRows = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
+    ? [...visibleManithaNaadiTableRows].sort((first, second) => (
+      first[7].localeCompare(second[7], undefined, { numeric: true })
+      || first[2].localeCompare(second[2], undefined, { numeric: true })
+    ))
+    : visibleManithaNaadiTableRows
   const pagedManithaNaadiTableRows = manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS'
-    ? visibleManithaNaadiTableRows.slice(
+    ? orderedVisibleManithaNaadiTableRows.slice(
       mobileNumberPage * CAR_REGISTRATION_PAGE_SIZE,
       (mobileNumberPage + 1) * CAR_REGISTRATION_PAGE_SIZE,
     )
-    : visibleManithaNaadiTableRows
+    : orderedVisibleManithaNaadiTableRows
+  const mobilePairGroupStartIndexes = new Set()
+  if (manithaNaadiCombinationResults?.generator === 'GEN-MOBILE-NUMBERS') {
+    pagedManithaNaadiTableRows.forEach((row, index) => {
+      const absoluteIndex = mobileNumberPage * CAR_REGISTRATION_PAGE_SIZE + index
+      if (absoluteIndex === 0 || orderedVisibleManithaNaadiTableRows[absoluteIndex - 1][7] !== row[7]) {
+        mobilePairGroupStartIndexes.add(index)
+      }
+    })
+  }
   const manithaNaadiUniqueDigitSums = [...new Set(manithaNaadiTableRows.map((row) => row[3]))]
     .sort((first, second) => first - second)
   const manithaNaadiUniqueRasiCharts = [...new Set(manithaNaadiTableRows.map((row) => row[5]))]
@@ -1664,7 +1679,7 @@ function App() {
                                   <div className="car-reg-pair-checks-heading">
                                     <span>{heading}</span>
                                     {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
-                                      <small className="manitha-mobile-pair-color-hint">Same pair = same colour</small>
+                                      <small className="manitha-mobile-pair-group-hint">Rows grouped by unique-pair set</small>
                                     )}
                                     <button
                                       className="car-reg-pair-filter-button"
@@ -1751,7 +1766,8 @@ function App() {
                             </tr>
                           ) : pagedManithaNaadiTableRows.map((row, index) => (
                             <tr
-                              className={(
+                              className={[
+                                ((
                                 manithaNaadiCombinationResults.generator === 'GEN-5'
                                   && manithaNaadiGen5NumerologistNumbers[manithaNaadiCombinationResults.profile]?.has(row[2])
                               ) || (
@@ -1760,7 +1776,9 @@ function App() {
                               ) || (
                                 manithaNaadiCombinationResults.generator === 'GEN-6'
                                   && manithaNaadiGen6NumerologistNumbers[manithaNaadiCombinationResults.profile]?.has(row[2])
-                              ) ? 'manitha-curated-number-row' : ''}
+                                )) ? 'manitha-curated-number-row' : '',
+                                mobilePairGroupStartIndexes.has(index) ? 'manitha-mobile-pair-group-start' : '',
+                              ].filter(Boolean).join(' ')}
                               key={`${row[2]}-${index}`}
                             >
                               <td>{row[0]}</td>

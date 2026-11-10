@@ -1461,12 +1461,16 @@
   gap: 6px;
 }
 
-.manitha-mobile-pair-color-hint {
+.manitha-mobile-pair-group-hint {
   display: block;
   color: var(--soft-ink);
   font-size: 9px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.manitha-results-table .manitha-mobile-pair-group-start td {
+  border-top: 2px solid rgba(71, 111, 90, 0.48);
 }
 
 .manitha-mobile-unique-pair-list {
