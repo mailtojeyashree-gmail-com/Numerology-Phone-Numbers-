@@ -1663,6 +1663,9 @@ function App() {
                                 {heading === 'Unique pairs' ? (
                                   <div className="car-reg-pair-checks-heading">
                                     <span>{heading}</span>
+                                    {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
+                                      <small className="manitha-mobile-pair-color-hint">Same pair = same colour</small>
+                                    )}
                                     <button
                                       className="car-reg-pair-filter-button"
                                       type="button"
@@ -1763,7 +1766,28 @@ function App() {
                               <td>{row[0]}</td>
                               <td>{row[1]}</td>
                                 {manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS' && (
-                                  <td>{row[7]}</td>
+                                  <td>
+                                    <div
+                                      className="manitha-mobile-unique-pair-list"
+                                      aria-label={`Unique pairs: ${row[7].replaceAll(',', ', ')}`}
+                                    >
+                                      {row[7].split(',').map((pair) => {
+                                        return (
+                                          <span
+                                            className="manitha-mobile-unique-pair"
+                                            key={pair}
+                                            style={{
+                                              color: `hsl(${(Number(pair.trim()) * 137.508) % 360} 55% 28%)`,
+                                              backgroundColor: `hsl(${(Number(pair.trim()) * 137.508) % 360} 80% 92%)`,
+                                              borderColor: `hsl(${(Number(pair.trim()) * 137.508) % 360} 65% 58%)`,
+                                            }}
+                                          >
+                                            {pair.trim()}
+                                          </span>
+                                        )
+                                      })}
+                                    </div>
+                                  </td>
                                 )}
                                 <td>{manithaNaadiCombinationResults.generator === 'GEN-MOBILE-NUMBERS'
                                   ? formatMobileNumber(row[2])
