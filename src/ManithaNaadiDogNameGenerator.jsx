@@ -14,6 +14,7 @@ const defaultRajanilaiNumbers = `2
 20
 22
 26
+29
 32
 33
 39

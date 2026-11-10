@@ -7,6 +7,7 @@ import { calculateGen8Matches } from './manithaNaadiGen8Logic'
 import ManithaNaadiPasswordGenerator from './ManithaNaadiPasswordGenerator'
 import ManithaNaadiGen12Generator from './ManithaNaadiGen12Generator'
 import PanjaPatchiPage from './PanjaPatchiPage'
+import RajanilaiDatesPage from './RajanilaiDatesPage'
 import Name2NumberPage from './Name2NumberPage'
 import PasswordPage from './PasswordPage'
 import LuckyNumbersOverview from './LuckyNumbersOverview'
@@ -20,6 +21,7 @@ import {
   rasiChartSigns,
   rasiChartStartingSigns,
 } from './rasiChartData'
+import { defaultRajanilaiNumbers } from './name2numberLogic'
 
 const CAR_REGISTRATION_PAGE_SIZE = 100
 const CAR_REGISTRATION_STARTING_LETTERS = Array.from(
@@ -336,6 +338,7 @@ function App() {
   const carRegistrationFilterRequestRef = useRef(0)
   const cachedCarRegistrationMatchesRef = useRef(null)
   const [activePage, setActivePage] = useState('manitha-naadi')
+  const [rajanilaiDateNumbers, setRajanilaiDateNumbers] = useState(defaultRajanilaiNumbers)
   const [selectedManithaNaadiInitials, setSelectedManithaNaadiInitials] = useState('MJ')
   const [manithaNaadiLuckyNumbers, setManithaNaadiLuckyNumbers] = useState(
     () => ({ ...manithaNaadiLuckyNumberDefaults }),
@@ -1191,6 +1194,14 @@ function App() {
           >
             name2number
           </button>
+          <button
+            className={`page-switch${activePage === 'rajanilai-dates' ? ' page-switch-active' : ''}`}
+            type="button"
+            aria-pressed={activePage === 'rajanilai-dates'}
+            onClick={() => navigateToPage('rajanilai-dates')}
+          >
+            rajanilai dates
+          </button>
           <a
             className={`page-switch page-switch-link${activePage === 'vipnumbers' ? ' page-switch-active' : ''}`}
             href="#vipnumbers"
@@ -1226,7 +1237,12 @@ function App() {
         </nav>
       </header>
       <section className="workspace" id="top">
-        {activePage === 'manitha-naadi' ? (
+        {activePage === 'rajanilai-dates' ? (
+          <RajanilaiDatesPage
+            rajanilaiNumbers={rajanilaiDateNumbers}
+            onRajanilaiNumbersChange={setRajanilaiDateNumbers}
+          />
+        ) : activePage === 'manitha-naadi' ? (
           <section className="matching-numbers-page" aria-labelledby="manitha-naadi-title">
             <LuckyNumbersOverview
               heading={<><span id="manitha-naadi-title">மனித நாடி </span><em>lucky numbers</em></>}
@@ -2850,7 +2866,7 @@ function App() {
       </section>
 
       <footer className="page-footer">
-        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : activePage === 'inputmobilenumbers' ? 'INPUTMOBILENUMBERS' : activePage === 'regnumbers' ? 'REGNUMBERS' : activePage === 'inputregnumbers' ? 'INPUT REGNUMBERS' : 'மனித நாடி LUCKY NUMBERS'}</span>
+        <span>NUMBER SIGNAL <span className="footer-separator">/</span> {activePage === 'manitha-naadi' ? 'மனித நாடி LUCKY NUMBERS' : activePage === 'password' ? 'PASSWORD GENERATOR' : activePage === 'panja-patchi' ? 'பஞ்ச பட்சி' : activePage === 'name2number' ? 'NAME2NUMBER' : activePage === 'rajanilai-dates' ? 'RAJANILAI DATES' : activePage === 'vipnumbers' ? 'PHONEOVERNET' : activePage === 'inputmobilenumbers' ? 'INPUTMOBILENUMBERS' : activePage === 'regnumbers' ? 'REGNUMBERS' : activePage === 'inputregnumbers' ? 'INPUT REGNUMBERS' : 'மனித நாடி LUCKY NUMBERS'}</span>
         <span>EDITABLE IN THIS BROWSER</span>
       </footer>
       {isButtonActionLoading && (

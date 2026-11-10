@@ -1,0 +1,476 @@
+.rajanilai-dates-page {
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.rajanilai-dates-heading {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.rajanilai-dates-heading h1 {
+  margin: 5px 0 8px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 400;
+}
+
+.rajanilai-dates-heading p {
+  margin: 0;
+  color: var(--soft-ink);
+  font-size: 14px;
+}
+
+.rajanilai-dates-numbers {
+  display: grid;
+  max-width: 700px;
+  gap: 6px;
+  margin-bottom: 24px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rajanilai-dates-numbers textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 500 14px/1.5 'SFMono-Regular', Consolas, monospace;
+  resize: vertical;
+}
+
+.rajanilai-dates-numbers textarea:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgba(71, 111, 90, 0.12);
+  outline: none;
+}
+
+.rajanilai-calendar {
+  padding: clamp(14px, 2.5vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(245, 204, 83, 0.13), transparent 34%),
+    #fffdf8;
+  box-shadow: 0 14px 40px rgba(48, 57, 48, 0.08);
+}
+
+.rajanilai-calendar-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.rajanilai-calendar-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.rajanilai-calendar-date-selectors {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.rajanilai-calendar-date-selectors select {
+  min-height: 46px;
+  padding: 0 34px 0 14px;
+  border: 1px solid rgba(71, 111, 90, 0.3);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--forest);
+  font: 600 clamp(16px, 2.5vw, 22px)/1.2 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  cursor: pointer;
+}
+
+.rajanilai-calendar-date-selectors select:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 3px;
+}
+
+.rajanilai-calendar-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--forest);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rajanilai-calendar-option input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--coral);
+}
+
+.rajanilai-calendar-option--year {
+  justify-self: end;
+}
+
+.rajanilai-calendar-toolbar button {
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(71, 111, 90, 0.3);
+  border-radius: 50%;
+  background: #fffdf8;
+  color: var(--forest);
+  font: 400 32px/1 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.rajanilai-calendar-toolbar button:hover {
+  transform: translateY(-1px);
+  background: rgba(71, 111, 90, 0.1);
+}
+
+.rajanilai-calendar-toolbar button:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 3px;
+}
+
+.rajanilai-calendar-summary {
+  margin: 12px 0 20px;
+  color: var(--soft-ink);
+  font-size: 13px;
+  text-align: center;
+}
+
+.rajanilai-calendar-viewport {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.rajanilai-calendar-grid {
+  display: grid;
+  min-width: 820px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rajanilai-calendar-weekday {
+  padding: 10px 8px;
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.rajanilai-calendar-day,
+.rajanilai-calendar-empty {
+  min-height: 196px;
+  border: 1px solid rgba(216, 212, 200, 0.9);
+  border-radius: 11px;
+}
+
+.rajanilai-calendar-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  transition: border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+
+.rajanilai-calendar-day:hover {
+  transform: translateY(-2px);
+  border-color: rgba(71, 111, 90, 0.55);
+  box-shadow: 0 5px 14px rgba(48, 57, 48, 0.08);
+}
+
+.rajanilai-calendar-day--both {
+  background: linear-gradient(145deg, rgba(255, 220, 213, 0.78), rgba(255, 255, 255, 0.78));
+}
+
+.rajanilai-calendar-day--extended {
+  min-height: 226px;
+}
+
+.rajanilai-calendar-day-number {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.rajanilai-calendar-day-number--today {
+  border: 2px solid var(--coral);
+  border-radius: 50%;
+  background: #fffdf8;
+  color: #a9232a;
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(228, 87, 79, 0.13);
+}
+
+.rajanilai-calendar-calculation {
+  color: var(--soft-ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.rajanilai-calendar-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--soft-ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.rajanilai-calendar-check strong {
+  font-size: 14px;
+  letter-spacing: -0.08em;
+}
+
+.rajanilai-calendar-match {
+  color: #1d6b43;
+}
+
+.rajanilai-calendar-miss {
+  color: #c62828;
+}
+
+.rajanilai-calendar-seal {
+  display: block;
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  filter: drop-shadow(0 3px 4px rgba(35, 40, 35, 0.24));
+}
+
+.rajanilai-calendar-seal--small {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.rajanilai-calendar-day > .rajanilai-calendar-seal {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+}
+
+.rajanilai-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 20px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 650;
+  list-style: none;
+}
+
+.rajanilai-calendar-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rajanilai-upcoming-dates {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.rajanilai-upcoming-dates-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+
+.rajanilai-upcoming-dates-heading h3 {
+  margin: 5px 0 0;
+  color: var(--forest);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 500;
+}
+
+.rajanilai-upcoming-dates-heading > span {
+  padding: 7px 12px;
+  border: 1px solid rgba(216, 92, 63, 0.25);
+  border-radius: 999px;
+  background: linear-gradient(120deg, #fff1bd, #ffe1d6);
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rajanilai-upcoming-dates-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rajanilai-upcoming-dates-list li {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  overflow: hidden;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background:
+    linear-gradient(135deg, #fffdf8, #fffdf8) padding-box,
+    linear-gradient(120deg, #e7b832, #df7661, #8ca9ba) border-box;
+  box-shadow: 0 5px 14px rgba(48, 57, 48, 0.07);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.rajanilai-upcoming-dates-list li::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, #f0c84b, #d9514c, #9eafbc);
+  content: '';
+}
+
+.rajanilai-upcoming-dates-list li:nth-child(3n + 2) {
+  background:
+    linear-gradient(135deg, #fffdf8, #fff9ee) padding-box,
+    linear-gradient(120deg, #d7b943, #e89a5c, #8eaf91) border-box;
+}
+
+.rajanilai-upcoming-dates-list li:nth-child(3n) {
+  background:
+    linear-gradient(135deg, #fffdf8, #f8fbff) padding-box,
+    linear-gradient(120deg, #91b9c9, #be8eae, #e7bd60) border-box;
+}
+
+.rajanilai-upcoming-dates-list li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 20px rgba(48, 57, 48, 0.12);
+}
+
+.rajanilai-upcoming-dates-list li > strong {
+  color: #174e43;
+  font-size: 13px;
+}
+
+.rajanilai-upcoming-dates-list li > span {
+  color: var(--soft-ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 11px;
+}
+
+.rajanilai-upcoming-dates-empty {
+  margin: 0;
+  padding: 16px;
+  border-radius: 9px;
+  background: rgba(235, 232, 220, 0.42);
+  color: var(--soft-ink);
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .rajanilai-calendar {
+    padding: 14px 10px;
+    border-radius: 12px;
+  }
+
+  .rajanilai-calendar-grid {
+    min-width: 760px;
+    gap: 6px;
+  }
+
+  .rajanilai-calendar-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px 8px;
+  }
+
+  .rajanilai-calendar-navigation {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .rajanilai-calendar-navigation {
+    gap: 5px;
+  }
+
+  .rajanilai-calendar-option {
+    grid-row: 2;
+  }
+
+  .rajanilai-calendar-option--year {
+    grid-column: 2;
+  }
+
+  .rajanilai-calendar-option {
+    gap: 5px;
+    font-size: 10px;
+  }
+
+  .rajanilai-calendar-option--year {
+    justify-self: start;
+  }
+
+  .rajanilai-calendar-toolbar button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .rajanilai-calendar-date-selectors {
+    gap: 5px;
+  }
+
+  .rajanilai-calendar-date-selectors select {
+    min-height: 40px;
+    padding: 0 22px 0 7px;
+    font-size: 15px;
+  }
+
+  .rajanilai-calendar-day,
+  .rajanilai-calendar-empty {
+    min-height: 180px;
+  }
+
+  .rajanilai-calendar-day--extended {
+    min-height: 210px;
+  }
+
+  .rajanilai-calendar-day {
+    padding: 9px;
+  }
+
+  .rajanilai-calendar-day-number {
+    font-size: 26px;
+  }
+
+  .rajanilai-calendar-day > .rajanilai-calendar-seal {
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .rajanilai-calendar-legend {
+    gap: 10px 16px;
+  }
+}
