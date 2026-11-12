@@ -816,6 +816,11 @@ export default function RegNumbersPage(props) {
                 All Rajanilai calculations match
               </label>
             </div> : null}
+            {isInputMobileNumbersPage ? (
+              <p className="car-reg-double-tick-count">
+                Saved mobile numbers - <span>Matching rows count - {twoGreenTickRows.length}</span>
+              </p>
+            ) : null}
             <div className="manitha-results-table-wrap">
               <table className="manitha-results-table">
                 <thead>
@@ -941,8 +946,16 @@ export default function RegNumbersPage(props) {
                 <tbody>
                   {visibleRows.length === 0 ? (
                     <tr><td colSpan={registrationLayout ? 8 : 9}>No {registrationLayout ? 'registrations' : 'numbers'} match the selected filters.</td></tr>
-                  ) : pagedRows.map((row) => (
-                    <tr key={`${row.number}-${row.sourceIndex}`}>
+                  ) : pagedRows.map((row, index) => (
+                    <tr
+                      className={isInputMobileNumbersPage
+                        && twoGreenTickRows.length > 0
+                        && twoGreenTickRows.length < visibleRows.length
+                        && page * VIP_NUMBER_PAGE_SIZE + index === twoGreenTickRows.length
+                        ? 'car-reg-double-tick-divider'
+                        : undefined}
+                      key={`${row.number}-${row.sourceIndex}`}
+                    >
                       {registrationLayout
                         ? <td><strong>{row.number}</strong></td>
                         : <td>{props.initials}</td>}

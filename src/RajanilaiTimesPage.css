@@ -1,0 +1,118 @@
+.rajanilai-times-page {
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.rajanilai-times-heading {
+  margin-bottom: 24px;
+}
+
+.rajanilai-times-heading h1 {
+  margin: 5px 0 8px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 400;
+}
+
+.rajanilai-times-heading p,
+.rajanilai-times-rules {
+  margin: 0;
+  color: var(--soft-ink);
+  font-size: 14px;
+}
+
+.rajanilai-times-results {
+  padding: clamp(16px, 2.5vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 14px 40px rgba(48, 57, 48, 0.06);
+}
+
+.rajanilai-times-results-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.rajanilai-times-results-heading h2 {
+  margin: 5px 0 0;
+  color: var(--forest);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(22px, 4vw, 30px);
+  font-weight: 400;
+}
+
+.rajanilai-times-count {
+  color: var(--moss);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rajanilai-times-rules {
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+.rajanilai-times-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.rajanilai-time-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(71, 111, 90, 0.2);
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(246, 248, 239, 0.96), rgba(255, 253, 248, 0.98));
+  box-shadow: 0 5px 16px rgba(48, 57, 48, 0.05);
+}
+
+.rajanilai-time-card-time {
+  color: var(--forest);
+  font: 750 30px/1 'SFMono-Regular', Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.rajanilai-time-card-date {
+  color: var(--soft-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.rajanilai-time-card-checks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(71, 111, 90, 0.16);
+  color: #1d6b43;
+  font: 650 11px/1.4 'SFMono-Regular', Consolas, monospace;
+}
+
+.rajanilai-times-empty {
+  margin: 0;
+  padding: 22px;
+  border: 1px dashed rgba(71, 111, 90, 0.3);
+  border-radius: 10px;
+  color: var(--soft-ink);
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .rajanilai-times-results-heading {
+    align-items: flex-start;
+  }
+
+  .rajanilai-times-grid {
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  }
+}

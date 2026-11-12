@@ -1473,6 +1473,10 @@
   border-top: 2px solid rgba(71, 111, 90, 0.48);
 }
 
+.manitha-results-table .car-reg-double-tick-divider td {
+  border-top: 3px solid #1d6b43;
+}
+
 .manitha-mobile-unique-pair-list {
   display: flex;
   flex-wrap: wrap;
@@ -2194,6 +2198,16 @@
   flex-wrap: wrap;
   gap: 10px 20px;
   margin: 14px 0;
+}
+
+.car-reg-double-tick-count {
+  margin: 0 0 10px;
+  color: #1d6b43;
+  font-weight: 800;
+}
+
+.car-reg-double-tick-count span {
+  color: #c62828;
 }
 
 .vip-result-check-filters label {
