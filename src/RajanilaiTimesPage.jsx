@@ -4,8 +4,8 @@ import './RajanilaiTimesPage.css'
 import { parseRajanilaiNumbers } from './name2numberLogic'
 
 function getMatchingTimes(rajanilaiSet) {
-  return Array.from({ length: 12 * 60 }, (_, minuteOffset) => {
-    const hour = String(Math.floor(minuteOffset / 60) + 1).padStart(2, '0')
+  return Array.from({ length: 24 * 60 }, (_, minuteOffset) => {
+    const hour = String(Math.floor(minuteOffset / 60)).padStart(2, '0')
     const minute = String(minuteOffset % 60).padStart(2, '0')
     const digits = `${hour}${minute}`
     const digitSum = [...digits].reduce((sum, digit) => sum + Number(digit), 0)
@@ -39,7 +39,7 @@ export default function RajanilaiTimesPage({ rajanilaiNumbers, onRajanilaiNumber
         <div>
           <span className="results-kicker">MANITHA NAADI</span>
           <h1 id="rajanilai-times-title">Rajanilai times</h1>
-          <p>See every time from 01:00 to 12:59 that matches both Rajanilai rules. Each result applies to both AM and PM.</p>
+          <p>See every time from 00:00 to 23:59 that matches both Rajanilai rules, shown in 24-hour format.</p>
         </div>
       </header>
 
@@ -60,20 +60,20 @@ export default function RajanilaiTimesPage({ rajanilaiNumbers, onRajanilaiNumber
       <section className="rajanilai-times-results" aria-labelledby="rajanilai-times-results-title">
         <div className="rajanilai-times-results-heading">
           <div>
-            <span className="results-kicker">01:00 AM/PM — 12:59 AM/PM</span>
+            <span className="results-kicker">00:00 — 23:59 (24-hour clock)</span>
             <h2 id="rajanilai-times-results-title">Matching times</h2>
           </div>
           <span className="rajanilai-times-count">{matchingTimes.length} matches</span>
         </div>
         <p className="rajanilai-times-rules">
-          Both checks must match: the digit sum of HH:MM and the two-digit minute value. Each listed time occurs twice daily.
+          Both checks must match: the digit sum of HH:MM and the two-digit minute value. Each listed time occurs once daily.
         </p>
         {matchingTimes.length > 0 ? (
           <div className="rajanilai-times-grid">
             {matchingTimes.map(({ key, time, digitSum, calculation, minute }) => (
               <article className="rajanilai-time-card" key={key}>
                 <time className="rajanilai-time-card-time">{time}</time>
-                <span className="rajanilai-time-card-date">AM and PM</span>
+                <span className="rajanilai-time-card-date">Once daily</span>
                 <div className="rajanilai-time-card-checks">
                   <span>{calculation} = {digitSum}</span>
                   <span>{minute} ✓</span>
@@ -83,7 +83,7 @@ export default function RajanilaiTimesPage({ rajanilaiNumbers, onRajanilaiNumber
           </div>
         ) : (
           <p className="rajanilai-times-empty">
-            No times from 01:00 to 12:59 match both rules and the current Rajanilai numbers.
+            No times from 00:00 to 23:59 match both rules and the current Rajanilai numbers.
           </p>
         )}
       </section>
